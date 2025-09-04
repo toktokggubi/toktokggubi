@@ -1,0 +1,7 @@
+android
+ios
+.expo
+.expo-shared
+web-build
+*.keystore
+*.jks
