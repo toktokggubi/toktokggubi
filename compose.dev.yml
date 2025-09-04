@@ -1,0 +1,56 @@
+services:
+  frontend:
+    # Use the 'development' stage from the multi-stage Dockerfile
+    build:
+      context: ./frontend
+      target: development
+    ports:
+      - "3000:3000" # Expose frontend dev server port
+    volumes:
+      # Mount the local frontend code for hot-reloading
+      - ./frontend:/app
+      - /app/node_modules # Keep node_modules in container to avoid host conflicts
+    command: npm run dev # Start the React development server
+
+  backend:
+    ports:
+      - "8080:8080" # Expose backend server port
+      # - "5005:5005" # Uncomment for remote debugging
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev # Activate 'dev' profile in Spring Boot
+      # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For remote debugging
+    depends_on:
+      - database
+      - ai
+
+  ai:
+    ports:
+      - "5000:5000" # Expose AI service port
+
+  nginx:
+    ports:
+      - "80:80" # Expose Nginx port
+    volumes:
+      # Mount the development-specific Nginx configuration
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend # Nginx depends on frontend and backend for proxying
+      - backend
+      - ai
+
+  # Jenkins CI/CD Server (only in development/CI environment)
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    privileged: true # Allows Jenkins to run Docker commands
+    user: root
+    ports:
+      - "8081:8080" # Jenkins web UI
+      - "50000:50000" # Jenkins agent port (for build agents)
+    volumes:
+      # Persist Jenkins data
+      - ./jenkins/jenkins_home:/var/jenkins_home
+      # Mount Docker socket to allow Jenkins to build/run other Docker containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount Docker client binary from host if docker-compose isn't in Jenkins image
+      # - /usr/local/bin/docker:/usr/local/bin/docker
+    restart: always

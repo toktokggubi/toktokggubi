@@ -1,0 +1,51 @@
+services:
+  # Database Service (PostgreSQL by default, change image for MySQL)
+  database:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      # These environment variables configure the PostgreSQL container
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      # Persist database data to avoid losing it when containers restart
+      - ./database/data:/var/lib/postgresql/data
+      # Initialize database with a script if init.sql exists
+      # - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: always
+
+  # AI Service (Flask)
+  ai:
+    build: ./ai # Build from the Dockerfile in the ./ai directory
+    restart: always
+    # Environment variables for AI service, if any
+    # environment:
+    #   - AI_MODEL_PATH=/app/model.pt
+
+  # Backend Service (Spring Boot with Gradle)
+  backend:
+    build: ./backend # Build from the Dockerfile in the ./backend directory
+    restart: always
+    environment:
+      # Spring Boot database connection properties (using environment variables from .env)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${DB_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      # Other common environment variables for backend
+
+  # Frontend Service (React)
+  frontend:
+    build: ./frontend # Build from the Dockerfile in the ./frontend directory
+    restart: always
+    # Frontend will be configured with specific build targets/ports in override files
+
+  # Nginx Reverse Proxy
+  nginx:
+    build: ./nginx # Build from the Dockerfile in the ./nginx directory
+    restart: always
+    depends_on:
+      - frontend
+      - backend
+      - ai # Nginx might proxy to AI service directly too

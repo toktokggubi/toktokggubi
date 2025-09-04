@@ -1,0 +1,34 @@
+services:
+  frontend:
+    # Use the 'production' stage from the multi-stage Dockerfile
+    build:
+      context: ./frontend
+      target: production
+    # No ports exposed directly to the host; Nginx will handle access.
+    # No volumes for source code in production, built assets are part of the image
+    environment:
+      - NODE_ENV=production # Ensure React builds for production
+
+  backend:
+    ports:
+      - "8080:8080" # Expose backend server port
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod # Activate 'prod' profile in Spring Boot
+    depends_on:
+      - database
+      - ai
+
+  ai:
+    ports:
+      - "5000:5000" # Expose AI service port
+
+  nginx:
+    ports:
+      - "80:80" # Expose Nginx port for public access
+    volumes:
+      # Mount the production-specific Nginx configuration
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend # Nginx proxies to the production frontend and backend
+      - backend
+      - ai
