@@ -1,0 +1,95 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ssafy.toktokggubi'
+version = '0.0.1-SNAPSHOT'
+description = 'backend'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springAiVersion', "1.0.1")
+}
+
+dependencies {
+    // ===== Spring 기본 Starter들 =====
+    implementation 'org.springframework.boot:spring-boot-starter-web'            // Spring MVC (REST API, 웹서버)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'       // Spring Data JPA (ORM)
+    implementation 'org.springframework.boot:spring-boot-starter-security'       // Spring Security (인증/인가)
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'           // RabbitMQ 메시징
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'  // OAuth2 클라이언트
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server' // OAuth2 리소스 서버
+    implementation 'org.springframework.boot:spring-boot-starter-websocket'      // WebSocket 서버
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'     // Redis 연동
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'      // 서버사이드 템플릿 엔진
+
+    // ===== Spring AI =====
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'       // Spring AI(OpenAI 연동)
+
+
+    // ===== Database Drivers =====
+    runtimeOnly 'com.mysql:mysql-connector-j'                                  // MySQL 드라이버
+    runtimeOnly 'org.postgresql:postgresql'                                    // PostgreSQL
+
+    // ===== JWT & 인증 관련 =====
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'                             // JWT API
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'                               // JWT 구현체
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'                            // JWT Jackson 기반 직렬화
+
+    // ===== OpenAPI / Swagger =====
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9'     // Swagger UI + OpenAPI 문서화
+
+    // ===== 오픈소스 유틸 =====
+    implementation "org.apache.commons:commons-lang3:3.18.0"                     // Apache Commons Lang
+
+    // ===== 메시징/소켓 =====
+    implementation 'org.springframework.security:spring-security-messaging'      // WebSocket + Security 연동
+
+    // ===== Firebase =====
+    implementation "com.google.firebase:firebase-admin:9.5.0"                    // Firebase Admin SDK (FCM 등)
+
+    // ===== OpenAI 공식 SDK (Spring AI 대신 직접 쓸 때) =====
+    implementation "com.openai:openai-java:3.0.3"
+
+    // ===== Lombok =====
+    compileOnly 'org.projectlombok:lombok'                                       // Lombok (컴파일 전용)
+    annotationProcessor 'org.projectlombok:lombok'                               // Lombok 어노테이션 처리
+
+    // ===== 개발용 =====
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'              // 개발 편의 (자동 리스타트)
+    developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+    developmentOnly 'org.springframework.ai:spring-ai-spring-boot-docker-compose' // Spring AI용 Docker Compose// Spring Boot Docker Compose 연동
+
+    // ===== 테스트 =====
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'       // JUnit + MockMvc 등
+    testImplementation 'org.springframework.amqp:spring-rabbit-test'             // RabbitMQ 테스트
+    testImplementation 'org.springframework.security:spring-security-test'       // Security 테스트
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                 // JUnit Platform 런처
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"       // Spring AI 버전 관리 BOM
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
