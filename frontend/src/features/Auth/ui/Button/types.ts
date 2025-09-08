@@ -1,16 +1,7 @@
-import type { ReactNode } from "react";
-import type {
-  PressableProps,
-  StyleProp,
-  ViewStyle,
-  TextStyle,
-} from "react-native";
+export type ButtonVariant = "default";
 
-export type ButtonVariant = "primary" | "secondary" | "danger";
-
-export interface ButtonProps extends PressableProps {
-  children?: ReactNode;
-  variant?: ButtonVariant;
-  style?: StyleProp<ViewStyle>;
-  labelStyle?: StyleProp<TextStyle>;
+export interface ButtonProps {
+  value: string; // 버튼 텍스트
+  onPress?: () => void; // 버튼 클릭 시 호출되는 함수
+  variant?: ButtonVariant; // 스타일
 }

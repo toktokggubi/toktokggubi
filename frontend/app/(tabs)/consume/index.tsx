@@ -1,7 +1,7 @@
 import { View } from "react-native";
 
-const ExploreScreen = () => {
+const ConsumeScreen = () => {
   return <View></View>;
 };
 
-export default ExploreScreen;
+export default ConsumeScreen;
