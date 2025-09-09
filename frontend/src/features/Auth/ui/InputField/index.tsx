@@ -48,7 +48,7 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
           <Text
             style={[
               styles.bottomLabel,
-              variant === "default" && { color: "#EF4444" },
+              variant === "default" && { color: "#D2D3D7" },
             ]}
           >
             {bottomLabel}
@@ -73,7 +73,12 @@ const styles = StyleSheet.create({
   },
   input: { flex: 1, fontSize: 16, paddingVertical: 10 },
   eyeBtn: { padding: 6, marginLeft: 4 },
-  bottomLabel: { marginTop: 4, fontSize: 12, color: "#6B7280" },
+  bottomLabel: {
+    marginTop: 4,
+    paddingHorizontal: 16,
+    fontSize: 12,
+    color: "#D2D3D7",
+  },
 });
 
 export default InputField;
