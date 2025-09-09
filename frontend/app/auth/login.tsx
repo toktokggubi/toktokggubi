@@ -1,4 +1,3 @@
-// app/auth/login.tsx
 import LoginTemplate from "@/features/Auth/templates/LoginTemplate";
 import { useState } from "react";
 import { SafeAreaView } from "react-native";
