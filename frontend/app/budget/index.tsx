@@ -1,3 +1,3 @@
-import StartBudgetScreen from "~features/Budget/screens/StartBudgetScreen";
+import IntroBudgetScreen from "@/features/Budget/screens/IntroBudgetScreen";
 
-export default StartBudgetScreen;
+export default IntroBudgetScreen;
