@@ -46,7 +46,7 @@ export default function TabLayout() {
 
       {/* 마이페이지 */}
       <Tabs.Screen
-        name="mypage/index"
+        name="mypage"
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-circle" size={size} color={color} />

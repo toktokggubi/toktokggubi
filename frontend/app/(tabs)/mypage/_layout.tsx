@@ -1,0 +1,45 @@
+// app/(tabs)/mypage/_layout.tsx
+import { Stack } from "expo-router";
+import { Pressable, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+
+const BG = "#F8FBFF";
+const TXT = "#0f172a";
+const ACCENT = "#246BFD";
+
+export default function MyPageStackLayout() {
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="cards/index"
+        options={{
+          headerShown: true,
+          title: "나의 카드",
+          headerTitleAlign: "center",
+          headerTintColor: TXT,
+          headerStyle: { backgroundColor: BG }, // ✅ 지원됨
+          headerShadowVisible: false, // ✅ 그림자/하단선 제거
+          headerTitleStyle: { fontSize: 18, fontWeight: "800" },
+          headerRight: () => (
+            <Pressable
+              onPress={() => {
+                /* router.push('/(tabs)/mypage/cards/add') */
+              }}
+              style={styles.headerBtn}
+              android_ripple={{ borderless: true }}
+              accessibilityRole="button"
+              accessibilityLabel="카드 추가"
+            >
+              <Ionicons name="add" size={24} color={ACCENT} />
+            </Pressable>
+          ),
+        }}
+      />
+    </Stack>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerBtn: { paddingHorizontal: 12, paddingVertical: 6 },
+});
