@@ -9,6 +9,8 @@ export default function HomeScreen() {
         value="로그인 화면으로"
         onPress={() => router.push("/auth/login")}
       />
+
+      <Button value="예산 설정 시작" onPress={() => router.push("/budget")} />
     </View>
   );
 }
