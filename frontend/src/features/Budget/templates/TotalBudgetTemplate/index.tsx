@@ -53,8 +53,8 @@ export default function TotalBudgetTemplate({
 
       {/* 중앙 금액 표시 */}
       <View style={s.centerContent}>
-        <CurrencyInlineInput 
-          value={isKeyboardMode ? keyboardValue : amount} 
+        <CurrencyInlineInput
+          value={isKeyboardMode ? keyboardValue : amount}
           onChange={handleKeyboardChange}
           onFocus={handleKeyboardStart}
         />
@@ -74,7 +74,7 @@ export default function TotalBudgetTemplate({
       {/* 하단 내비게이션 (고정 단계) */}
       <BudgetWizardFooter
         stepIndex={0}
-        stepTotal={4}
+        stepTotal={5}
         onPressPrev={onPressPrev}
         onPressNext={onPressNext}
         nextDisabled={nextDisabled}
