@@ -1,2 +1,2 @@
-import MypageScreen from "@/features/User/screens/MyPage";
+import MypageScreen from "@/features/User/screens/MyPageScreen";
 export default MypageScreen;

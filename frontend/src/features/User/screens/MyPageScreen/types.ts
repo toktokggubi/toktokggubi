@@ -12,6 +12,8 @@ export interface UserCard {
 // 매퍼 객체 안에서 미리 require 해 둔다.
 export const CARD_IMAGE_BY_ISSUER: Record<string, any> = {
   KB: require("@/assets/dummy/card-kb.png"),
+  KB2: require("@/assets/dummy/card-kb2.png"),
+  HANA: require("@/assets/dummy/card-hana.png"),
   SS: require("@/assets/dummy/card-samsung.png"), // 삼성카드 (코드 예: SS)
   SH: require("@/assets/dummy/card-sh.png"), // 신한카드
 };
