@@ -27,13 +27,10 @@ export default function CardCarouselTemplate({
         data={cards}
         renderItem={renderCard}
         sliderWidth={SCREEN_W}
-        itemWidth={ITEM_W}
+        itemWidth={Math.round(SCREEN_W * 0.68)}
         inactiveSlideScale={0.92}
         inactiveSlideOpacity={1}
-        contentContainerCustomStyle={{
-          // 양옆 카드 살짝 보이게 패딩 보정
-          paddingHorizontal: (SCREEN_W - ITEM_W) / 2,
-        }}
+        activeSlideAlignment="center"
         vertical={false}
         onSnapToItem={setActive}
       />
