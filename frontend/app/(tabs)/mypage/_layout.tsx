@@ -21,19 +21,6 @@ export default function MyPageStackLayout() {
           headerStyle: { backgroundColor: BG }, // ✅ 지원됨
           headerShadowVisible: false, // ✅ 그림자/하단선 제거
           headerTitleStyle: { fontSize: 18, fontWeight: "800" },
-          headerRight: () => (
-            <Pressable
-              onPress={() => {
-                /* router.push('/(tabs)/mypage/cards/add') */
-              }}
-              style={styles.headerBtn}
-              android_ripple={{ borderless: true }}
-              accessibilityRole="button"
-              accessibilityLabel="카드 추가"
-            >
-              <Ionicons name="add" size={24} color={ACCENT} />
-            </Pressable>
-          ),
         }}
       />
     </Stack>

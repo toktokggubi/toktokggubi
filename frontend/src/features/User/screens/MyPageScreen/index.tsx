@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { router } from "expo-router";
-import MyPageTemplate from "@/features/User/templates/MyPage";
+import MyPageTemplate from "@/features/User/templates/MyPageTemplate";
 
 const cardImg = require("@/assets/images/illustration/my_card.png");
 const giftImg = require("@/assets/images/illustration/my_gifticon.png");
