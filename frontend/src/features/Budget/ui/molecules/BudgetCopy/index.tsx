@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { colors } from "@/shared/constants/colors";
 import { BudgetCopyProps } from "./types";
 
 export default function BudgetCopy({ title, subtitle }: BudgetCopyProps) {
@@ -11,5 +12,5 @@ export default function BudgetCopy({ title, subtitle }: BudgetCopyProps) {
 }
 const s = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: "#111" },
-  sub: { fontSize: 16, color: "#4B5563" },
+  sub: { fontSize: 16, color: colors.GRAY_NORMAL },
 });
