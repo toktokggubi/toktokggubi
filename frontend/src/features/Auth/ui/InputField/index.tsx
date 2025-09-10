@@ -12,6 +12,7 @@ import { inputFieldVariants } from "./variants";
 const InputField = forwardRef<InputFieldRef, InputFieldProps>(
   (
     {
+      topLabel,
       bottomLabel,
       variant = "default",
       passwordToggle,
@@ -26,6 +27,13 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
 
     return (
       <View style={styles.container}>
+        {topLabel ? (
+          <Text
+            style={[styles.topLabel, variant === "default" && { color: "#ff" }]}
+          >
+            {topLabel}
+          </Text>
+        ) : null}
         <View style={[styles.inputWrapper, v.wrapper]}>
           <TextInput
             ref={ref}
@@ -78,6 +86,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 12,
     color: "#D2D3D7",
+  },
+  topLabel: {
+    marginBottom: 4,
   },
 });
 

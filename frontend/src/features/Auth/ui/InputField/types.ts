@@ -4,6 +4,7 @@ export type InputFieldVariant = "default";
 
 export interface InputFieldProps extends Omit<TextInputProps, "style"> {
   bottomLabel?: string; // 하단 라벨
+  topLabel?: string; // 상단 라벨
   passwordToggle?: boolean; // 비밀번호 눈 아이콘
   variant?: InputFieldVariant; // 스타일
 }

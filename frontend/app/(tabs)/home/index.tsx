@@ -6,7 +6,7 @@ export default function HomeScreen() {
   return (
     <View style={s.container}>
       <Button
-        value="로그인 화면으로"
+        value="로그인 화면으로!!"
         onPress={() => router.push("/auth/login")}
       />
 

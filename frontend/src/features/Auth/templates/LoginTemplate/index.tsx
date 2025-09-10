@@ -1,6 +1,16 @@
 import Button from "@/features/Auth/ui/Button";
 import InputField from "@/features/Auth/ui/InputField";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  ScrollView,
+  Keyboard,
+} from "react-native";
 import { LoginTemplateProps } from "./types";
 
 export default function LoginTemplate({
@@ -14,79 +24,91 @@ export default function LoginTemplate({
   headerImageSource,
 }: LoginTemplateProps) {
   return (
-    <View style={style.wrap}>
-      <View>
-        {headerImageSource && (
-          <Image
-            source={headerImageSource}
-            resizeMode="contain"
-            style={{ marginTop: -100 }}
-          />
-        )}
-      </View>
-      <View style={style.introWrap}>
-        <Text style={style.introBold}>똑똑꺼비</Text>
-        <Text style={style.introNormal}>와 함께</Text>
-      </View>
-      <View style={style.introWrap}>
-        <Text style={style.introBold}>똑똑한 소비생활</Text>
-        <Text style={style.introNormal}> 함께해요!</Text>
-      </View>
-      <View style={style.container}>
-        <View style={style.loginSection}>
-          {/* 아이디 입력 */}
-          <InputField
-            placeholder="아이디"
-            value={id}
-            onChangeText={onChangeId}
-          />
+    <KeyboardAvoidingView style={style.avoiding}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={style.wrap}>
+            <View>
+              {headerImageSource && (
+                <Image
+                  source={headerImageSource}
+                  resizeMode="contain"
+                  style={{ marginTop: -100 }}
+                />
+              )}
+            </View>
+            <View style={style.introWrap}>
+              <Text style={style.introBold}>똑똑꺼비</Text>
+              <Text style={style.introNormal}>와 함께</Text>
+            </View>
+            <View style={style.introWrap}>
+              <Text style={style.introBold}>똑똑한 소비생활</Text>
+              <Text style={style.introNormal}> 함께해요!</Text>
+            </View>
+            <View style={style.container}>
+              <View style={style.loginSection}>
+                {/* 아이디 입력 */}
+                <InputField
+                  placeholder="아이디"
+                  value={id}
+                  onChangeText={onChangeId}
+                />
 
-          {/* 비밀번호 입력 */}
-          <InputField
-            placeholder="비밀번호"
-            value={password}
-            onChangeText={onChangePassword}
-            secureTextEntry
-            passwordToggle
-            bottomLabel={errorMessage}
-          />
+                {/* 비밀번호 입력 */}
+                <InputField
+                  placeholder="비밀번호"
+                  value={password}
+                  onChangeText={onChangePassword}
+                  secureTextEntry
+                  passwordToggle
+                  bottomLabel={errorMessage}
+                />
 
-          {/* 로그인 버튼 */}
-          <Button value="로그인" onPress={onSubmit} />
+                {/* 로그인 버튼 */}
+                <Button value="로그인" onPress={onSubmit} />
 
-          {/* 하단 작은 링크 */}
-          <View style={style.signUpLink}>
-            <Text style={style.guideText}>아직 회원이 아니신가요?</Text>
-            <Pressable onPress={onNavigateSignUp}>
-              <Text>회원가입하기</Text>
-            </Pressable>
+                {/* 하단 작은 링크 */}
+                <View style={style.signUpLink}>
+                  <Text style={style.guideText}>아직 회원이 아니신가요?</Text>
+                  <Pressable onPress={onNavigateSignUp}>
+                    <Text>회원가입하기</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* 간편 로그인 */}
+              <View style={style.divider}>
+                <View style={style.line}></View>
+                <Text style={style.dividerText}>간편 로그인</Text>
+                <View style={style.line}></View>
+              </View>
+              <Button
+                value="카카오로 시작하기"
+                variant="kakaoButton"
+                onPress={() => {}}
+                icon={
+                  <Image
+                    source={require("@/assets/icon/kakao.png")}
+                    style={{ width: 20, height: 20, marginTop: 4 }}
+                    resizeMode="contain"
+                  />
+                }
+              />
+            </View>
           </View>
-        </View>
-
-        {/* 간편 로그인 */}
-        <View style={style.divider}>
-          <View style={style.line}></View>
-          <Text style={style.dividerText}>간편 로그인</Text>
-          <View style={style.line}></View>
-        </View>
-        <Button
-          value="카카오로 시작하기"
-          variant="kakaoButton"
-          onPress={() => {}}
-          icon={
-            <Image
-              source={require("@/assets/icon/kakao.png")}
-              style={{ width: 20, height: 20, marginTop: 4 }}
-              resizeMode="contain"
-            />
-          }
-        />
-      </View>
-    </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
 const style = StyleSheet.create({
+  avoiding: {
+    flex: 1,
+  },
   introWrap: {
     flexDirection: "row",
     justifyContent: "flex-start",
@@ -105,7 +127,7 @@ const style = StyleSheet.create({
   wrap: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F8FBFF",
   },
   container: {
     paddingHorizontal: 16,

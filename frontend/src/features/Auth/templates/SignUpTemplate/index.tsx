@@ -13,7 +13,7 @@ export default function SignUpTemplate({
   confirmPassword,
   onChangeConfirmPassword,
   confirmPasswordToggle,
-  onNavigateLogin,
+  onNavigatePersonalInfo,
   //
   errorMessage,
 }: SignUpTemplateProps) {
@@ -31,7 +31,7 @@ export default function SignUpTemplate({
           <Text style={style.introNormal}>을 받을 수 있어요!</Text>
         </View>
         <View style={{ marginTop: 70, marginBottom: 20 }}>
-          "{/* 아이디 입력 */}
+          {/* 아이디 입력 */}
           <InputField
             placeholder="아이디"
             value={id}
@@ -59,7 +59,7 @@ export default function SignUpTemplate({
 
         {/* 회원가입 버튼 */}
         <View style={{ marginTop: 20 }}>
-          <Button value="가입하기" onPress={onSubmit} />
+          <Button value="가입하기" onPress={onNavigatePersonalInfo} />
         </View>
       </View>
     </View>
@@ -84,7 +84,7 @@ const style = StyleSheet.create({
   wrap: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F8FBFF",
   },
   container: {
     paddingHorizontal: 16,

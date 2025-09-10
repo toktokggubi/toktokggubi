@@ -52,7 +52,7 @@ export default function SignUpScreen() {
         onChangePassword={setPw}
         onChangeConfirmPassword={setCpw}
         onSubmit={onSubmit}
-        onNavigateLogin={() => router.replace("/auth/login")}
+        onNavigatePersonalInfo={() => router.replace("/auth/personalinfo")}
         errorMessage={generalErr}
         submitting={false}
         disabled={!id || !pw || !cpw}

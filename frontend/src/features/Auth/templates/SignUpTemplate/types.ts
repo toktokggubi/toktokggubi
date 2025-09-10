@@ -6,7 +6,7 @@ export interface SignUpTemplateProps {
   onChangeId: (v: string) => void;
   onChangePassword: (v: string) => void;
   onChangeConfirmPassword: (v: string) => void;
-  onNavigateLogin: () => void;
+  onNavigatePersonalInfo: () => void;
   onSubmit: () => void;
 
   // 에러
