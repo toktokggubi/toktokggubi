@@ -1,34 +1,27 @@
-import { StyleSheet, Dimensions, Platform, StatusBar } from "react-native";
+import { StyleSheet, Dimensions } from "react-native";
+import { colors } from "@/shared/constants/colors";
 
 const { height } = Dimensions.get("window");
 
-/**
- * 모크업 기준 가이드:
- * - 좌/우 패딩: 24
- * - 위/아래 패딩: 32
- * - 카피 블록 상단 여백: 96 (상태바/노치 감안해서 약간 여유)
- * - 카피 줄간격: lineHeight 34, 줄 간격 10
- * - 마스코트: 180x180, 카피와의 간격 56
- * - 우하단 버튼 여백: right 16, bottom 24
- */
 const PADDING_H = 16;
 const PADDING_V = 32;
 const TITLE_TOP = Math.max(84, Math.min(112, height * 0.12)); // 화면 높이에 비례한 안전값
 const TITLE_GAP = 10;
 const MASCOT_SIZE = 180;
 const TITLE_TO_MASCOT = 56;
-const FOOTER_RIGHT = 16;
-const FOOTER_BOTTOM = PADDING_V;
+
+export const FOOTER_RIGHT = 20; 
+export const FOOTER_BOTTOM = PADDING_V;
 
 export const introTemplateStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
-    // Android 상태바 높이 보정(헤더 숨김일 때)
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight ?? 0 : 0,
+    backgroundColor: colors.BACKGROUND_PRIMARY,
+    justifyContent: "space-between", // TotalBudgetTemplate과 동일
+    paddingTop: 32, // TotalBudgetTemplate과 동일
   },
 
-  body: {
+  content: {
     flex: 1,
     paddingHorizontal: PADDING_H,
     paddingVertical: PADDING_V,
@@ -58,10 +51,13 @@ export const introTemplateStyles = StyleSheet.create({
     marginTop: TITLE_TO_MASCOT,
   },
 
-  // 우하단 '다음'
+  // 하단 버튼 - BudgetWizardFooter와 동일한 스타일
   footer: {
-    position: "absolute",
-    right: FOOTER_RIGHT,
-    bottom: FOOTER_BOTTOM,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end", // NextButton만 오른쪽 정렬
+    paddingHorizontal: FOOTER_RIGHT,
+    paddingTop: 16,
+    paddingBottom: FOOTER_BOTTOM,
   },
 });
