@@ -28,4 +28,6 @@ export const colors = {
   GRAY_DARK_HOVER: "#42444c",
   GRAY_DARK_ACTIVE: "#313339",
   GRAY_DARKER: "#27282c",
+
+  BACKGROUND_PRIMARY: "#F8FBFF",
 };
