@@ -3,10 +3,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { colors } from "@/shared/constants/colors";
 import { FOOTER_BOTTOM } from "~features/Budget/templates/BudgetIntroTemplate/variants";
-import BudgetCopy from "~features/Budget/ui/BudgetCopy";
-import CurrencyInlineInput from "~features/Budget/ui/CurrencyInlineInput";
-import AmountSlider from "~features/Budget/ui/AmountSlider";
-import BudgetWizardFooter from "@/features/Budget/ui/BudgetWizardFooter";
+import BudgetCopy from "@/features/Budget/ui/molecules/BudgetCopy";
+import CurrencyInlineInput from "@/features/Budget/ui/atoms/CurrencyInlineInput";
+import AmountSlider from "@/features/Budget/ui/atoms/AmountSlider";
+import BudgetWizardFooter from "@/features/Budget/ui/organisms/BudgetWizardFooter";
 import { TotalBudgetTemplateProps } from "./types";
 
 export default function TotalBudgetTemplate({

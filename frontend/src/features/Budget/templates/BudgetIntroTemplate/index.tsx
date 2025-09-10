@@ -1,9 +1,9 @@
 import React from "react";
-import { View, Text, Image, ImageSourcePropType, StyleSheet } from "react-native";
+import { View, Text, Image, ImageSourcePropType } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BudgetIntroTemplateProps } from "./types";
-import { introTemplateStyles as s, FOOTER_BOTTOM } from "./variants";
-import NextButton from "~features/Budget/ui/NextButton";
+import { introTemplateStyles as s } from "./variants";
+import NextButton from "@/features/Budget/ui/atoms/NextButton";
 
 export default function BudgetIntroTemplate({
   onNext,

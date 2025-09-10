@@ -8,9 +8,7 @@ export default function TotalBudgetInputScreen() {
 
   const goPrev = () => router.back();
   const goNext = () => {
-    // TODO: 다음 페이지 만든 후 경로 연결
-    // router.push("/budget/category-select");
-    // 아직 /budget/next 라우트 없음 → 임시로 콘솔만 찍어두기
+    router.push("/budget/fixed-expense");
 
     console.log("다음 페이지로 이동 예정 (라우트 연결 대기중)");
   };

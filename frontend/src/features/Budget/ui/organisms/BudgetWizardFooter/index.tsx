@@ -1,9 +1,9 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import StepDots from "~features/Budget/ui/StepDots";
-import PrevButton from "~features/Budget/ui/PrevButton";
-import NextButton from "~features/Budget/ui/NextButton";
+import StepDots from "@/features/Budget/ui/atoms/StepDots";
+import PrevButton from "@/features/Budget/ui/atoms/PrevButton";
+import NextButton from "@/features/Budget/ui/atoms/NextButton";
 import { BudgetWizardFooterProps } from "./types";
 
 export default function BudgetWizardFooter({
