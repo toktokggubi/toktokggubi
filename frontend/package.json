@@ -36,11 +36,8 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-<<<<<<< HEAD
     "react-native-snap-carousel": "^4.0.0-beta.6",
-=======
     "react-native-svg": "15.11.2",
->>>>>>> 075bf95e4e383700ae4389d3b77f0d7c2dfaa988
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "@react-native-community/slider": "4.5.6"

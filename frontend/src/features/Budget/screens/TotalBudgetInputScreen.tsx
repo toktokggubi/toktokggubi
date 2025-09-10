@@ -1,6 +1,5 @@
 // src/features/Budget/screens/TotalBudgetInputScreen/TotalBudgetInputScreen.tsx
 import { useState } from "react";
-import { Alert } from "react-native";
 import TotalBudgetTemplate from "~features/Budget/templates/TotalBudgetTemplate";
 import { router } from "expo-router"; // 라우트 넣을 때 사용
 
