@@ -13,7 +13,10 @@ function CardSlideImpl({ card }: CardSlideProps) {
 }
 
 const s = StyleSheet.create({
-  wrap: { alignItems: "center", width: "100%" },
+  wrap: {
+    alignItems: "center",
+    width: "100%",
+  },
   cardImg: {
     width: "100%",
     height: 280,

@@ -18,9 +18,20 @@ export default function MyPageStackLayout() {
           title: "나의 카드",
           headerTitleAlign: "center",
           headerTintColor: TXT,
-          headerStyle: { backgroundColor: BG }, // ✅ 지원됨
-          headerShadowVisible: false, // ✅ 그림자/하단선 제거
+          headerStyle: { backgroundColor: BG },
+          headerShadowVisible: false,
           headerTitleStyle: { fontSize: 18, fontWeight: "800" },
+        }}
+      />
+      <Stack.Screen
+        name="gifticons/index"
+        options={{
+          headerShown: true,
+          title: "나의 기프티콘",
+          headerTitleAlign: "center",
+          headerTintColor: TXT,
+          headerStyle: { backgroundColor: BG },
+          headerShadowVisible: false,
         }}
       />
     </Stack>

@@ -6,8 +6,9 @@ import type {
   CardActionMenuControlledProps,
   MenuViewProps,
 } from "./types";
+import { colors } from "@/shared/constants/colors";
 
-const TXT = "#0f172a";
+const TXT = colors.BLUE_DARK;
 
 function MenuView({
   onSelectImport,
@@ -43,27 +44,8 @@ function MenuView({
   );
 }
 
-/** A. 부모가 open/close 제어하는 버전 */
-export const CardActionMenuControlled = memo(function CardActionMenuControlled({
-  open,
-  onClose,
-  ...rest
-}: CardActionMenuControlledProps) {
-  return (
-    <Modal
-      transparent
-      visible={open}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <MenuView onClose={onClose} {...rest} />
-    </Modal>
-  );
-});
-
-/** B. 자체 +버튼을 포함한 버전(헤더에 꽂기 좋음) */
 export const CardActionMenu = memo(function CardActionMenu({
-  color = "#246BFD",
+  color = colors.BLUE_NORMAL,
   top,
   right,
   onSelectImport,
