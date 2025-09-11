@@ -12,7 +12,7 @@ import {
 import { colors } from "@/shared/constants/colors";
 import type { AddFixedExpenseFormProps } from "./types";
 import { formTitle, fieldLabels } from "./variants";
-import { onlyNum } from "~features/Budget/utils/currency";
+import { onlyNum } from "@/shared/utils/currency";
 
 type Sel = { start: number; end: number };
 
