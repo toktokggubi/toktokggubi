@@ -6,11 +6,13 @@ import com.ssafy.toktokggubi.domain.budget.dto.CategoryAllocDto;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftPatchRequest;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftSnapshotDto;
 import com.ssafy.toktokggubi.domain.budget.dto.FixedExpenseDto;
+import com.ssafy.toktokggubi.domain.budget.exception.BudgetException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import static com.ssafy.toktokggubi.domain.budget.exception.BudgetErrorCode.*;
+import com.ssafy.toktokggubi.domain.budget.exception.BudgetException;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
@@ -64,7 +66,11 @@ public class BudgetDraftService {
         // 1) 낙관적 락: 버전 체크
         Integer expected = req.expectedVersion();
         if (expected != null && !expected.equals(cur.version())) {
-            throw new IllegalStateException("version mismatch: expected=" + expected + ", actual=" + cur.version());
+            throw new BudgetException(
+                    VERSION_MISMATCH,
+                    "version mismatch: expected=%d, actual=%d".formatted(expected, cur.version()),
+                    java.util.Map.of("expected", expected, "actual", cur.version())
+            );
         }
 
         // 2) 부분 필드 머지

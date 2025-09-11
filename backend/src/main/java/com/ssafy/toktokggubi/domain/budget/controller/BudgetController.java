@@ -4,6 +4,7 @@ import com.ssafy.toktokggubi.domain.budget.dto.DraftPatchRequest;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftSaveResponse;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetCommitService;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetDraftService;
+import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.BudgetYmResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -40,10 +41,11 @@ public class BudgetController {
             @ApiResponse(responseCode = "409", description = "버전 충돌"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    public DraftSaveResponse saveDraftTotal( @RequestParam(value = "userId", required = false) Long userIdQuery,
+    public DraftSaveResponse saveDraftTotal(
 
                                             @RequestBody DraftPatchRequest req) {
-        Long userId = userIdQuery;
+
+        Long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         draftService.delete(userId, ym);
         return doSave(userId, req);
@@ -59,9 +61,9 @@ public class BudgetController {
             @ApiResponse(responseCode = "409", description = "버전 충돌"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    public DraftSaveResponse saveDraftFixed( @RequestParam(value = "userId", required = false) Long userIdQuery,
+    public DraftSaveResponse saveDraftFixed(
                                             @RequestBody DraftPatchRequest req) {
-        Long userId = userIdQuery;
+        Long userId = SecurityUtils.currentUserIdOrNull();
         return doSave(userId, req);
     }
 
@@ -75,10 +77,10 @@ public class BudgetController {
             @ApiResponse(responseCode = "409", description = "버전 충돌"),
             @ApiResponse(responseCode = "401", description = "인증 실패")
     })
-    public DraftSaveResponse saveDraftCategories( @RequestParam(value = "userId", required = false) Long userIdQuery,
+    public DraftSaveResponse saveDraftCategories(
 
                                                  @RequestBody DraftPatchRequest req) {
-        Long userId = userIdQuery;
+        Long userId = SecurityUtils.currentUserIdOrNull();
         return doSave(userId, req);
     }
 
@@ -108,9 +110,9 @@ public class BudgetController {
     })
     // BD-6 마지막 버튼 (commit)
     @PostMapping("/commit")
-    public BudgetCommitResponse commit( @RequestParam(value = "userId", required = false) Long userIdQuery,
+    public BudgetCommitResponse commit(
                                        @RequestBody BudgetCommitRequest req) {
-        Long userId = userIdQuery;
+        Long userId =SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();                       // ✅ 항상 현재 달
         return commitService.commit(userId, ym, req.expectedVersion());
     }
