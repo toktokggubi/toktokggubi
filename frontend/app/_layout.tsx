@@ -32,10 +32,8 @@ export default function RootLayout() {
     if (!loaded) return;
     const T: any = Text;
     const TI: any = TextInput;
-
     T.defaultProps = T.defaultProps || {};
     TI.defaultProps = TI.defaultProps || {};
-
     T.defaultProps.style = [
       { fontFamily: "NotoSansKR" },
       T.defaultProps.style,
@@ -46,21 +44,21 @@ export default function RootLayout() {
     ].flat();
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <BottomSheetModalProvider>
-          <SafeAreaProvider>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" />
-            </Stack>
-          </SafeAreaProvider>
+<SafeAreaProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="pay" options={{ headerShown: false }} />
+            <Stack.Screen name="budget" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        </SafeAreaProvider>
         </BottomSheetModalProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

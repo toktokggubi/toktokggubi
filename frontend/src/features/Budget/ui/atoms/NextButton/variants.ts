@@ -11,7 +11,7 @@ export const makeNextButtonStyles = (tone: "link" | "filled" = "link") =>
     txt: {
       color: tone === "filled" ? "white" : "#3B82F6",
       fontWeight: "700",
-      fontSize: 14,
+      fontSize: 20,
     },
     pressed: { opacity: 0.7 },
     disabled: { opacity: 0.5 },

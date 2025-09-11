@@ -10,7 +10,7 @@ const TITLE_GAP = 10;
 const MASCOT_SIZE = 180;
 const TITLE_TO_MASCOT = 56;
 
-export const FOOTER_RIGHT = 20; 
+export const FOOTER_RIGHT = 20;
 export const FOOTER_BOTTOM = PADDING_V;
 
 export const introTemplateStyles = StyleSheet.create({
