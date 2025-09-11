@@ -1,10 +1,31 @@
+import { Tabs, router } from "expo-router";
+import React, { useEffect } from "react";
+import { useIsFocused } from "@react-navigation/native";
+
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
-import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
+// import FontAwesome6 from "@expo/vector-icons/FontAwesome6"; 소비 탭
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Tabs } from "expo-router";
+
+import { useShakeAdvanced } from "@/shared/hooks/useShake";
 
 export default function TabLayout() {
+  const isFocused = useIsFocused();
+
+  // 컴포넌트가 마운트될 때 흔들기 훅 초기화
+  useEffect(() => {
+  }, [isFocused]);
+
+  // 탭 화면에서만 흔들기 활성화
+  useShakeAdvanced(
+    () => {
+      router.push({
+        pathname: "/pay/payment",
+        params: { source: "shake" },
+      });
+    },
+    { enabled: isFocused }
+  );
   return (
     <Tabs
       screenOptions={{
@@ -20,16 +41,6 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Feather name="home" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* 소비 */}
-      <Tabs.Screen
-        name="consume/index"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <FontAwesome6 name="money-bills" size={size} color={color} />
           ),
         }}
       />

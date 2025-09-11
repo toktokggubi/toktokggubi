@@ -7,7 +7,6 @@ import { Stack } from "expo-router";
 import React, { useEffect } from "react";
 import { Text, TextInput } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import "react-native-reanimated";
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -18,10 +17,8 @@ export default function RootLayout() {
     if (!loaded) return;
     const T: any = Text;
     const TI: any = TextInput;
-
     T.defaultProps = T.defaultProps || {};
     TI.defaultProps = TI.defaultProps || {};
-
     T.defaultProps.style = [
       { fontFamily: "NotoSansKR" },
       T.defaultProps.style,
@@ -32,9 +29,7 @@ export default function RootLayout() {
     ].flat();
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -43,6 +38,8 @@ export default function RootLayout() {
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="pay" options={{ headerShown: false }} />
+            <Stack.Screen name="budget" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
         </SafeAreaProvider>
