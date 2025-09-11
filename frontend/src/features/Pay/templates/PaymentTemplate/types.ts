@@ -8,5 +8,8 @@ export interface PaymentTemplateProps {
   // 카드 관련 props
   cards?: UserCard[];
   activeCardIndex?: number;
-  onActiveCardChange?: (index: number) => void;
+  onActiveCardChange?: (index: number, userCardId: number) => void;
+  benefitsSection?: React.ReactNode;
+  cardTopSection?: React.ReactNode;
+  cardBottomSection?: React.ReactNode;
 }

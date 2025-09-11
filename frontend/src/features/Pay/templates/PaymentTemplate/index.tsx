@@ -11,6 +11,7 @@ import { colors } from "@/shared/constants/colors";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const ITEM_W = Math.round(SCREEN_W * 0.68);
+const ITEM_W_LARGE = Math.round(SCREEN_W * 0.68); // 가맹점이 없을 때 더 큰 카드
 
 function PaymentTemplate({
   selectedTab,
@@ -19,6 +20,9 @@ function PaymentTemplate({
   cards = [],
   activeCardIndex = 0,
   onActiveCardChange,
+  benefitsSection,
+  cardTopSection,
+  cardBottomSection,
 }: PaymentTemplateProps) {
   const carouselRef = useRef<Carousel<UserCard> | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(activeCardIndex);
@@ -35,7 +39,8 @@ function PaymentTemplate({
   // 카드 인덱스 변경 처리
   const handleCardChange = (index: number) => {
     setCurrentCardIndex(index);
-    onActiveCardChange?.(index);
+    const id = cards[index]?.userCardId;
+    if (id != null) onActiveCardChange?.(index, id);
   };
 
   const renderCard = ({ item }: { item: UserCard; index: number }) => {
@@ -62,22 +67,40 @@ function PaymentTemplate({
           </View>
         ) : (
           <View style={styles.cardContainer}>
+            {cardTopSection ? (
+              <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                {cardTopSection}
+              </View>
+            ) : null}
             <Carousel<UserCard>
               ref={carouselRef}
               data={cards}
               renderItem={renderCard}
               sliderWidth={SCREEN_W}
-              itemWidth={ITEM_W}
+              itemWidth={benefitsSection ? ITEM_W : ITEM_W_LARGE}
               inactiveSlideScale={0.92}
               inactiveSlideOpacity={1}
               activeSlideAlignment="center"
               vertical={false}
               onSnapToItem={handleCardChange}
               keyExtractor={(item, index) =>
-                String(item.userCardId) ?? String(index)
+                item?.userCardId != null
+                  ? String(item.userCardId)
+                  : String(index)
               }
+              containerCustomStyle={styles.carouselContainer}
             />
             <PagerDots length={cards.length} activeIndex={currentCardIndex} />
+            {benefitsSection ? (
+              <View style={{ marginTop: 8, marginBottom: 12 }}>
+                {benefitsSection}
+              </View>
+            ) : null}
+            {cardBottomSection ? (
+              <View style={{ marginTop: 8, marginBottom: 12 }}>
+                {cardBottomSection}
+              </View>
+            ) : null}
           </View>
         )
       ) : (
@@ -94,7 +117,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.BACKGROUND_PRIMARY,
-    paddingTop: 50,
+    paddingTop: 160,
   },
   tap: {
     paddingHorizontal: 16,
@@ -118,4 +141,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
+  carouselContainer: { flex: 0, flexGrow: 0, alignSelf: "stretch" },
 });
