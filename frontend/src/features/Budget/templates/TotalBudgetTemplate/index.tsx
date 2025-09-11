@@ -2,7 +2,7 @@ import { View, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { colors } from "@/shared/constants/colors";
-import { FOOTER_BOTTOM } from "~features/Budget/templates/BudgetIntroTemplate/variants";
+import { FOOTER_BOTTOM } from "@/features/Budget/templates/IntroBudgetTemplate/variants";
 import BudgetCopy from "@/features/Budget/ui/molecules/BudgetCopy";
 import CurrencyInlineInput from "@/features/Budget/ui/atoms/CurrencyInlineInput";
 import AmountSlider from "@/features/Budget/ui/atoms/AmountSlider";

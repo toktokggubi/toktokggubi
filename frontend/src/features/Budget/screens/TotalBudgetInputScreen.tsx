@@ -9,8 +9,6 @@ export default function TotalBudgetInputScreen() {
   const goPrev = () => router.back();
   const goNext = () => {
     router.push("/budget/fixed-expense");
-
-    console.log("다음 페이지로 이동 예정 (라우트 연결 대기중)");
   };
 
   return (
