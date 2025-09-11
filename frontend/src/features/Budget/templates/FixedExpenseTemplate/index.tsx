@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Modal } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/shared/constants/colors";
 
 import BudgetCopy from "~features/Budget/ui/molecules/BudgetCopy";
@@ -11,26 +12,17 @@ import type { FixedExpenseTemplateProps } from "./types";
 import { COPY_DEFAULT, LAYOUT } from "./variants";
 
 export default function FixedExpenseTemplate({
-  // 상단 카피
   title = COPY_DEFAULT.title,
   subtitle = COPY_DEFAULT.subtitle,
-
-  // 리스트
   items,
   onPressItem,
   onPressAdd,
-
-  // 폼(옆 모달)
   formVisible,
   formMode = "create",
   formDefaultValues,
   onSubmitForm,
   onCancelForm,
-
-  // 안내 텍스트
   availableNextMonth,
-
-  // 푸터
   stepIndex,
   stepTotal,
   onPressPrev,
@@ -38,16 +30,14 @@ export default function FixedExpenseTemplate({
   nextDisabled,
 }: FixedExpenseTemplateProps) {
   return (
-    <View style={s.container}>
-      {/* 1) 상단 카피 */}
-      <View
-        style={{ paddingHorizontal: LAYOUT.horizontal, paddingTop: LAYOUT.top }}
-      >
+    <SafeAreaView style={s.container} edges={["top", "bottom"]}>
+      {/* 1) 상단 카피 (header) */}
+      <View style={s.header}>
         <BudgetCopy title={title} subtitle={subtitle} />
       </View>
 
-      {/* 2) 리스트 영역 */}
-      <View style={{ paddingHorizontal: LAYOUT.horizontal, marginTop: 16 }}>
+      {/* 2) 리스트 영역 (centerContent 느낌, 화면을 채우는 본문) */}
+      <View style={s.listArea}>
         <FixedExpenseList
           items={items}
           onPressItem={onPressItem}
@@ -55,8 +45,8 @@ export default function FixedExpenseTemplate({
         />
       </View>
 
-      {/* 3) 안내 텍스트 */}
-      <View style={{ paddingHorizontal: LAYOUT.horizontal, marginTop: 12 }}>
+      {/* 3) 하단 안내문 (bottomContent) */}
+      <View style={s.bottomContent}>
         <Text style={s.notice}>
           다음 달 사용 가능 예산은{" "}
           <Text style={s.accent}>{availableNextMonth.toLocaleString()}원</Text>{" "}
@@ -64,7 +54,7 @@ export default function FixedExpenseTemplate({
         </Text>
       </View>
 
-      {/* 4) 푸터 (이전/점/다음) */}
+      {/* 4) 푸터 (이전/점/다음) - 동일 좌표 고정 */}
       <BudgetWizardFooter
         stepIndex={stepIndex}
         stepTotal={stepTotal}
@@ -74,12 +64,12 @@ export default function FixedExpenseTemplate({
         baseBottom={LAYOUT.footerBaseBottom}
       />
 
-      {/* 5) 우측(옆) 모달: 추가/수정 겸용 폼 */}
+      {/* 5) 옆 모달 */}
       <Modal
         visible={formVisible}
         animationType="slide"
         onRequestClose={onCancelForm}
-        presentationStyle="pageSheet" // iOS 시트 느낌, 안드로이드는 slide
+        presentationStyle="pageSheet"
       >
         <AddFixedExpenseForm
           mode={formMode}
@@ -88,12 +78,36 @@ export default function FixedExpenseTemplate({
           onCancel={onCancelForm}
         />
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F5F7FF" },
-  notice: { textAlign: "left", color: "#222" },
-  accent: { color: colors.BLUE_NORMAL, fontWeight: "700" },
+  container: {
+    flex: 1,
+    backgroundColor: colors.BACKGROUND_PRIMARY,
+    paddingTop: 32,
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
+  },
+  listArea: {
+    flex: 1,
+    paddingHorizontal: 24,
+    marginTop: 16,
+  },
+  bottomContent: {
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  notice: {
+    textAlign: "left",
+    color: "#222",
+  },
+  accent: {
+    color: colors.BLUE_NORMAL,
+    fontWeight: "700",
+  },
 });

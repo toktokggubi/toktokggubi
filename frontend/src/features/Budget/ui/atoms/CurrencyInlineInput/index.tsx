@@ -1,7 +1,7 @@
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
 import { useRef } from "react";
 import { CurrencyInlineInputProps } from "./types";
-import { krw, onlyNum } from "~features/Budget/utils/currency";
+import { krw, onlyNum } from "@/shared/utils/currency";
 
 export default function CurrencyInlineInput({
   value,
@@ -25,7 +25,7 @@ export default function CurrencyInlineInput({
       </Pressable>
       <TextInput
         ref={ref}
-        value={typeof value === "string" ? value : (value ? String(value) : "")}
+        value={typeof value === "string" ? value : value ? String(value) : ""}
         onChangeText={onChange}
         onFocus={onFocus}
         keyboardType="number-pad" // ← 기본 키패드

@@ -12,11 +12,20 @@ function FixedExpenseRowImpl({ item, onPress }: FixedExpenseRowProps) {
       accessibilityRole="button"
       accessibilityLabel={`${item.name} ${item.amount}원 상세 편집`}
     >
-      <Text style={[s.cell, s.name]} numberOfLines={nameMaxLines}>
-        {item.name}
-      </Text>
-      <Text style={[s.cell, s.amount]}>{item.amount.toLocaleString()}원</Text>
-      <View style={[s.cell, s.checkboxWrap]}>
+      {/* 항목명 */}
+      <View style={[s.cellWrap, s.colName]}>
+        <Text style={[s.cellText]} numberOfLines={nameMaxLines}>
+          {item.name}
+        </Text>
+      </View>
+
+      {/* 금액 */}
+      <View style={[s.cellWrap, s.colAmount]}>
+        <Text style={[s.cellText]}>{item.amount.toLocaleString()}원</Text>
+      </View>
+
+      {/* 예산 포함 */}
+      <View style={[s.cellWrap, s.colInclude, s.noDivider]}>
         <View style={[s.checkbox, item.includeInBudget && s.checkboxOn]}>
           {item.includeInBudget ? <Text style={s.check}>✓</Text> : null}
         </View>
@@ -31,18 +40,41 @@ const s = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
+    height: rowHeights,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: colors.BLUE_LIGHT,
     borderRadius: 10,
-    paddingHorizontal: 12,
-    height: rowHeights,
-    marginBottom: 10,
-    backgroundColor: "#fff",
+    overflow: "hidden",
   },
-  cell: { paddingVertical: 0 },
-  name: { flex: 1, marginRight: 8, color: "#111" },
-  amount: { width: 110, textAlign: "right", marginRight: 8, color: "#111" },
-  checkboxWrap: { width: 60, alignItems: "center", justifyContent: "center" },
+
+  // ✅ 공통 셀 래퍼: 가로·세로 중앙 + 얇은 세로 구분선
+  cellWrap: {
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    borderRightWidth: 1,
+    borderRightColor: "rgba(0,0,0,0.06)",
+  },
+  noDivider: { borderRightWidth: 0 },
+
+  // ✅ 헤더와 동일한 컬럼 규격
+  colName: { flex: 1.1 },
+  colAmount: { flex: 0.9 },
+  colInclude: { width: 78 },
+
+  // ✅ 텍스트 중앙 정렬
+  cellText: {
+    color: "#111",
+    fontSize: 14,
+    textAlign: "center",
+    width: "100%",
+  },
+
+  // 체크박스
   checkbox: {
     width: 22,
     height: 22,
