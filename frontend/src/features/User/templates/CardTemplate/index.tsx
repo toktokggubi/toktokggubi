@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Dimensions, StyleSheet, Text } from "react-native";
 import Carousel from "react-native-snap-carousel";
 import type { CardCarouselTemplateProps, UserCard } from "./types";
-import CardSlide from "@/features/User/ui/CardSlide";
+import CardSlide from "@/shared/ui/CardSlide";
 import PagerDots from "@/features/User/ui/PagerDots";
 
 const { width: SCREEN_W } = Dimensions.get("window");
