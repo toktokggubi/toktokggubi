@@ -12,6 +12,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Objects;
 
 @Component
 @Getter
@@ -60,6 +61,6 @@ public class JwtProvider {
         if (sub != null && sub.startsWith("refresh:")) {
             sub = sub.substring("refresh:".length());
         }
-        return Long.valueOf(sub);
+        return Long.valueOf(Objects.requireNonNull(sub));
     }
 }
