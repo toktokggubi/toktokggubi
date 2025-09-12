@@ -39,6 +39,7 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.6",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-image-viewing": "^0.2.2",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
@@ -47,7 +48,12 @@
     "react-native-svg": "15.11.2",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
+<<<<<<< HEAD
     "zod": "^3.25.76"
+=======
+    "zod": "^3.25.76",
+    "zustand": "^5.0.8"
+>>>>>>> 96c5ed83f33b21658e4852a7c5fe1d5b2710884f
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

@@ -14,3 +14,5 @@ export const CATEGORY_ICON_BY_NAME: Record<string, any> = {
 
 // 폴백(없을 때)
 export const CATEGORY_ICON_FALLBACK = require("@/assets/images/illustration/category_shopping.png");
+
+export type CategoryName = keyof typeof CATEGORY_ICON_BY_NAME;
