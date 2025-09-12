@@ -1,10 +1,5 @@
 import { StyleSheet } from "react-native";
 
-/**
- * NextButton 과 동일한 API(tone)로 맞춰서 재사용성 확보
- * - link : 파란 텍스트 버튼
- * - filled : 회색 배경의 채움 버튼 (구분감만 다르게)
- */
 export const makePrevButtonStyles = (tone: "link" | "filled" = "link") =>
   StyleSheet.create({
     btn: {

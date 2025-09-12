@@ -63,5 +63,5 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 50)
-    private UserStatus status; // ACTIVE, WITHDRAWN
+    private UserStatus status; // ACTIVE, INACTIVE, WITHDRAWN
 }
