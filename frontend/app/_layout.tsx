@@ -80,7 +80,7 @@ export default function RootLayout() {
   }, [loaded]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView>
       <QueryClientProvider client={queryClient}>
         <BottomSheetModalProvider>
           <SafeAreaProvider>

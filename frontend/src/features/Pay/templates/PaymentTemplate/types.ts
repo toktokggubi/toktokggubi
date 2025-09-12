@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
+import type { Gifticon } from "@/shared/types/gifticon";
 
 export interface PaymentTemplateProps {
   selectedTab: number; // 현재 탭 인덱스
@@ -8,5 +9,14 @@ export interface PaymentTemplateProps {
   // 카드 관련 props
   cards?: UserCard[];
   activeCardIndex?: number;
-  onActiveCardChange?: (index: number) => void;
+  onActiveCardChange?: (index: number, userCardId: number) => void;
+  benefitsSection?: React.ReactNode;
+  cardTopSection?: React.ReactNode;
+  cardBottomSection?: React.ReactNode;
+
+  gifticons?: Gifticon[];
+  activeGifticonIndex?: number;
+  onActiveGifticonChange?: (index: number, gifticonId: number) => void;
+  gifticonTopSection?: ReactNode;
+  gifticonBottomSection?: ReactNode;
 }
