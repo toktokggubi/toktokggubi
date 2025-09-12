@@ -49,7 +49,7 @@ CREATE TABLE `user` (
                         `finance_user_key` CHAR(36)     NULL,
                         `created_at`       DATETIME     NOT NULL,
                         `updated_at`       DATETIME     NOT NULL,
-                        `status`           VARCHAR(50)  NULL COMMENT 'ENUM(`ACTIVE`, `WITHDRAWN`)',
+                        `status`           VARCHAR(50)  NULL COMMENT 'ENUM(`ACTIVE`, `INACTIVE`, `WITHDRAWN`)',
                         CONSTRAINT `PK_USER` PRIMARY KEY (`user_id`),
                         UNIQUE KEY `uq_user_email` (`email`),
                         UNIQUE KEY `uq_user_kakao` (`kakao_sub`)
@@ -315,6 +315,7 @@ CREATE TABLE `gifticon` (
                             `label`       VARCHAR(150) NOT NULL,
                             `image_url`   VARCHAR(500) NULL,
                             `expires_at`  DATE         NULL,
+                            `created_at`  DATETIME     NOT NULL,
                             `status`      VARCHAR(16)  NULL DEFAULT 'ACTIVE' COMMENT 'ENUM(`ACTIVE`, `USED`, `EXPIRED`)',
                             CONSTRAINT `PK_GIFTICON` PRIMARY KEY (`gifticon_id`),
                             KEY `idx_gi_user_status_exp` (`user_id`, `status`, `expires_at`),
