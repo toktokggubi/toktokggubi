@@ -2,9 +2,9 @@ import { useCallback, useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import BudgetSummaryTemplate from "~features/Budget/templates/BudgetSummaryTemplate";
 import BudgetConfirmModal from "~features/Budget/ui/molecules/BudgetConfirmModal";
-import type { 
-  CategoryBudgetItem, 
-  FixedExpenseItem 
+import type {
+  CategoryBudgetItem,
+  FixedExpenseItem,
 } from "~features/Budget/templates/BudgetSummaryTemplate/types";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
 
@@ -27,17 +27,13 @@ export default function BudgetSummaryScreen() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // 현재는 이전 단계에서 파라미터로 전달받음
-  const { 
-    totalAmount, 
-    fixedExpenses, 
-    selectedCategories,
-    categoryBudgets 
-  } = useLocalSearchParams<{
-    totalAmount?: string;
-    fixedExpenses?: string;
-    selectedCategories?: string; // JSON-encoded CategoryName[]
-    categoryBudgets?: string; // JSON-encoded CategoryBudgetItem[]
-  }>();
+  const { totalAmount, fixedExpenses, selectedCategories, categoryBudgets } =
+    useLocalSearchParams<{
+      totalAmount?: string;
+      fixedExpenses?: string;
+      selectedCategories?: string; // JSON-encoded CategoryName[]
+      categoryBudgets?: string; // JSON-encoded CategoryBudgetItem[]
+    }>();
 
   // 총예산
   const totalBudget = totalAmount ? parseInt(totalAmount, 10) : 0;
@@ -57,7 +53,7 @@ export default function BudgetSummaryScreen() {
   // 고정지출 (예산 포함/미포함) 분리
   const fixedIncludedExpenses: FixedExpenseItem[] = useMemo(() => {
     return parsedFixed
-      .filter(item => item.includeInBudget !== false)
+      .filter((item) => item.includeInBudget !== false)
       .map((item) => ({
         id: item.id,
         name: item.name,
@@ -69,7 +65,7 @@ export default function BudgetSummaryScreen() {
 
   const fixedExcludedExpenses: FixedExpenseItem[] = useMemo(() => {
     return parsedFixed
-      .filter(item => item.includeInBudget === false)
+      .filter((item) => item.includeInBudget === false)
       .map((item) => ({
         id: item.id,
         name: item.name,
@@ -150,7 +146,7 @@ export default function BudgetSummaryScreen() {
         stepTotal={5}
         nextLabel="확정"
       />
-      
+
       <BudgetConfirmModal
         visible={showConfirmModal}
         month={currentMonth}

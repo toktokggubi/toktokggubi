@@ -1,7 +1,7 @@
 import { View, Text, TextInput, StyleSheet, Pressable } from "react-native";
 import { useRef } from "react";
 import { CurrencyInlineInputProps } from "./types";
-import { krw, onlyNum } from "@/shared/utils/currency";
+import { krw } from "@/shared/utils/currency";
 
 export default function CurrencyInlineInput({
   value,

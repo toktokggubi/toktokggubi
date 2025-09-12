@@ -1,4 +1,3 @@
-// src/features/Budget/screens/CategoryBudgetScreen/CategoryBudgetScreen.tsx
 import { useCallback, useMemo, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import CategoryBudgetTemplate from "~features/Budget/templates/CategoryBudgetTemplate";
@@ -128,9 +127,6 @@ export default function CategoryBudgetScreen() {
       onPressNext={goNext}
       stepIndex={3}
       stepTotal={5}
-      // 필요하면 비활성화 제어
-      // disabled={false}
-      // 커스텀 카피 문구도 주입 가능
       title="카테고리별 예산 설정"
       subtitle="꺼비가 회원님의 정보를 바탕으로 제안했어요."
     />

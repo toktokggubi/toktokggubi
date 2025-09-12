@@ -2,7 +2,6 @@ import React, { memo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { colors } from "@/shared/constants/colors";
 import type { FixedExpenseRowProps } from "./types";
-import { krw } from "@/shared/utils/currency";
 import { rowHeights, nameMaxLines } from "./variants";
 
 function FixedExpenseRowImpl({ item, onPress }: FixedExpenseRowProps) {

@@ -1,9 +1,3 @@
-//molecules/BudgetCopy
-//전체 예산 알려주는 문구 ex) 전체 예산은 {availableNextMonth}원 입니다.
-//CategorybudgetRow -> CategoryBudgetList 앞 페이지에서 선택한 카테고리들을 바탕으로 백엔드에서 카테고리별 예산을 주고 그걸 보여줌 사용자는 거기서 금액을 눌러 키패드로 금액을 수정할 수 있음
-//예산으로 넣을 수 있는 금액 보여주는 문구 ex)60,000원 남았습니다 availableNextMonth에서 현재 카테고리별 예산 설정한거 뺀 값
-//organisms/BudgetWizardFooter
-
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -144,19 +138,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  leftAmount: { 
+  leftAmount: {
     color: colors.BLUE_NORMAL, // 파란색으로 남은 금액만 표시
     fontWeight: "700",
   },
-  leftText: { 
+  leftText: {
     color: colors.GRAY_DARK, // 텍스트는 기본 색상
     fontWeight: "700",
   },
-  overAmount: { 
+  overAmount: {
     color: "#E53935", // 빨간색으로 초과 금액만 표시
     fontWeight: "700",
   },
-  overText: { 
+  overText: {
     color: colors.GRAY_DARK, // 텍스트는 기본 색상
     fontWeight: "700",
   },

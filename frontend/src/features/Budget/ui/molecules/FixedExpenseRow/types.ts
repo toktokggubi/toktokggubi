@@ -1,4 +1,3 @@
-// 이 컴포넌트에서 쓰는 로컬 타입 (도메인 공용 파일 없이 사용)
 export interface FixedExpenseItem {
   id: string;
   name: string;

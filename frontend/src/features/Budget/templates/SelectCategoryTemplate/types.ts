@@ -1,4 +1,3 @@
-// src/features/Budget/templates/SelectCategoryTemplate/types.ts
 import type { CategoryName } from "@/shared/constants/categoryIcons";
 import type { CategoryItem } from "~features/Budget/ui/molecules/CategoryGrid/types";
 
