@@ -4,8 +4,10 @@ import com.ssafy.toktokggubi.domain.merchant.entity.Merchant;
 import com.ssafy.toktokggubi.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -28,7 +30,7 @@ public class Gifticon {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id")
-    private Merchant merchant; // nullable
+    private Merchant merchant;
 
     @Column(name = "label", nullable = false, length = 150)
     private String label;
@@ -38,6 +40,10 @@ public class Gifticon {
 
     @Column(name = "expires_at")
     private LocalDate expiresAt;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 16)
