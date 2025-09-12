@@ -12,7 +12,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    NotoSansKR: require("@/assets/fonts/NotoSansKR-VF.ttf"),
+    NotoSansKR_Light: require("@/assets/fonts/NotoSansKR-Light.ttf"),
+    NotoSansKR_Regular: require("@/assets/fonts/NotoSansKR-Regular.ttf"),
+    NotoSansKR_Medium: require("@/assets/fonts/NotoSansKR-Medium.ttf"),
+    NotoSansKR_Bold: require("@/assets/fonts/NotoSansKR-Bold.ttf"),
   });
 
   const [queryClient] = useState(
@@ -30,35 +33,65 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!loaded) return;
-    const T: any = Text;
-    const TI: any = TextInput;
-    T.defaultProps = T.defaultProps || {};
-    TI.defaultProps = TI.defaultProps || {};
-    T.defaultProps.style = [
-      { fontFamily: "NotoSansKR" },
-      T.defaultProps.style,
-    ].flat();
-    TI.defaultProps.style = [
-      { fontFamily: "NotoSansKR" },
-      TI.defaultProps.style,
-    ].flat();
-  }, [loaded]);
 
-  if (!loaded) return null;
+    // weight → fontFamily 매핑
+    const fontMap: Record<string, string> = {
+      "100": "NotoSansKR_Light",
+      "300": "NotoSansKR_Light",
+      "400": "NotoSansKR_Regular",
+      normal: "NotoSansKR_Regular",
+      "500": "NotoSansKR_Medium",
+      "600": "NotoSansKR_Medium",
+      "700": "NotoSansKR_Bold",
+      bold: "NotoSansKR_Bold",
+    };
+
+    const applyFont = (style: any) => {
+      const styles = Array.isArray(style) ? style.flat() : [style];
+      const merged = Object.assign({}, ...styles);
+
+      if (merged.fontFamily) return merged;
+
+      const weight = String(merged.fontWeight ?? "400");
+      merged.fontFamily = fontMap[weight] ?? "NotoSansKR_Regular";
+      delete merged.fontWeight; // RN 기본 weight 혼선 제거
+      return merged;
+    };
+
+    // Text 오버라이드
+    const T: any = Text;
+    const originalRenderText = T.render ?? T.prototype?.render;
+    T.render = function render(...args: any[]) {
+      const origin = originalRenderText.apply(this, args);
+      return React.cloneElement(origin, {
+        style: applyFont(origin.props.style),
+      });
+    };
+
+    // TextInput 오버라이드
+    const TI: any = TextInput;
+    const originalRenderInput = TI.render ?? TI.prototype?.render;
+    TI.render = function render(...args: any[]) {
+      const origin = originalRenderInput.apply(this, args);
+      return React.cloneElement(origin, {
+        style: applyFont(origin.props.style),
+      });
+    };
+  }, [loaded]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <BottomSheetModalProvider>
-<SafeAreaProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="auth" options={{ headerShown: false }} />
-            <Stack.Screen name="pay" options={{ headerShown: false }} />
-            <Stack.Screen name="budget" options={{ headerShown: false }} />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        </SafeAreaProvider>
+          <SafeAreaProvider>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="auth" options={{ headerShown: false }} />
+              <Stack.Screen name="pay" options={{ headerShown: false }} />
+              <Stack.Screen name="budget" options={{ headerShown: false }} />
+              <Stack.Screen name="+not-found" />
+            </Stack>
+          </SafeAreaProvider>
         </BottomSheetModalProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

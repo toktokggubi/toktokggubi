@@ -65,19 +65,20 @@ export default function CardCarouselTemplate({
           // @ts-expect-error: UserCard에 id가 없을 수도 있어 폴백
           (item.id as string | undefined) ?? String(index)
         }
-        // 캐러셀이 남는 세로공간을 먹지 않도록
         containerCustomStyle={styles.carouselContainer}
       />
 
-      <PagerDots length={cards.length} activeIndex={activeIndex} top={20} />
+      <View style={styles.dotsWrapper}>
+        <PagerDots length={cards.length} activeIndex={activeIndex} top={20} />
+      </View>
 
       {isLoading ? (
-        <View style={{ marginTop: 16, marginHorizontal: 16 }}>
-          <Text style={{ color: colors.GRAY_NORMAL }}>혜택 불러오는 중...</Text>
+        <View style={styles.benefitLoadingWrapper}>
+          <Text style={styles.benefitLoadingText}>혜택 불러오는 중...</Text>
         </View>
       ) : isError ? (
-        <View style={{ marginTop: 16, marginHorizontal: 16 }}>
-          <Text style={{ color: "tomato" }}>혜택을 가져오지 못했어요</Text>
+        <View style={styles.benefitErrorWrapper}>
+          <Text style={styles.benefitErrorText}>혜택을 가져오지 못했어요</Text>
         </View>
       ) : (
         <BenefitsList benefits={data?.benefits ?? []} />
@@ -93,4 +94,11 @@ const styles = StyleSheet.create({
 
   // 캐러셀이 콘텐츠 높이만 차지하도록
   carouselContainer: { flex: 0, flexGrow: 0, alignSelf: "stretch" },
+  dotsWrapper: { marginBottom: 16 },
+
+  // ✅ 로딩/에러 스타일 분리
+  benefitLoadingWrapper: { marginTop: 16, marginHorizontal: 16 },
+  benefitLoadingText: { color: colors.GRAY_NORMAL },
+  benefitErrorWrapper: { marginTop: 16, marginHorizontal: 16 },
+  benefitErrorText: { color: "tomato" },
 });
