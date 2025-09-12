@@ -1,14 +1,16 @@
-// src/features/Budget/screens/TotalBudgetInputScreen/TotalBudgetInputScreen.tsx
 import { useState } from "react";
 import TotalBudgetTemplate from "~features/Budget/templates/TotalBudgetTemplate";
-import { router } from "expo-router"; // 라우트 넣을 때 사용
+import { router } from "expo-router";
 
 export default function TotalBudgetInputScreen() {
   const [amount, setAmount] = useState(500_000);
 
   const goPrev = () => router.back();
   const goNext = () => {
-    router.push("/budget/fixed-expense");
+    router.push({
+      pathname: "/budget/fixed-expense",
+      params: { totalAmount: amount.toString() }
+    });
   };
 
   return (
