@@ -4,14 +4,15 @@ import com.ssafy.toktokggubi.domain.budget.dto.DraftPatchRequest;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftSaveResponse;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetCommitService;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetDraftService;
+
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
-import com.ssafy.toktokggubi.global.time.BudgetYmResolver;
+import com.ssafy.toktokggubi.global.time.YmResolver;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.ssafy.toktokggubi.domain.budget.dto.BudgetCommitRequest;
 import com.ssafy.toktokggubi.domain.budget.dto.BudgetCommitResponse;
@@ -25,7 +26,7 @@ public class BudgetController {
 
     private final BudgetDraftService draftService;
     private final BudgetCommitService commitService;
-    private final BudgetYmResolver ymResolver;
+    private final YmResolver ymResolver;
 
     // BD-1, BD-3, BD-6 (draft 저장)
     // BD-1, BD-3, BD-6 (draft 저장)
@@ -44,15 +45,12 @@ public class BudgetController {
     public DraftSaveResponse saveDraftTotal(
 
                                             @RequestBody DraftPatchRequest req) {
-<<<<<<< HEAD
+
 
         Long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         draftService.delete(userId, ym);
-=======
-        Long userId = userIdQuery;
 
->>>>>>> 0150484 (fix: correct budget-Redis draft code)
         return doSave(userId, req);
     }
 

@@ -8,7 +8,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Component
-public class BudgetYmResolver {
+public class YmResolver {
     private static final ZoneId ZONE = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM");
 
