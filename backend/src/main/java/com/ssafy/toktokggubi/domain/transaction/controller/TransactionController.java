@@ -4,6 +4,7 @@ import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponse;
 import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponse;
 import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponse;
 import com.ssafy.toktokggubi.domain.transaction.service.TransactionService;
+import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,12 +34,8 @@ public class TransactionController {
 
     // ---- TX-1 이번 달 소비 금액 조회 (전체) ----
     @GetMapping("/summary")
-    @Operation(summary = "TX-1 기간별 소비 금액 조회 (yyyyMMdd 또는 yyyy-MM-dd 지원)" , description = "from to 안쓰면 이번달, 쓰면 기간")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공")
-    })
+
     public TxSummaryResponse getMonthlySummary(
-            @RequestParam("userId") long userId,
             @RequestParam(name = "from", required = false) String fromStr,
             @RequestParam(name = "to",   required = false) String toStr
     ) {
@@ -62,32 +59,27 @@ public class TransactionController {
                     "Both 'from' and 'to' are required together (yyyyMMdd or yyyy-MM-dd), or omit both."
             );
         }
-
+long userId = SecurityUtils.currentUserIdOrNull();
         return service.getSummaryByRange(userId, from, to);
 
     }
 
     // ---- TX-1 이번 달 소비 금액 조회 (카테고리별) ----
     @GetMapping("/summary/category")
-    @Operation(summary = "TX-1 이번 달 소비 금액 조회(카테고리별)")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "조회 성공")
-    })
-    public TxCategorySummaryResponse getMonthlyByCategory(
-            @RequestParam("userId") long userId
-    ) {
+
+    public TxCategorySummaryResponse getMonthlyByCategory() {
+        long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         return service.getMonthlyByCategory(userId, ym);
     }
 
     // 카테고리별 거래 목록(이번 달) — userId만 필수, sizePerCategory는 선택(기본 2)
     @GetMapping("/category")
-    @Operation(summary = "TX-1 이번 달 카테고리별 소비 목록 조회",
-            description = "카테고리별 합계 + 카테고리당 최신 거래 N건(기본 2건)")
-    @ApiResponses({ @ApiResponse(responseCode = "200", description = "조회 성공") })
+
     public TxCategoryListResponse getCurrentMonthCategoryList(
-            @RequestParam("userId") long userId
+
     ) {
+        long userId=SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         return service.getCurrentMonthCategoryList(userId, ym); // 내부에서 이번 달 계산
 
