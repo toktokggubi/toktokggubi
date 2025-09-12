@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import PaymentTemplate from "../templates/PaymentTemplate";
 import { getUserCards } from "@/features/User/api/cardService";
@@ -8,6 +8,9 @@ import { useCardBenefits } from "@/features/User/model/benefit/hooks";
 import BenefitsList from "@/features/User/ui/BenefitsList";
 
 import { colors } from "@/shared/constants/colors";
+
+import { DUMMY_GIFTICONS } from "@/features/Pay/model/dummyGifticons";
+import type { Gifticon } from "@/shared/types/gifticon";
 
 // real과 mock 교체 - useNearbyPlaces.ts 파일에서 export 부분만 바꾸면 됩니다
 import { useNearbyPlaces } from "@/shared/hooks/useNearbyPlaces";
@@ -26,40 +29,70 @@ export default function PaymentScreen() {
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null);
   const cards: UserCard[] = getUserCards();
+  const [gifticons, setGifticons] = useState<Gifticon[]>([]);
   const bottomSheetRef = useRef<BottomSheetRef>(null);
 
   const userCardId = cards[activeCardIndex]?.userCardId ?? 0;
   const q = useCardBenefits(userCardId);
 
   const keywords =
-    q.data?.benefits.map((b) => b.franchiseName).filter(Boolean) ?? [];
-  const nearbyPlaces = useNearbyPlaces(KAKAO_KEY, keywords);
+    q.data?.benefits?.map((b) => b.franchiseName).filter(Boolean) ?? [];
+  const nearbyPlaces = useNearbyPlaces(KAKAO_KEY, keywords) ?? [];
 
   const hasNearby = nearbyPlaces.length > 0;
   const nearbyNames = nearbyPlaces.map((p) => p.place_name);
 
-  // 3) 혜택 매칭 (선택된 가맹점 또는 주변 가맹점과 매칭)
+  useEffect(() => {
+    // API 대신 더미 세팅
+    setGifticons(DUMMY_GIFTICONS); // Gifticon & {imageSource}?[] -> Gifticon[]으로 할당 OK
+  }, []);
+  // 주변 가맹점이 로드되면 첫 번째 가맹점을 자동으로 선택
+  useEffect(() => {
+    if (hasNearby && !selectedPlace) {
+      setSelectedPlace(nearbyPlaces[0]);
+    }
+  }, [hasNearby, selectedPlace, nearbyPlaces]);
+
+  // 혜택 매칭
   const matchedBenefits = useMemo(() => {
     if (!q.data?.benefits || !hasNearby) return [];
 
-    // 선택된 가맹점이 있으면 해당 가맹점과 매칭, 없으면 모든 주변 가맹점과 매칭
     const targetPlaces = selectedPlace
       ? [selectedPlace.place_name]
-      : nearbyNames;
+      : [nearbyNames[0]];
 
-    return q.data.benefits.filter((b) => {
+    const filtered = q.data.benefits.filter((b) => {
       const franchiseName = b.franchiseName?.toLowerCase?.() ?? "";
 
       return targetPlaces.some((placeName) => {
         const place = placeName.toLowerCase();
 
-        // 정확한 매칭 로직
-        // 1. 가맹점명이 장소명에 포함되는 경우 (예: "CGV 유성점" -> "CGV")
-        // 2. 장소명이 가맹점명에 포함되는 경우 (예: "스타벅스" -> "유성 스타벅스 NC점")
         return place.includes(franchiseName) || franchiseName.includes(place);
       });
     });
+
+    return filtered;
   }, [q.data?.benefits, hasNearby, nearbyNames, selectedPlace]);
+
+  // 기프티콘 필터링 - 현재 위치에 맞는 기프티콘만 표시
+  const filteredGifticons = useMemo(() => {
+    if (!hasNearby) return gifticons;
+
+    const targetPlaces = selectedPlace
+      ? [selectedPlace.place_name]
+      : [nearbyNames[0]];
+
+    return gifticons.filter((gifticon) => {
+      const merchantName = gifticon.merchantName?.toLowerCase() ?? "";
+
+      return targetPlaces.some((placeName) => {
+        const place = placeName.toLowerCase();
+
+        // 가맹점명이 장소명에 포함되거나, 장소명이 가맹점명에 포함되는 경우
+        return place.includes(merchantName) || merchantName.includes(place);
+      });
+    });
+  }, [gifticons, hasNearby, nearbyNames, selectedPlace]);
 
   // 위치 선택 핸들러
   const handlePlaceSelect = (place: KakaoPlace) => {
@@ -67,12 +100,12 @@ export default function PaymentScreen() {
     bottomSheetRef.current?.close();
   };
 
-  // BottomSheet 열기
+  // BottomSheet 열기 (카드 탭과 기프티콘 탭 모두에서 사용)
   const handleLocationChange = () => {
     bottomSheetRef.current?.snapToIndex(0);
   };
 
-  // 4) 템플릿 슬롯 조립 (분기)
+  // 템플릿 슬롯 조립
   const cardTopSection =
     tab === 0 && hasNearby ? (
       <View>
@@ -102,6 +135,26 @@ export default function PaymentScreen() {
       </View>
     ) : null;
 
+  // 기프티콘 탭의 위치 헤더
+  const gifticonTopSection =
+    tab === 1 && hasNearby ? (
+      <View>
+        <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
+        <Text
+          style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
+        >
+          {selectedPlace?.place_name ||
+            nearbyPlaces[0]?.place_name ||
+            "주변 가맹점"}
+        </Text>
+        <TouchableOpacity onPress={handleLocationChange}>
+          <Text style={{ color: "#94a3b8", marginTop: 4 }}>
+            이 위치가 아닌가요?
+          </Text>
+        </TouchableOpacity>
+      </View>
+    ) : null;
+
   const benefitsSection =
     tab !== 0 ? null : q.isLoading ? (
       <LoadingCard />
@@ -118,7 +171,7 @@ export default function PaymentScreen() {
         )}
         <BenefitsList benefits={matchedBenefits} />
       </View>
-    ) : null; // 매칭되는 혜택이 없으면 혜택 섹션 숨김
+    ) : null;
 
   return (
     <>
@@ -131,6 +184,11 @@ export default function PaymentScreen() {
         cardTopSection={cardTopSection}
         cardBottomSection={cardBottomSection}
         benefitsSection={benefitsSection}
+        // Gifticon 관련 props 추가
+        gifticons={filteredGifticons}
+        activeGifticonIndex={0}
+        onActiveGifticonChange={(i, id) => {}}
+        gifticonTopSection={gifticonTopSection}
       />
 
       {/* 주변 가맹점 BottomSheet */}

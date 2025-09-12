@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { fetchNearbyPlaces } from "@/shared/api/kakao-location";
 import type { KakaoPlace } from "@/shared/types/location.types";
 
+type Options = {
+  enabled: boolean;
+  dedupe: boolean;
+};
 // Real implementation
 export function useNearbyPlacesReal(
   apiKey: string,
@@ -88,4 +92,4 @@ export function useNearbyPlacesMock(
 export const useNearbyPlaces: (
   apiKey: string,
   keywords: string[]
-) => KakaoPlace[] = useNearbyPlacesReal;
+) => KakaoPlace[] = useNearbyPlacesMock;
