@@ -8,7 +8,6 @@ import DividerDashed from "~features/Budget/ui/molecules/DividerDashed";
 import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
 import type { BudgetSummaryTemplateProps } from "./types";
 import { colors } from "@/shared/constants/colors";
-import { krw } from "@/shared/utils/currency";
 import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 
 export default function BudgetSummaryTemplate({
@@ -39,16 +38,13 @@ export default function BudgetSummaryTemplate({
       </View>
 
       {/* 스크롤 가능한 메인 콘텐츠 영역 */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* 전체 예산 요약 */}
-        <BudgetSummaryHeaderRow
-          title={`${month} 예산`}
-          amount={totalBudget}
-        />
+        <BudgetSummaryHeaderRow title={`${month} 예산`} amount={totalBudget} />
 
         {/* 변동 지출 예산 섹션 */}
         {variableBudget > 0 && (
@@ -77,16 +73,13 @@ export default function BudgetSummaryTemplate({
               amount={fixedIncludedBudget}
             />
             {fixedIncludedExpenses.map((item) => (
-              <FixedExpenseSummaryRow
-                key={item.id}
-                item={item}
-              />
+              <FixedExpenseSummaryRow key={item.id} item={item} />
             ))}
           </View>
         )}
 
         {/* 구분선 */}
-        {(fixedIncludedBudget > 0 && fixedExcludedBudget > 0) && (
+        {fixedIncludedBudget > 0 && fixedExcludedBudget > 0 && (
           <DividerDashed />
         )}
 
@@ -98,10 +91,7 @@ export default function BudgetSummaryTemplate({
               amount={fixedExcludedBudget}
             />
             {fixedExcludedExpenses.map((item) => (
-              <FixedExpenseSummaryRow
-                key={item.id}
-                item={item}
-              />
+              <FixedExpenseSummaryRow key={item.id} item={item} />
             ))}
           </View>
         )}

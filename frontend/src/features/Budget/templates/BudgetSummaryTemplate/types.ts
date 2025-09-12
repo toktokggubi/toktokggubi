@@ -1,5 +1,4 @@
 import type { CategoryName } from "@/shared/constants/categoryIcons";
-import type { ImageSourcePropType } from "react-native";
 
 export interface CategoryBudgetItem {
   name: CategoryName;
