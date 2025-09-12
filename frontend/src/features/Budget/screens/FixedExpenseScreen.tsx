@@ -4,12 +4,30 @@ import FixedExpenseTemplate from "~features/Budget/templates/FixedExpenseTemplat
 import type { FixedExpenseItem } from "~features/Budget/ui/molecules/FixedExpenseRow/types";
 import type { AddFixedExpenseFormValues } from "~features/Budget/ui/forms/AddFixedExpenseForm/types";
 
+// 🔄 REDIS 전환 시 수정할 부분들:
+// 1. import 추가: useBudgetDraftQuery, useSaveFixedExpensesMutation, useBudgetDraftFormData, useBudgetDraftActions, useBudgetDraftCalculations, useBudgetDraftData
+// 2. useLocalSearchParams 제거하고 draft store에서 데이터 가져오기
+// 3. 로컬 상태(items) 대신 draft store 사용
+// 4. goNext에서 파라미터 전달 대신 Redis 저장 후 네비게이션
+
 export default function FixedExpenseScreen() {
-  // 이전 단계에서 받은 총 예산
+  // 🔄 REDIS 전환 시: 이 부분을 draft store에서 가져오도록 변경
+  // const { totalAmount } = useBudgetDraftFormData();
+  // const { updateFixedExpenses } = useBudgetDraftActions();
+  // const { getAvailableBudget } = useBudgetDraftCalculations();
+  // const { version } = useBudgetDraftData();
+  // const saveFixedMutation = useSaveFixedExpensesMutation();
+  
+  // 현재: 파라미터로 받은 총 예산
   const { totalAmount } = useLocalSearchParams<{ totalAmount: string }>();
   const totalBudget = totalAmount ? parseInt(totalAmount) : 1000000;
 
-  // 고정 지출 리스트 상태
+  // 🔄 REDIS 전환 시: 로컬 상태 대신 draft store 사용
+  // const [localItems, setLocalItems] = useState<FixedExpenseItem[]>([]);
+  // const [isInitialized, setIsInitialized] = useState(false);
+  // const { data: draftData } = useBudgetDraftQuery();
+  
+  // 현재: 로컬 상태로 고정 지출 관리
   const [items, setItems] = useState<FixedExpenseItem[]>([]);
 
   // 폼(모달) 상태
@@ -51,7 +69,39 @@ export default function FixedExpenseScreen() {
   // 네비게이션
   const goPrev = () => router.back();
   const goNext = () => {
-    router.push("/budget/select-category");
+    // 🔄 REDIS 전환 시: 파라미터 전달 대신 Redis 저장 후 네비게이션
+    // const expenses = items.map((item: FixedExpenseItem) => ({
+    //   title: item.name,
+    //   amount: item.amount,
+    //   payDay: item.billingDay || 1,
+    //   includeInBudget: item.includeInBudget,
+    // }));
+    // 
+    // if (version && version > 0) {
+    //   saveFixedMutation.mutate({
+    //     expectedVersion: version,
+    //     fixedExpenses: expenses,
+    //   }, {
+    //     onSuccess: () => {
+    //       router.push("/budget/select-category");
+    //     },
+    //     onError: (error) => {
+    //       console.error('저장 실패:', error);
+    //     },
+    //   });
+    // } else {
+    //   router.push("/budget/select-category");
+    // }
+    
+    // 현재: 파라미터로 고정 지출 데이터 전달
+    const fixedExpensesParam = encodeURIComponent(JSON.stringify(items));
+    router.push({
+      pathname: "/budget/select-category",
+      params: { 
+        totalAmount: totalAmount,
+        fixedExpenses: fixedExpensesParam
+      }
+    });
   };
 
   return (

@@ -1,11 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import SelectCategoryTemplate from "~features/Budget/templates/SelectCategoryTemplate";
 import {
   CATEGORY_ICON_BY_NAME,
   type CategoryName,
 } from "@/shared/constants/categoryIcons";
 import type { CategoryItem } from "~features/Budget/ui/organisms/CategoryGrid/types";
+
+// 🔄 REDIS 전환 시 수정할 부분들:
+// 1. import 추가: useBudgetDraftQuery, useSaveCategoriesMutation, useCommitBudgetMutation, useBudgetDraftFormData, useBudgetDraftActions, useBudgetDraftCalculations
+// 2. useLocalSearchParams 제거하고 draft store에서 데이터 가져오기
+// 3. 로컬 상태(selected) 대신 draft store 사용
+// 4. goNext에서 파라미터 전달 대신 Redis 저장 후 커밋
 
 // ✅ 초기 선택 없음
 const INITIAL_SELECTED: CategoryName[] = [];
@@ -19,6 +25,31 @@ const ALL: CategoryName[] = Object.keys(
 const DISABLED_SET = new Set<CategoryName>([]);
 
 export default function SelectCategoryScreen() {
+  // 🔄 REDIS 전환 시: 이 부분을 draft store에서 가져오도록 변경
+  // const { totalAmount, fixedExpenses } = useBudgetDraftFormData();
+  // const { updateCategorySelection } = useBudgetDraftActions();
+  // const { getAvailableBudget } = useBudgetDraftCalculations();
+  // const { version } = useBudgetDraftData();
+  // const saveCategoriesMutation = useSaveCategoriesMutation();
+  // const commitMutation = useCommitBudgetMutation();
+  // const { data: draftData } = useBudgetDraftQuery();
+
+  // 현재: 파라미터로 받은 데이터
+  const { totalAmount, fixedExpenses } = useLocalSearchParams<{
+    totalAmount: string;
+    fixedExpenses: string;
+  }>();
+
+  const totalBudget = totalAmount ? parseInt(totalAmount) : 1000000;
+  const parsedFixedExpenses = fixedExpenses
+    ? JSON.parse(decodeURIComponent(fixedExpenses))
+    : [];
+
+  // 🔄 REDIS 전환 시: 로컬 상태 대신 draft store 사용
+  // const [localSelected, setLocalSelected] = useState<CategoryName[]>(INITIAL_SELECTED);
+  // const [localAllocations, setLocalAllocations] = useState<Record<string, number>>({});
+
+  // 현재: 로컬 상태로 카테고리 선택 관리
   const [selected, setSelected] = useState<CategoryName[]>(INITIAL_SELECTED);
 
   // 템플릿에 줄 아이템 변환
@@ -43,10 +74,38 @@ export default function SelectCategoryScreen() {
   // 네비게이션
   const goPrev = useCallback(() => router.back(), []);
   const goNext = useCallback(() => {
-    // TODO: 다음 단계 라우트 연결
-    // router.push("/budget/set-amount");
-    console.log("다음 단계로 이동 예정");
-  }, []);
+    // 🔄 REDIS 전환 시: 파라미터 전달 대신 Redis 저장 후 커밋
+    // const categoryIds = selected.map(name => CATEGORY_NAME_TO_ID[name]);
+    // const allocations = selected.map(name => ({
+    //   categoryId: CATEGORY_NAME_TO_ID[name],
+    //   finalAmount: localAllocations[name] || 0,
+    // }));
+    //
+    // updateCategorySelection(categoryIds, allocations);
+    // autoSaveCategories(categoryIds, allocations);
+    //
+    // commitMutation.mutate({}, {
+    //   onSuccess: () => {
+    //     router.push("/(tabs)/home");
+    //   },
+    //   onError: (error) => {
+    //     console.error('예산 커밋 실패:', error);
+    //   },
+    // });
+
+    // 현재: 파라미터로 모든 데이터 전달 (완료 페이지가 없으므로 홈으로)
+    const selectedCategoriesParam = encodeURIComponent(
+      JSON.stringify(selected)
+    );
+    router.push({
+      pathname: "/budget/category-budget",
+      params: {
+        totalAmount: totalAmount,
+        fixedExpenses: fixedExpenses,
+        selectedCategories: selectedCategoriesParam,
+      },
+    });
+  }, [selected, totalAmount, fixedExpenses]);
 
   return (
     <SelectCategoryTemplate
