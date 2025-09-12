@@ -10,7 +10,16 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.w3c.dom.ranges.Range;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,15 +32,38 @@ public class TransactionController {
 
     // ---- TX-1 이번 달 소비 금액 조회 (전체) ----
     @GetMapping("/summary")
-    @Operation(summary = "TX-1 이번 달 소비 금액 조회(전체)")
+    @Operation(summary = "TX-1 기간별 소비 금액 조회 (yyyyMMdd 또는 yyyy-MM-dd 지원)" , description = "from to 안쓰면 이번달, 쓰면 기간")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공")
     })
     public TxSummaryResponse getMonthlySummary(
-            @RequestParam("userId") long userId
+            @RequestParam("userId") long userId,
+            @RequestParam(name = "from", required = false) String fromStr,
+            @RequestParam(name = "to",   required = false) String toStr
     ) {
-        String ym = ymResolver.nowYm(); // 예: "202509"
-        return service.getMonthlySummary(userId, ym);
+        LocalDate from;
+        LocalDate to;
+        // from/to가 없으면 현재달 1~말일로 기본 처리
+        if (fromStr == null && toStr == null) {
+            // 이번 달 1일 ~ 말일
+            YearMonth ym = YearMonth.parse(ymResolver.nowYm(), DateTimeFormatter.ofPattern("yyyyMM"));
+            from = ym.atDay(1);
+            to   = ym.atEndOfMonth();
+        } else if (fromStr != null && toStr != null) {
+            from = parseFlexibleDate(fromStr);
+            to   = parseFlexibleDate(toStr);
+            if (to.isBefore(from)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "'to' must be on/after 'from'.");
+            }
+        } else {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Both 'from' and 'to' are required together (yyyyMMdd or yyyy-MM-dd), or omit both."
+            );
+        }
+
+        return service.getSummaryByRange(userId, from, to);
+
     }
 
     // ---- TX-1 이번 달 소비 금액 조회 (카테고리별) ----
@@ -45,5 +77,28 @@ public class TransactionController {
     ) {
         String ym = ymResolver.nowYm();
         return service.getMonthlyByCategory(userId, ym);
+    }
+    /* ---------- helpers ---------- */
+
+    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE;         // yyyy-MM-dd
+    private static final DateTimeFormatter COMPACT = DateTimeFormatter.BASIC_ISO_DATE;     // yyyyMMdd
+
+    private LocalDate parseFlexibleDate(String s) {
+        // 공백 트리밍
+        String v = s.trim();
+        // 길이로 빠른 분기
+        if (v.length() == 10 && v.charAt(4) == '-' && v.charAt(7) == '-') {
+            // yyyy-MM-dd
+            return LocalDate.parse(v, ISO);
+        }
+        if (v.length() == 8 && v.chars().allMatch(Character::isDigit)) {
+            // yyyyMMdd
+            return LocalDate.parse(v, COMPACT);
+        }
+        // 최종 실패
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Invalid date format: '" + s + "'. Use yyyyMMdd or yyyy-MM-dd."
+        );
     }
 }
