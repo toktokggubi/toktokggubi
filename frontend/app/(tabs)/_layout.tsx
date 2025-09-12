@@ -1,6 +1,7 @@
 import { Tabs, router } from "expo-router";
 import React, { useEffect } from "react";
 import { useIsFocused } from "@react-navigation/native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
@@ -8,6 +9,18 @@ import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { useShakeAdvanced } from "@/shared/hooks/useShake";
+import SvgTabBar from "@/shared/ui/SvgTabBar";
+import HomeScreen from "./home/index";
+import LuckyScreen from "./lucky/index";
+import MyPageScreen from "./mypage/index";
+
+const Tab = createBottomTabNavigator();
+
+const tabs = [
+  { name: "home/index", icon: "home", label: "홈" },
+  { name: "lucky/index", icon: "staro", label: "혜택" },
+  { name: "mypage", icon: "person-circle", label: "마이페이지" },
+];
 
 export default function TabLayout() {
   const isFocused = useIsFocused();
@@ -26,44 +39,17 @@ export default function TabLayout() {
     },
     { enabled: isFocused }
   );
+
   return (
-    <Tabs
+    <Tab.Navigator
+      tabBar={(props) => <SvgTabBar {...props} tabs={tabs} />}
       screenOptions={{
         headerShown: false,
-        tabBarShowLabel: false, // 라벨 감추고 아이콘만
-        tabBarActiveTintColor: "black",
-        tabBarInactiveTintColor: "gray",
       }}
     >
-      {/* Home */}
-      <Tabs.Screen
-        name="home/index"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* Lucky (혜택) */}
-      <Tabs.Screen
-        name="lucky/index"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <AntDesign name="staro" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* 마이페이지 */}
-      <Tabs.Screen
-        name="mypage"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-circle" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+      <Tab.Screen name="home/index" component={HomeScreen} />
+      <Tab.Screen name="lucky/index" component={LuckyScreen} />
+      <Tab.Screen name="mypage" component={MyPageScreen} />
+    </Tab.Navigator>
   );
 }

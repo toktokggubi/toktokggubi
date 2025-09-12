@@ -1,8 +1,8 @@
-import type { FixedExpenseItem } from "../../ui/molecules/FixedExpenseRow/types";
+import type { FixedExpenseItem } from "~features/Budget/ui/molecules/FixedExpenseRow/types";
 import type {
   FixedExpenseFormMode,
   AddFixedExpenseFormValues,
-} from "../../ui/forms/AddFixedExpenseForm/types";
+} from "~features/Budget/ui/forms/AddFixedExpenseForm/types";
 
 export interface FixedExpenseTemplateProps {
   // 상단 카피

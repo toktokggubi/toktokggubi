@@ -42,6 +42,5 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 16, // ⬅️ 위 여백만 고정
-    // paddingBottom은 런타임에 주입
   },
 });

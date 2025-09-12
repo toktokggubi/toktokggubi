@@ -1,4 +1,3 @@
-// src/features/Budget/ui/molecules/CategoryGrid/types.ts
 import type { ImageSourcePropType } from "react-native";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
 
