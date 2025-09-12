@@ -44,10 +44,15 @@ public class BudgetController {
     public DraftSaveResponse saveDraftTotal(
 
                                             @RequestBody DraftPatchRequest req) {
+<<<<<<< HEAD
 
         Long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         draftService.delete(userId, ym);
+=======
+        Long userId = userIdQuery;
+
+>>>>>>> 0150484 (fix: correct budget-Redis draft code)
         return doSave(userId, req);
     }
 
