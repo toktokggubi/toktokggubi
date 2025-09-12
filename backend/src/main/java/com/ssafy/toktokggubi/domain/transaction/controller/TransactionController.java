@@ -1,5 +1,6 @@
 package com.ssafy.toktokggubi.domain.transaction.controller;
 
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponse;
 import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponse;
 import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponse;
 import com.ssafy.toktokggubi.domain.transaction.service.TransactionService;
@@ -77,6 +78,19 @@ public class TransactionController {
     ) {
         String ym = ymResolver.nowYm();
         return service.getMonthlyByCategory(userId, ym);
+    }
+
+    // 카테고리별 거래 목록(이번 달) — userId만 필수, sizePerCategory는 선택(기본 2)
+    @GetMapping("/category")
+    @Operation(summary = "TX-1 이번 달 카테고리별 소비 목록 조회",
+            description = "카테고리별 합계 + 카테고리당 최신 거래 N건(기본 2건)")
+    @ApiResponses({ @ApiResponse(responseCode = "200", description = "조회 성공") })
+    public TxCategoryListResponse getCurrentMonthCategoryList(
+            @RequestParam("userId") long userId
+    ) {
+        String ym = ymResolver.nowYm();
+        return service.getCurrentMonthCategoryList(userId, ym); // 내부에서 이번 달 계산
+
     }
     /* ---------- helpers ---------- */
 
