@@ -106,9 +106,18 @@ export default function CategoryBudgetScreen() {
     // updateCategorySelection(...); autoSaveCategories(...);
     // commitMutation.mutate(...)
 
-    // 현재: 홈으로 이동(예시). 필요 시 다음 라우트로 교체.
-    router.push("/(tabs)/home");
-  }, [items]);
+    // 예산 요약 화면으로 이동
+    const categoryBudgetsParam = encodeURIComponent(JSON.stringify(items));
+    router.push({
+      pathname: "/budget/summary",
+      params: {
+        totalAmount,
+        fixedExpenses,
+        selectedCategories,
+        categoryBudgets: categoryBudgetsParam,
+      },
+    });
+  }, [items, totalAmount, fixedExpenses, selectedCategories]);
 
   return (
     <CategoryBudgetTemplate

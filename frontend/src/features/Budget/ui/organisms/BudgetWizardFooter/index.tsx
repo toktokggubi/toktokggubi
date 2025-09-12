@@ -14,6 +14,7 @@ export default function BudgetWizardFooter({
   nextDisabled,
   nextTone = "link",
   prevTone = "link",
+  nextLabel = "다음",
   baseBottom = 32, // ✅ 기본 하단 여백
   style, // (선택) 외부 스타일 병합
 }: BudgetWizardFooterProps) {
@@ -25,6 +26,7 @@ export default function BudgetWizardFooter({
       <PrevButton tone={prevTone} onPress={onPressPrev} />
       <StepDots index={stepIndex} total={stepTotal} />
       <NextButton
+        label={nextLabel}
         tone={nextTone}
         onPress={onPressNext}
         disabled={nextDisabled}

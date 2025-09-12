@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   containerPressed: { opacity: 0.9 },
-  containerDisabled: { opacity: 0.6 },
+  containerDisabled: { opacity: 1 },
   left: {
     flexDirection: "row",
     alignItems: "center",
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
   },
-  amountDisabled: { color: colors.GRAY_NORMAL },
+  amountDisabled: { color: colors.GRAY_DARK },
   won: {
     marginLeft: 4,
     fontSize: 14,
