@@ -96,9 +96,7 @@ export default function GifticonsScreen() {
       ),
       headerRight: () => (
         <Pressable
-          onPress={() =>
-            Alert.alert("기프티콘 등록", "등록 기능은 나중에 연결할게요")
-          }
+          onPress={() => router.push("/gifticons/register")}
           style={{ paddingHorizontal: 12, paddingVertical: 6 }}
           accessibilityRole="button"
           accessibilityLabel="기프티콘 추가"

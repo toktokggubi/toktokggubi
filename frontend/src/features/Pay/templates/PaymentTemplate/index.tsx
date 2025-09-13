@@ -1,25 +1,26 @@
+import type { UserCard } from "@/features/User/screens/MyPageScreen/types"; // TODO: 맞춰서 수정
+import PagerDots from "@/features/User/ui/PagerDots";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import CardSlide from "@/shared/ui/CardSlide";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
+  Dimensions,
+  PanResponder,
   StyleSheet,
   Text,
-  Dimensions,
   TouchableOpacity,
-  PanResponder,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import Carousel from "react-native-snap-carousel";
 import SegmentedTabs from "~features/Pay/ui/SegmentedTabs";
-import CardSlide from "@/shared/ui/CardSlide";
-import PagerDots from "@/features/User/ui/PagerDots";
 import type { PaymentTemplateProps } from "./types";
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types"; // TODO: 맞춰서 수정
-import { colors } from "@/shared/constants/colors";
 
-import GifticonSlide from "@/shared/ui/GifticonSlide";
 import type { Gifticon } from "@/shared/types/gifticon";
+import GifticonSlide from "@/shared/ui/GifticonSlide";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const ITEM_W = Math.round(SCREEN_W * 0.68);
@@ -56,17 +57,21 @@ function PaymentTemplate({
     onStartShouldSetPanResponder: () => !isTransitioning,
     onMoveShouldSetPanResponder: (evt, gestureState) => {
       // 수평 스와이프만 감지 (세로 스와이프는 무시)
-      return !isTransitioning && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      return (
+        !isTransitioning &&
+        Math.abs(gestureState.dx) > Math.abs(gestureState.dy) &&
+        Math.abs(gestureState.dx) > 10
+      );
     },
     onPanResponderGrant: () => {
       // 제스처 시작 시 즉시 반응
     },
     onPanResponderMove: (evt, gestureState) => {
       if (isTransitioning) return;
-      
+
       // 실시간으로 스와이프 감지하여 더 빠른 반응
       const { dx } = gestureState;
-      
+
       // 오른쪽으로 스와이프 (카드 → 기프티콘)
       if (dx > 30 && selectedTab === 0) {
         setIsTransitioning(true);
@@ -82,12 +87,12 @@ function PaymentTemplate({
     },
     onPanResponderRelease: (evt, gestureState) => {
       if (isTransitioning) return;
-      
+
       const { dx, vx } = gestureState;
-      
+
       // 속도와 거리를 모두 고려하여 더 정확한 판단
       const isFastSwipe = Math.abs(vx) > 0.5;
-      
+
       // 오른쪽으로 스와이프 (카드 → 기프티콘)
       if ((dx > 20 || (isFastSwipe && dx > 10)) && selectedTab === 0) {
         setIsTransitioning(true);
@@ -187,12 +192,18 @@ function PaymentTemplate({
             />
             <PagerDots length={cards.length} activeIndex={currentCardIndex} />
             {benefitsSection ? (
-              <View style={{ marginTop: 8, marginBottom: 12 }} {...panResponder.panHandlers}>
+              <View
+                style={{ marginTop: 8, marginBottom: 12 }}
+                {...panResponder.panHandlers}
+              >
                 {benefitsSection}
               </View>
             ) : null}
             {cardBottomSection ? (
-              <View style={{ marginTop: 8, marginBottom: 12 }} {...panResponder.panHandlers}>
+              <View
+                style={{ marginTop: 8, marginBottom: 12 }}
+                {...panResponder.panHandlers}
+              >
                 {cardBottomSection}
               </View>
             ) : null}
@@ -240,11 +251,17 @@ function PaymentTemplate({
           )}
 
           {gifticonBottomSection ? (
-            <View style={styles.gifticonBottomContainer} {...panResponder.panHandlers}>
+            <View
+              style={styles.gifticonBottomContainer}
+              {...panResponder.panHandlers}
+            >
               {gifticonBottomSection}
             </View>
           ) : null}
-          <View style={styles.instructionContainer} {...panResponder.panHandlers}>
+          <View
+            style={styles.instructionContainer}
+            {...panResponder.panHandlers}
+          >
             <Text style={styles.instructionText}>바코드를 찍어주세요</Text>
           </View>
         </View>
@@ -296,7 +313,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#64748b",
     fontSize: 14,
-    fontWeight: "600",
+    ...font.medium,
   },
   carouselContainer: { flex: 0, flexGrow: 0, alignSelf: "stretch" },
   gifticonBottomContainer: {
@@ -312,7 +329,7 @@ const styles = StyleSheet.create({
   instructionText: {
     color: colors.GRAY_NORMAL,
     fontSize: 14,
-    fontWeight: "500",
+    ...font.medium,
     textAlign: "center",
   },
 });

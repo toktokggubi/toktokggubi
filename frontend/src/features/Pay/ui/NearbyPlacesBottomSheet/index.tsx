@@ -1,9 +1,16 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, FlatList } from "react-native";
 import AppBottomSheet from "@/features/Auth/ui/BottomSheetList";
 import type { BottomSheetRef } from "@/features/Auth/ui/BottomSheetList/types";
-import type { KakaoPlace } from "@/shared/types/location.types";
 import { colors } from "@/shared/constants/colors";
+import type { KakaoPlace } from "@/shared/types/location.types";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import {
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import type { NearbyPlacesBottomSheetProps } from "./types";
 
 const NearbyPlacesBottomSheet = React.forwardRef<
@@ -37,7 +44,7 @@ const NearbyPlacesBottomSheet = React.forwardRef<
           <Text style={styles.title}>주변 가맹점</Text>
           <Text style={styles.subtitle}>30m 이내</Text>
         </View>
-        
+
         <FlatList
           data={places}
           renderItem={renderPlaceItem}
@@ -65,7 +72,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.BLUE_DARKER,
     marginBottom: 4,
   },
@@ -92,7 +99,7 @@ const styles = StyleSheet.create({
   },
   placeName: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: "#1e293b",
     marginBottom: 4,
   },
@@ -108,7 +115,7 @@ const styles = StyleSheet.create({
   },
   distanceText: {
     fontSize: 12,
-    fontWeight: "600",
+    ...font.medium,
     color: "white",
   },
 });

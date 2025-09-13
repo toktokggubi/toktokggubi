@@ -1,6 +1,7 @@
-import React from "react";
-import { View, Text, Pressable, StyleSheet, FlatList } from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import FixedExpenseRow from "~features/Budget/ui/molecules/FixedExpenseRow";
 import type { FixedExpenseListProps } from "./types";
 import { listHeaderLabel } from "./variants";
@@ -86,7 +87,7 @@ const s = StyleSheet.create({
   /* 🔹 텍스트 스타일 */
   headerCellText: {
     color: "#fff",
-    fontWeight: "700",
+    ...font.bold,
     fontSize: 13,
     textAlign: "center",
   },

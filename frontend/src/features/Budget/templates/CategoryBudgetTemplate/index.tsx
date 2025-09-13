@@ -1,12 +1,13 @@
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { krw } from "@/shared/utils/currency";
 import React, { useMemo } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BudgetCopy from "~features/Budget/ui/molecules/BudgetCopy";
-import CategoryBudgetList from "~features/Budget/ui/organisms/CategoryBudgetList";
 import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
+import CategoryBudgetList from "~features/Budget/ui/organisms/CategoryBudgetList";
 import type { CategoryBudgetTemplateProps } from "./types";
-import { colors } from "@/shared/constants/colors";
-import { krw } from "@/shared/utils/currency";
 
 export default function CategoryBudgetTemplate({
   availableNextMonth,
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
     color: colors.GRAY_DARK,
   },
   totalEmph: {
-    fontWeight: "700",
+    ...font.bold,
     color: colors.BLUE_NORMAL,
   },
   editHint: {
@@ -136,22 +137,22 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
     fontSize: 16,
-    fontWeight: "700",
+    ...font.bold,
   },
   leftAmount: {
     color: colors.BLUE_NORMAL, // 파란색으로 남은 금액만 표시
-    fontWeight: "700",
+    ...font.bold,
   },
   leftText: {
     color: colors.GRAY_DARK, // 텍스트는 기본 색상
-    fontWeight: "700",
+    ...font.bold,
   },
   overAmount: {
     color: "#E53935", // 빨간색으로 초과 금액만 표시
-    fontWeight: "700",
+    ...font.bold,
   },
   overText: {
     color: colors.GRAY_DARK, // 텍스트는 기본 색상
-    fontWeight: "700",
+    ...font.bold,
   },
 });

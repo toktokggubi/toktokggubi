@@ -1,7 +1,8 @@
-import React from "react";
-import { View, StyleSheet, Text, Image } from "react-native";
-import type { WelcomeTemplateProps } from "./types";
 import Button from "@/features/Auth/ui/Button";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import type { WelcomeTemplateProps } from "./types";
 
 const WelcomeTemplate = ({
   centerImageSource,
@@ -33,7 +34,7 @@ const style = StyleSheet.create({
   },
   textWrap: {
     fontSize: 32,
-    fontWeight: "400",
+    ...font.regular,
     textAlign: "center",
   },
   imageWrap: {

@@ -1,16 +1,17 @@
 // src/features/User/ui/GifticonCard/index.tsx
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Image } from "expo-image";
 import React, { memo } from "react";
 import {
-  View,
-  Text,
+  Platform,
   Pressable,
   StyleSheet,
-  Platform,
+  Text,
+  View,
   type TextStyle,
 } from "react-native";
-import { Image } from "expo-image";
 import type { GifticonCardProps } from "./types";
-import { colors } from "@/shared/constants/colors";
 
 const androidTight: TextStyle = Platform.select({
   android: { includeFontPadding: false }, // ✅ 스타일로 적용
@@ -72,7 +73,7 @@ const s = StyleSheet.create({
     fontSize: 12,
     lineHeight: 16,
     color: colors.BLUE_DARKER,
-    fontWeight: "bold",
+    ...font.bold,
     textAlignVertical: "center",
     paddingVertical: 0,
     marginBottom: 5,

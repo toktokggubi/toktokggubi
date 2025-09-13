@@ -1,9 +1,10 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import type { PersonalInfoTemplateProps } from "./types";
-import InputField from "~features/Auth/ui/InputField";
-import Button from "~features/Auth/ui/Button";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Button from "~features/Auth/ui/Button";
+import InputField from "~features/Auth/ui/InputField";
+import type { PersonalInfoTemplateProps } from "./types";
 
 export default function PersonalInfoTemplate({
   nickname,
@@ -143,7 +144,7 @@ const style = StyleSheet.create({
   },
   introBold: {
     fontSize: 24,
-    fontWeight: "700",
+    ...font.bold,
     color: "#0E3159",
   },
   introNormal: {
@@ -157,7 +158,7 @@ const style = StyleSheet.create({
     padding: 16,
     backgroundColor: "#F8FBFF",
   },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
+  title: { fontSize: 20, ...font.bold, marginBottom: 16 },
   label: { fontSize: 14, color: "#334155", marginBottom: 6 },
   row: { flexDirection: "row", gap: 8 },
   chip: {
@@ -165,7 +166,7 @@ const style = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
   },
-  chipText: { color: "#0F172A", fontWeight: "600" },
+  chipText: { color: "#0F172A", ...font.medium },
   pressField: {
     flexDirection: "row",
     alignItems: "center",

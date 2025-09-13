@@ -1,12 +1,13 @@
-import React from "react";
-import { View, Text, StyleSheet, Modal } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import { Modal, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import BudgetCopy from "~features/Budget/ui/molecules/BudgetCopy";
-import FixedExpenseList from "~features/Budget/ui/organisms/FixedExpenseList";
-import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
 import AddFixedExpenseForm from "~features/Budget/ui/forms/AddFixedExpenseForm";
+import BudgetCopy from "~features/Budget/ui/molecules/BudgetCopy";
+import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
+import FixedExpenseList from "~features/Budget/ui/organisms/FixedExpenseList";
 
 import type { FixedExpenseTemplateProps } from "./types";
 import { COPY_DEFAULT, LAYOUT } from "./variants";
@@ -108,6 +109,6 @@ const s = StyleSheet.create({
   },
   accent: {
     color: colors.BLUE_NORMAL,
-    fontWeight: "700",
+    ...font.bold,
   },
 });

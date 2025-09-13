@@ -1,18 +1,19 @@
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { onlyNum } from "@/shared/utils/currency";
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
+  NativeSyntheticEvent,
   Pressable,
   StyleSheet,
-  NativeSyntheticEvent,
-  TextInputSelectionChangeEventData,
+  Text,
+  TextInput,
   TextInputKeyPressEventData,
+  TextInputSelectionChangeEventData,
+  View,
 } from "react-native";
-import { colors } from "@/shared/constants/colors";
 import type { AddFixedExpenseFormProps } from "./types";
-import { formTitle, fieldLabels } from "./variants";
-import { onlyNum } from "@/shared/utils/currency";
+import { fieldLabels, formTitle } from "./variants";
 
 type Sel = { start: number; end: number };
 
@@ -203,7 +204,7 @@ export default function AddFixedExpenseForm({
 
 const s = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  title: { fontSize: 16, fontWeight: "700", marginBottom: 16 },
+  title: { fontSize: 16, ...font.bold, marginBottom: 16 },
   label: { marginTop: 12, marginBottom: 6 },
   input: {
     borderWidth: 1,
@@ -224,7 +225,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxOn: { backgroundColor: colors.BLUE_NORMAL },
-  checkMark: { color: "#fff", fontWeight: "700" },
+  checkMark: { color: "#fff", ...font.bold },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -240,5 +241,5 @@ const s = StyleSheet.create({
   },
   primary: { backgroundColor: colors.BLUE_NORMAL },
   ghost: { backgroundColor: "#E9EEFF" },
-  submitTxt: { color: "#fff", fontWeight: "700" },
+  submitTxt: { color: "#fff", ...font.bold },
 });
