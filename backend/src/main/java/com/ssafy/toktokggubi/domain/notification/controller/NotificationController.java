@@ -1,6 +1,7 @@
 // src/main/java/com/ssafy/toktokggubi/domain/ai/controller/AiNotificationController.java
 package com.ssafy.toktokggubi.domain.notification.controller;
 
+import com.ssafy.toktokggubi.domain.notification.dto.NotificationDeleteResponse;
 import com.ssafy.toktokggubi.domain.notification.dto.NotificationListResponse;
 import com.ssafy.toktokggubi.domain.notification.dto.NotificationReadResponse;
 import com.ssafy.toktokggubi.domain.notification.service.NotificationService;
@@ -48,5 +49,15 @@ public class NotificationController {
         String ym = ymResolver.nowYm(); // 현재 달
         int updated = service.markAllUnreadInMonthAsRead(userId, ym);
         return new NotificationReadResponse(updated);
+    }
+
+    /** 🔥 이번 달 알림 전체 삭제 */
+    @DeleteMapping("/notification")
+    public NotificationDeleteResponse deleteThisMonthAll() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
+
+        String ym = ymResolver.nowYm();
+        return service.deleteAllInMonth(userId, ym);
     }
 }

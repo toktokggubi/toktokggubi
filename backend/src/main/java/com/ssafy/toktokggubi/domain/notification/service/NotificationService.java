@@ -1,6 +1,7 @@
 // src/main/java/com/ssafy/toktokggubi/domain/notification/service/NotificationService.java
 package com.ssafy.toktokggubi.domain.notification.service;
 
+import com.ssafy.toktokggubi.domain.notification.dto.NotificationDeleteResponse;
 import com.ssafy.toktokggubi.domain.notification.dto.NotificationItem;
 import com.ssafy.toktokggubi.domain.notification.dto.NotificationListResponse;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
@@ -67,6 +68,12 @@ public class NotificationService {
     private int normalizeLimit(Integer limit) {
         if (limit == null) return 20;
         return Math.max(1, Math.min(limit, 100));
+    }
+    @Transactional
+    public NotificationDeleteResponse deleteAllInMonth(long userId, String ym) {
+        Range r = parseYmToRange(ym); // 이미 있는 yyyyMM → [from, toExclusive) 헬퍼 재사용
+        int deleted = repo.deleteByUserAndPeriod(userId, r.from, r.toExclusive);
+        return new NotificationDeleteResponse(deleted);
     }
 
     /** ym("yyyyMM") → [from, toExclusive) */

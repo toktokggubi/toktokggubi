@@ -121,6 +121,24 @@ public class NotificationRepository {
         return q.executeUpdate();
     }
 
+    public int deleteByUserAndPeriod(long userId,
+                                     java.time.LocalDateTime fromInclusive,
+                                     java.time.LocalDateTime toExclusive) {
+
+        String sql = """
+            DELETE FROM notification_log
+             WHERE user_id = ?1
+               AND sent_at >= ?2
+               AND sent_at <  ?3
+        """;
+
+        return em.createNativeQuery(sql)
+                .setParameter(1, userId)
+                .setParameter(2, java.sql.Timestamp.valueOf(fromInclusive))
+                .setParameter(3,   java.sql.Timestamp.valueOf(toExclusive))
+                .executeUpdate();
+    }
+
 
     /* =========================
        변환 유틸
