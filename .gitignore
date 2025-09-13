@@ -92,3 +92,6 @@ database/data/
 
 # Ignore Jenkins CI/CD files
 jenkins/
+
+# Remove ai data files
+ai/data/

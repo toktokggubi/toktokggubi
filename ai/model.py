@@ -8,36 +8,38 @@ import pandas as pd
 import logging
 
 
+def find_autoencoder_model(uid: str):
+    """Helper function to find and load autoencoder model"""
+    model_path = os.path.join("./model", uid, "_autoencoder_model.h5")
+    if os.path.exists(model_path):
+        return tf.keras.models.load_model(model_path)
+    return None
+
+def find_isolation_forest_model(uid: str):
+    """Helper function to find and load isolation forest model"""
+    model_path = os.path.join("./model", uid, "_isolation_forest_model.joblib")
+    if os.path.exists(model_path):
+        return joblib.load(model_path)
+    return None
+
 class DetectionModel:
     """
     This is a class that encapsulates the combined model of AutoEncoder and Isolation Forest for anomaly detection.
     """
-    def __init__(self, autoencoder=None, isolation_forest=None, uid : str = None):
+    def __init__(self, autoencoder=None, isolation_forest=None, uid: str = None):
         """
-        Initializing for Detection Model.
+        Initialize the Detection Model.
 
         Args:
-            input_dim (int): The dimension of the input data
-            autoencoder(tf.keras.Model, optional): A pre-trained AutoEncoder Model.
+            autoencoder (tf.keras.Model, optional): A pre-trained AutoEncoder Model.
             isolation_forest (sklearn.ensemble.IsolationForest, optional): A pre-trained Isolation Forest Model.
+            uid (str, optional): User ID for model loading/saving.
         """
+        self.autoencoder = autoencoder or find_autoencoder_model(uid) if uid else None
+        self.isolation_forest = isolation_forest or find_isolation_forest_model(uid) if uid else None
+        self.uid = uid
 
-        # search corresponding uid in directory:
-        def find_autoencoder_model(self, uid : str):
-            model_path = os.path.join("./model", uid, "_autoencoder_model.h5")
-            if os.path.exists(model_path):
-                return tf.keras.models.load_model(model_path)
-            return None
-        
-        def find_isolation_forest_model(self, uid : str):
-            model_path = os.path.join("./model", uid, "_isolation_forest_model.joblib")
-            if os.path.exists(model_path):
-                return joblib.load(model_path)
-            return None
-        
-
-        self.autoencoder = find_autoencoder_model(uid)
-        self.isolation_forest = find_isolation_forest_model(uid)
+    
 
 
 
