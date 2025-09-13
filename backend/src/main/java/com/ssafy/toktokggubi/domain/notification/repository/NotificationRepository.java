@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Repository
 public class NotificationRepository {
@@ -94,63 +95,32 @@ public class NotificationRepository {
         return n.longValue();
     }
 
-    /* =========================
-       (기존) 기간 제한 없는 버전 (호환 유지용)
-       ========================= */
-    public List<NotificationItem> findByUserAndReadFilter(long userId, String read, int limit) {
-        StringBuilder sql = new StringBuilder("""
-            SELECT notification_log_id, type, title, body, sent_at, read_at
-            FROM notification_log
-            WHERE user_id = ?1
-        """);
+    // src/main/java/com/ssafy/toktokggubi/domain/notification/repository/NotificationRepository.java
 
-        switch (read == null ? "unread" : read.toLowerCase()) {
-            case "unread" -> sql.append(" AND read_at IS NULL ");
-            case "read"   -> sql.append(" AND read_at IS NOT NULL ");
-            case "all"    -> { /* no condition */ }
-            default       -> sql.append(" AND read_at IS NULL ");
-        }
 
-        sql.append(" ORDER BY sent_at DESC LIMIT ?2");
+    public int markAsRead(long userId, List<Long> ids) {
+        if (ids == null || ids.isEmpty()) return 0;
 
-        @SuppressWarnings("unchecked")
-        List<Object[]> rows = em.createNativeQuery(sql.toString())
-                .setParameter(1, userId)
-                .setParameter(2, limit)
-                .getResultList();
+        String placeholders = java.util.stream.IntStream.range(0, ids.size())
+                .mapToObj(i -> "?" + (i + 2)) // ?2, ?3, ...
+                .collect(java.util.stream.Collectors.joining(","));
 
-        List<NotificationItem> list = new ArrayList<>(rows.size());
-        for (Object[] r : rows) {
-            long id = ((Number) r[0]).longValue();
-            String type = r[1] == null ? "" : r[1].toString();
-            String title = r[2] == null ? "" : r[2].toString();
-            String body = r[3] == null ? "" : r[3].toString();
-            LocalDateTime sentAt = toLdt(r[4]);
-            LocalDateTime readAt = toLdt(r[5]);
-            list.add(new NotificationItem(id, type, title, body, sentAt, readAt));
-        }
-        return list;
+        String sql = ("""
+        UPDATE notification_log
+           SET read_at = NOW()
+         WHERE user_id = ?1
+           AND read_at IS NULL
+           AND notification_log_id IN (%s)
+        """).formatted(placeholders);
+
+        var q = em.createNativeQuery(sql)
+                .setParameter(1, userId);
+        int idx = 2;
+        for (Long id : ids) q.setParameter(idx++, id);
+
+        return q.executeUpdate();
     }
 
-    public long countByUserAndReadFilter(long userId, String read) {
-        StringBuilder sql = new StringBuilder("""
-            SELECT COUNT(*)
-            FROM notification_log
-            WHERE user_id = ?1
-        """);
-
-        switch (read == null ? "unread" : read.toLowerCase()) {
-            case "unread" -> sql.append(" AND read_at IS NULL ");
-            case "read"   -> sql.append(" AND read_at IS NOT NULL ");
-            case "all"    -> { /* no condition */ }
-            default       -> sql.append(" AND read_at IS NULL ");
-        }
-
-        Number n = (Number) em.createNativeQuery(sql.toString())
-                .setParameter(1, userId)
-                .getSingleResult();
-        return n.longValue();
-    }
 
     /* =========================
        변환 유틸
