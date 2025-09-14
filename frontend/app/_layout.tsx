@@ -1,14 +1,14 @@
-import "react-native-gesture-handler";
-import "react-native-reanimated";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+// RootLayout.tsx
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Text, TextInput } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Platform, Text, TextInput } from "react-native";
+import "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -23,9 +23,9 @@ export default function RootLayout() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60_000, // 1분 캐시 신선
-            retry: 1, // 실패 시 1회 재시도
-            refetchOnWindowFocus: false, // 모바일 UX 배려
+            staleTime: 60_000,
+            retry: 1,
+            refetchOnWindowFocus: false,
           },
         },
       })
@@ -34,53 +34,53 @@ export default function RootLayout() {
   useEffect(() => {
     if (!loaded) return;
 
-    // weight → fontFamily 매핑
-    const fontMap: Record<string, string> = {
-      "100": "NotoSansKR_Light",
-      "300": "NotoSansKR_Light",
-      "400": "NotoSansKR_Regular",
-      normal: "NotoSansKR_Regular",
-      "500": "NotoSansKR_Medium",
-      "600": "NotoSansKR_Medium",
-      "700": "NotoSansKR_Bold",
-      bold: "NotoSansKR_Bold",
-    };
+    // Text 전역 기본값
+    const RNText = Text as unknown as {
+      defaultProps?: { style?: any };
+    } & typeof Text;
+    RNText.defaultProps = RNText.defaultProps ?? {};
+    const prevTextStyle = RNText.defaultProps.style;
+    RNText.defaultProps.style = [
+      { fontFamily: "NotoSansKR_Regular" },
+      ...(Array.isArray(prevTextStyle)
+        ? prevTextStyle
+        : prevTextStyle
+        ? [prevTextStyle]
+        : []),
+    ];
 
-    const applyFont = (style: any) => {
-      const styles = Array.isArray(style) ? style.flat() : [style];
-      const merged = Object.assign({}, ...styles);
-
-      if (merged.fontFamily) return merged;
-
-      const weight = String(merged.fontWeight ?? "400");
-      merged.fontFamily = fontMap[weight] ?? "NotoSansKR_Regular";
-      delete merged.fontWeight; // RN 기본 weight 혼선 제거
-      return merged;
-    };
-
-    // Text 오버라이드
-    const T: any = Text;
-    const originalRenderText = T.render ?? T.prototype?.render;
-    T.render = function render(...args: any[]) {
-      const origin = originalRenderText.apply(this, args);
-      return React.cloneElement(origin, {
-        style: applyFont(origin.props.style),
-      });
-    };
-
-    // TextInput 오버라이드
-    const TI: any = TextInput;
-    const originalRenderInput = TI.render ?? TI.prototype?.render;
-    TI.render = function render(...args: any[]) {
-      const origin = originalRenderInput.apply(this, args);
-      return React.cloneElement(origin, {
-        style: applyFont(origin.props.style),
-      });
-    };
+    // TextInput 전역 기본값
+    const RNTextInput = TextInput as unknown as {
+      defaultProps?: { style?: any; placeholderTextColor?: string };
+    } & typeof TextInput;
+    RNTextInput.defaultProps = RNTextInput.defaultProps ?? {};
+    const prevInputStyle = RNTextInput.defaultProps.style;
+    RNTextInput.defaultProps.style = [
+      {
+        fontFamily: "NotoSansKR_Regular",
+        ...(Platform.OS === "android"
+          ? {
+              height: 44,
+              paddingVertical: 0,
+              textAlignVertical: "center" as const,
+              minHeight: 0,
+            }
+          : { height: 44, paddingVertical: 0 }),
+      },
+      ...(Array.isArray(prevInputStyle)
+        ? prevInputStyle
+        : prevInputStyle
+        ? [prevInputStyle]
+        : []),
+    ];
+    // 필요하면 placeholder 전역색
+    // RNTextInput.defaultProps.placeholderTextColor = colors.BLUE_LIGHT_ACTIVE;
   }, [loaded]);
 
+  if (!loaded) return null; // 폰트 로딩 전엔 null로
+
   return (
-    <GestureHandlerRootView>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <QueryClientProvider client={queryClient}>
         <BottomSheetModalProvider>
           <SafeAreaProvider>

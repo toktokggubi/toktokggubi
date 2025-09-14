@@ -1,14 +1,15 @@
+import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import React from "react";
-import { StyleSheet, Text, View, Image, ScrollView } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BudgetSummaryHeaderRow from "~features/Budget/ui/molecules/BudgetSummaryHeaderRow";
 import CategoryBudgetRow from "~features/Budget/ui/molecules/CategoryBudgetRow";
-import FixedExpenseSummaryRow from "~features/Budget/ui/molecules/FixedExpenseSummaryRow";
 import DividerDashed from "~features/Budget/ui/molecules/DividerDashed";
+import FixedExpenseSummaryRow from "~features/Budget/ui/molecules/FixedExpenseSummaryRow";
 import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
 import type { BudgetSummaryTemplateProps } from "./types";
-import { colors } from "@/shared/constants/colors";
-import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 
 export default function BudgetSummaryTemplate({
   month,
@@ -129,7 +130,7 @@ const styles = StyleSheet.create({
   },
   completionText: {
     fontSize: 20,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.GRAY_DARK,
     textAlign: "center",
   },

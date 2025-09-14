@@ -1,3 +1,6 @@
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { krw, onlyNum } from "@/shared/utils/currency";
 import React, { useMemo, useRef, useState } from "react";
 import {
   Image,
@@ -7,9 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { colors } from "@/shared/constants/colors";
 import { CategoryBudgetRowProps } from "./types";
-import { krw, onlyNum } from "@/shared/utils/currency";
 
 export default function CategoryBudgetRow({
   name,
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
   icon: { width: 36, height: 36 },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: colors.GRAY_DARK,
   },
   right: { flexDirection: "row", alignItems: "center" },
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
     minWidth: 90,
     textAlign: "right",
     fontSize: 16,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.GRAY_DARK,
     padding: 0,
     margin: 0,
@@ -121,7 +122,7 @@ const styles = StyleSheet.create({
   won: {
     marginLeft: 4,
     fontSize: 14,
-    fontWeight: "600",
+    ...font.medium,
     color: colors.GRAY_DARK,
   },
 });

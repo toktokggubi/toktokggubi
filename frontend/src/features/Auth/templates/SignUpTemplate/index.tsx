@@ -1,5 +1,6 @@
 import Button from "@/features/Auth/ui/Button";
 import InputField from "@/features/Auth/ui/InputField";
+import { font } from "@/shared/typography/font";
 import { StyleSheet, Text, View } from "react-native";
 import { SignUpTemplateProps } from "./types";
 
@@ -73,7 +74,7 @@ const style = StyleSheet.create({
   },
   introBold: {
     fontSize: 24,
-    fontWeight: "700",
+    ...font.bold,
     color: "#0E3159",
   },
   introNormal: {

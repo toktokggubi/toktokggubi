@@ -1,3 +1,4 @@
+import { font } from "@/shared/typography/font";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { ButtonProps } from "./types";
@@ -47,7 +48,7 @@ const style = StyleSheet.create({
   text: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
   },
   defaultText: {
     color: "#fff",

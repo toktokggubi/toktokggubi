@@ -1,15 +1,19 @@
-import React, { memo } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
 import { colors } from "@/shared/constants/colors";
-import type { FixedExpenseItem } from "~features/Budget/ui/molecules/FixedExpenseRow/types";
+import { font } from "@/shared/typography/font";
 import { krw } from "@/shared/utils/currency";
+import React, { memo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { FixedExpenseItem } from "~features/Budget/ui/molecules/FixedExpenseRow/types";
 
 interface FixedExpenseSummaryRowProps {
   item: FixedExpenseItem;
   onPress?: (item: FixedExpenseItem) => void;
 }
 
-function FixedExpenseSummaryRowImpl({ item, onPress }: FixedExpenseSummaryRowProps) {
+function FixedExpenseSummaryRowImpl({
+  item,
+  onPress,
+}: FixedExpenseSummaryRowProps) {
   return (
     <Pressable
       onPress={() => onPress?.(item)}
@@ -50,7 +54,7 @@ const s = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: colors.GRAY_DARK,
   },
   billingDay: {
@@ -63,7 +67,7 @@ const s = StyleSheet.create({
   },
   amount: {
     fontSize: 16,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.GRAY_DARK,
   },
 });

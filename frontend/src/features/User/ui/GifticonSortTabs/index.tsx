@@ -1,7 +1,8 @@
-import React, { memo } from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
-import type { GifticonSortTabsProps, GifticonSort } from "./types";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React, { memo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import type { GifticonSort, GifticonSortTabsProps } from "./types";
 
 function Tab({
   label,
@@ -70,7 +71,7 @@ const s = StyleSheet.create({
   },
   tabText: {
     fontSize: 12,
-    fontWeight: "bold",
+    ...font.bold,
     lineHeight: 12,
     textAlignVertical: "center",
   },

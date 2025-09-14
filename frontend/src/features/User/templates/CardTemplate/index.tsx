@@ -1,13 +1,14 @@
 // src/features/User/templates/Card/index.tsx
-import React, { useEffect, useRef } from "react";
-import { View, Dimensions, StyleSheet, Text } from "react-native";
-import Carousel from "react-native-snap-carousel";
-import type { CardCarouselTemplateProps, UserCard } from "./types";
-import CardSlide from "@/shared/ui/CardSlide";
+import { useCardBenefits } from "@/features/User/model/benefit/hooks";
+import BenefitsList from "@/features/User/ui/BenefitsList";
 import PagerDots from "@/features/User/ui/PagerDots";
 import { colors } from "@/shared/constants/colors";
-import BenefitsList from "@/features/User/ui/BenefitsList";
-import { useCardBenefits } from "@/features/User/model/benefit/hooks";
+import { font } from "@/shared/typography/font";
+import CardSlide from "@/shared/ui/CardSlide";
+import React, { useEffect, useRef } from "react";
+import { Dimensions, StyleSheet, Text, View } from "react-native";
+import Carousel from "react-native-snap-carousel";
+import type { CardCarouselTemplateProps, UserCard } from "./types";
 
 const { width: SCREEN_W } = Dimensions.get("window");
 const ITEM_W = Math.round(SCREEN_W * 0.68);
@@ -90,7 +91,7 @@ export default function CardCarouselTemplate({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.BACKGROUND_PRIMARY, paddingTop: 20 },
   empty: { alignItems: "center", justifyContent: "center" },
-  emptyText: { color: colors.GRAY_NORMAL, fontSize: 14, fontWeight: "600" },
+  emptyText: { color: colors.GRAY_NORMAL, fontSize: 14, ...font.medium },
 
   // 캐러셀이 콘텐츠 높이만 차지하도록
   carouselContainer: { flex: 0, flexGrow: 0, alignSelf: "stretch" },

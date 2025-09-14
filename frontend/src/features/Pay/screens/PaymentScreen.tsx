@@ -1,22 +1,23 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
-import PaymentTemplate from "../templates/PaymentTemplate";
 import { getUserCards } from "@/features/User/api/cardService";
 import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Text, TouchableOpacity, View } from "react-native";
+import PaymentTemplate from "../templates/PaymentTemplate";
 
 import { useCardBenefits } from "@/features/User/model/benefit/hooks";
 import BenefitsList from "@/features/User/ui/BenefitsList";
 
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 
 import { DUMMY_GIFTICONS } from "@/features/Pay/model/dummyGifticons";
 import type { Gifticon } from "@/shared/types/gifticon";
 
 // real과 mock 교체 - useNearbyPlaces.ts 파일에서 export 부분만 바꾸면 됩니다
-import { useNearbyPlaces } from "@/shared/hooks/useNearbyPlaces";
-import NearbyPlacesBottomSheet from "../ui/NearbyPlacesBottomSheet";
 import type { BottomSheetRef } from "@/features/Auth/ui/BottomSheetList/types";
+import { useNearbyPlaces } from "@/shared/hooks/useNearbyPlaces";
 import type { KakaoPlace } from "@/shared/types/location.types";
+import NearbyPlacesBottomSheet from "../ui/NearbyPlacesBottomSheet";
 
 const KAKAO_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
 
@@ -110,9 +111,7 @@ export default function PaymentScreen() {
     tab === 0 && hasNearby ? (
       <View>
         <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
-        <Text
-          style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
-        >
+        <Text style={{ fontSize: 16, ...font.bold, color: colors.BLUE_DARKER }}>
           {selectedPlace?.place_name ||
             nearbyPlaces[0]?.place_name ||
             "주변 가맹점"}
@@ -140,9 +139,7 @@ export default function PaymentScreen() {
     tab === 1 && hasNearby ? (
       <View>
         <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
-        <Text
-          style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
-        >
+        <Text style={{ fontSize: 16, ...font.bold, color: colors.BLUE_DARKER }}>
           {selectedPlace?.place_name ||
             nearbyPlaces[0]?.place_name ||
             "주변 가맹점"}

@@ -1,11 +1,12 @@
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import { font } from "@/shared/typography/font";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  View,
-  Text,
+  Animated,
+  LayoutChangeEvent,
   Pressable,
   StyleSheet,
-  LayoutChangeEvent,
-  Animated,
+  Text,
+  View,
 } from "react-native";
 import type { SegmentedTabsProps } from "./types";
 
@@ -113,6 +114,6 @@ const styles = StyleSheet.create({
   },
   textSelected: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    ...font.medium,
   },
 });

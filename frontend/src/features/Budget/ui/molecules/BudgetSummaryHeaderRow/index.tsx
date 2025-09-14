@@ -1,7 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import { krw } from "@/shared/utils/currency";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 interface BudgetSummaryHeaderRowProps {
   title: string;
@@ -33,12 +34,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: colors.GRAY_DARK,
   },
   amount: {
     fontSize: 16,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.BLUE_NORMAL,
   },
 });

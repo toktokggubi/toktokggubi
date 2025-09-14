@@ -1,3 +1,4 @@
+import { font } from "@/shared/typography/font";
 import { StyleSheet } from "react-native";
 
 export const makeNextButtonStyles = (tone: "link" | "filled" = "link") =>
@@ -10,7 +11,7 @@ export const makeNextButtonStyles = (tone: "link" | "filled" = "link") =>
     },
     txt: {
       color: tone === "filled" ? "white" : "#3B82F6",
-      fontWeight: "700",
+      ...font.bold,
       fontSize: 14,
     },
     pressed: { opacity: 0.7 },
