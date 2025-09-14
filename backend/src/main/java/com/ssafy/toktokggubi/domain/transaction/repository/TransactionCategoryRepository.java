@@ -1,6 +1,6 @@
 package com.ssafy.toktokggubi.domain.transaction.repository;
 
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryItem;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryItemDto;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
@@ -20,7 +20,7 @@ public class TransactionCategoryRepository {
      * (요약) 특정 월(yyyyMM) 카테고리별 합계/건수.
      * 컨트롤러의 /summary/category 같은 용도
      */
-    public List<TxCategorySummaryItem> groupByCategory(long userId, String ym) {
+    public List<TxCategorySummaryItemDto> groupByCategory(long userId, String ym) {
         String ymPrefix = ym + "%"; // 202509%
 
         @SuppressWarnings("unchecked")
@@ -42,13 +42,13 @@ public class TransactionCategoryRepository {
                 .setParameter(2, ymPrefix)
                 .getResultList();
 
-        List<TxCategorySummaryItem> result = new ArrayList<>(rows.size());
+        List<TxCategorySummaryItemDto> result = new ArrayList<>(rows.size());
         for (Object[] row : rows) {
             long categoryId   = toLong(row[0]);
             String categoryNm = row[1] == null ? "" : row[1].toString();
             long amount       = toLong(row[2]);
             long count        = toLong(row[3]);
-            result.add(new TxCategorySummaryItem(categoryId, categoryNm, amount, count));
+            result.add(new TxCategorySummaryItemDto(categoryId, categoryNm, amount, count));
         }
         return result;
     }

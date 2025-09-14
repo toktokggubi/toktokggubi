@@ -1,9 +1,9 @@
 // src/main/java/com/ssafy/toktokggubi/domain/ai/controller/AiNotificationController.java
 package com.ssafy.toktokggubi.domain.notification.controller;
 
-import com.ssafy.toktokggubi.domain.notification.dto.NotificationDeleteResponse;
-import com.ssafy.toktokggubi.domain.notification.dto.NotificationListResponse;
-import com.ssafy.toktokggubi.domain.notification.dto.NotificationReadResponse;
+import com.ssafy.toktokggubi.domain.notification.dto.NotificationDeleteResponseDto;
+import com.ssafy.toktokggubi.domain.notification.dto.NotificationListResponseDto;
+import com.ssafy.toktokggubi.domain.notification.dto.NotificationReadResponseDto;
 import com.ssafy.toktokggubi.domain.notification.service.NotificationService;
 
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
@@ -26,34 +26,31 @@ public class NotificationController {
     private final YmResolver ymResolver;
 
     @GetMapping("/notification")
-    public NotificationListResponse listRecent(
-
-    ) {
+    public NotificationListResponseDto listRecent() {
         Long userId = SecurityUtils.currentUserIdOrNull();
         if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
-        log.info("current userId = {}", SecurityUtils.currentUserIdOrNull());
-        // 기본값 내부 적용
+
         final String read = "all";
         final Integer limit = 20;
 
         String ym = ymResolver.nowYm();
-        return service.listByReadFilter(userId, read, limit, ym);
+        return service.getMonthlyNotifications(userId, ym, read, limit);
     }
 
     // 읽음 처리 (read_at 채우기)
     @PatchMapping("/notification/read")
-    public NotificationReadResponse markRead() {
+    public NotificationReadResponseDto markRead() {
         Long userId = SecurityUtils.currentUserIdOrNull();
         if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
-        log.info("current userId = {}", SecurityUtils.currentUserIdOrNull());
-        String ym = ymResolver.nowYm(); // 현재 달
-        int updated = service.markAllUnreadInMonthAsRead(userId, ym);
-        return new NotificationReadResponse(updated);
+
+        String ym = ymResolver.nowYm();
+        int updated = service.markMonthlyUnreadAsRead(userId, ym);
+        return new NotificationReadResponseDto(updated);
     }
 
-    /** 🔥 이번 달 알림 전체 삭제 */
+    // 이번 달 알림 삭제 처리
     @DeleteMapping("/notification")
-    public NotificationDeleteResponse deleteThisMonthAll() {
+    public NotificationDeleteResponseDto deleteThisMonthAll() {
         Long userId = SecurityUtils.currentUserIdOrNull();
         if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
 

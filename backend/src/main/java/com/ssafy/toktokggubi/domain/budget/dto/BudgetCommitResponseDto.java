@@ -4,7 +4,7 @@ package com.ssafy.toktokggubi.domain.budget.dto;
 /**
  * /budget/commit 응답
  */
-public record BudgetCommitResponse(
+public record BudgetCommitResponseDto(
         String status,            // "COMMITTED"
         Long budgetId,
         Long userId,
@@ -13,7 +13,7 @@ public record BudgetCommitResponse(
         Integer fixedExpenseCount,
         Integer categoryCount
 ) {
-    public static BudgetCommitResponse committed(Long id, Long uid, String ym, Long total, int fe, int cat) {
-        return new BudgetCommitResponse("COMMITTED", id, uid, ym, total, fe, cat);
+    public static BudgetCommitResponseDto committed(Long id, Long uid, String ym, Long total, int fe, int cat) {
+        return new BudgetCommitResponseDto("COMMITTED", id, uid, ym, total, fe, cat);
     }
 }

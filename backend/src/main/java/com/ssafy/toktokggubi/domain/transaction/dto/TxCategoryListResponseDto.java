@@ -3,7 +3,7 @@ package com.ssafy.toktokggubi.domain.transaction.dto;
 
 import java.util.List;
 
-public record TxCategoryListResponse(
+public record TxCategoryListResponseDto(
         long userId,
         String period, // "current"
         PeriodRange range,

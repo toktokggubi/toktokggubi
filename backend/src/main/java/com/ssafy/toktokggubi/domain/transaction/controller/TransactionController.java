@@ -1,26 +1,19 @@
 package com.ssafy.toktokggubi.domain.transaction.controller;
 
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponse;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponse;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponse;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponseDto;
 import com.ssafy.toktokggubi.domain.transaction.service.TransactionService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.w3c.dom.ranges.Range;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @RestController
@@ -35,7 +28,7 @@ public class TransactionController {
     // ---- TX-1 이번 달 소비 금액 조회 (전체) ----
     @GetMapping("/summary")
 
-    public TxSummaryResponse getMonthlySummary(
+    public TxSummaryResponseDto getMonthlySummary(
             @RequestParam(name = "from", required = false) String fromStr,
             @RequestParam(name = "to",   required = false) String toStr
     ) {
@@ -67,7 +60,7 @@ long userId = SecurityUtils.currentUserIdOrNull();
     // ---- TX-1 이번 달 소비 금액 조회 (카테고리별) ----
     @GetMapping("/summary/category")
 
-    public TxCategorySummaryResponse getMonthlyByCategory() {
+    public TxCategorySummaryResponseDto getMonthlyByCategory() {
         long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         return service.getMonthlyByCategory(userId, ym);
@@ -76,7 +69,7 @@ long userId = SecurityUtils.currentUserIdOrNull();
     // 카테고리별 거래 목록(이번 달) — userId만 필수, sizePerCategory는 선택(기본 2)
     @GetMapping("/category")
 
-    public TxCategoryListResponse getCurrentMonthCategoryList(
+    public TxCategoryListResponseDto getCurrentMonthCategoryList(
 
     ) {
         long userId=SecurityUtils.currentUserIdOrNull();

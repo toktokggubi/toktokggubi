@@ -1,8 +1,8 @@
 package com.ssafy.toktokggubi.domain.transaction.service;
 
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponse;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponse;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponse;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponseDto;
 import com.ssafy.toktokggubi.domain.transaction.repository.TransactionCategoryRepository;
 import com.ssafy.toktokggubi.domain.transaction.repository.TransactionSummaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,13 +26,13 @@ public class TransactionService {
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE; // 2025-09-01
 
     /** 임의 기간(여러 달 가능) 합계 */
-    public TxSummaryResponse getSummaryByRange(long userId, LocalDate from, LocalDate to) {
+    public TxSummaryResponseDto getSummaryByRange(long userId, LocalDate from, LocalDate to) {
         var row = summaryRepo.sumForUserRange(
                 userId,
                 from.format(YMD),
                 to.format(YMD)
         );
-        return new TxSummaryResponse(
+        return new TxSummaryResponseDto(
                 from.format(ISO),
                 to.format(ISO),
                 row.totalAmount(),
@@ -42,24 +42,24 @@ public class TransactionService {
 
 
     // 기존 TransactionService에 메서드 하나 추가
-    public TxCategorySummaryResponse getMonthlyByCategory(long userId, String ym) {
+    public TxCategorySummaryResponseDto getMonthlyByCategory(long userId, String ym) {
         var items = categoryRepo.groupByCategory(userId, ym); // 레포에서 집계
-        return new TxCategorySummaryResponse(ym, items);
+        return new TxCategorySummaryResponseDto(ym, items);
     }
 
     /** 이번 달 카테고리별 거래 목록 (sizePerCategory=2 고정 대신, 필요 시 파라미터로 바꿔도 됨) */
-    public TxCategoryListResponse getCurrentMonthCategoryList(long userId, String ym) {
+    public TxCategoryListResponseDto getCurrentMonthCategoryList(long userId, String ym) {
         String fromYmd = firstDayYmd(ym); // e.g. 20250901
         String toYmd   = lastDayYmd(ym);  // e.g. 20250930
 
         var totals = categoryRepo.findCategoryTotals(userId, fromYmd, toYmd);
         var allTx  = categoryRepo.findCategoryAllTransactions(userId, fromYmd, toYmd);
 
-        Map<Long, List<TxCategoryListResponse.TxItem>> itemsByCat = allTx.stream()
+        Map<Long, List<TxCategoryListResponseDto.TxItem>> itemsByCat = allTx.stream()
                 .collect(Collectors.groupingBy(
                         TransactionCategoryRepository.CategoryTxRow::categoryId,
                         LinkedHashMap::new,
-                        Collectors.mapping(r -> new TxCategoryListResponse.TxItem(
+                        Collectors.mapping(r -> new TxCategoryListResponseDto.TxItem(
                                 r.transactionUniqueNo(),
                                 toIsoDateTime(r.ymd(), r.hms()),
                                 r.amount(),
@@ -71,18 +71,18 @@ public class TransactionService {
                         ), Collectors.toList())
                 ));
 
-        List<TxCategoryListResponse.CategoryBlock> blocks = new ArrayList<>();
+        List<TxCategoryListResponseDto.CategoryBlock> blocks = new ArrayList<>();
         for (var t : totals) {
-            blocks.add(new TxCategoryListResponse.CategoryBlock(
+            blocks.add(new TxCategoryListResponseDto.CategoryBlock(
                     t.categoryId(), t.categoryName(), t.totalAmount(), t.count(),
                     itemsByCat.getOrDefault(t.categoryId(), List.of())
             ));
         }
 
-        return new TxCategoryListResponse(
+        return new TxCategoryListResponseDto(
                 userId,
                 "current",
-                new TxCategoryListResponse.PeriodRange(fromYmd, toYmd),
+                new TxCategoryListResponseDto.PeriodRange(fromYmd, toYmd),
                 blocks
         );
     }

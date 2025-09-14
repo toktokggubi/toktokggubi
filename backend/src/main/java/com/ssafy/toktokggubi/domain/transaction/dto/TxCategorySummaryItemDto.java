@@ -1,6 +1,6 @@
 package com.ssafy.toktokggubi.domain.transaction.dto;
 
-public record TxCategorySummaryItem(
+public record TxCategorySummaryItemDto(
         long categoryId,
         String categoryName,
         long amount,
