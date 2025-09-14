@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 
 @RestController
@@ -32,14 +31,20 @@ public class TransactionController {
             @RequestParam(name = "from", required = false) String fromStr,
             @RequestParam(name = "to",   required = false) String toStr
     ) {
+
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
+
         LocalDate from;
         LocalDate to;
         // from/to가 없으면 현재달 1~말일로 기본 처리
         if (fromStr == null && toStr == null) {
-            // 이번 달 1일 ~ 말일
-            YearMonth ym = YearMonth.parse(ymResolver.nowYm(), DateTimeFormatter.ofPattern("yyyyMM"));
-            from = ym.atDay(1);
-            to   = ym.atEndOfMonth();
+            // 이번 달 1일 ~ 말일 (YearMonth 없이 계산)
+            String ym = ymResolver.nowYm(); // "yyyyMM"
+            int y = Integer.parseInt(ym.substring(0, 4));
+            int m = Integer.parseInt(ym.substring(4, 6));
+            from = LocalDate.of(y, m, 1);
+            to   = LocalDate.of(y, m, 1).withDayOfMonth(LocalDate.of(y, m, 1).lengthOfMonth());
         } else if (fromStr != null && toStr != null) {
             from = parseFlexibleDate(fromStr);
             to   = parseFlexibleDate(toStr);
@@ -52,7 +57,7 @@ public class TransactionController {
                     "Both 'from' and 'to' are required together (yyyyMMdd or yyyy-MM-dd), or omit both."
             );
         }
-long userId = SecurityUtils.currentUserIdOrNull();
+
         return service.getSummaryByRange(userId, from, to);
 
     }
@@ -61,7 +66,9 @@ long userId = SecurityUtils.currentUserIdOrNull();
     @GetMapping("/summary/category")
 
     public TxCategorySummaryResponseDto getMonthlyByCategory() {
-        long userId = SecurityUtils.currentUserIdOrNull();
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
+
         String ym = ymResolver.nowYm();
         return service.getMonthlyByCategory(userId, ym);
     }
@@ -72,7 +79,9 @@ long userId = SecurityUtils.currentUserIdOrNull();
     public TxCategoryListResponseDto getCurrentMonthCategoryList(
 
     ) {
-        long userId=SecurityUtils.currentUserIdOrNull();
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 필요");
+
         String ym = ymResolver.nowYm();
         return service.getCurrentMonthCategoryList(userId, ym); // 내부에서 이번 달 계산
 
