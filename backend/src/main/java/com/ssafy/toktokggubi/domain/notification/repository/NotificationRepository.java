@@ -15,7 +15,7 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
     @Query(value = """
         SELECT notification_log_id, type, title, body, sent_at, read_at
           FROM notification_log
-         WHERE user_id = :uid
+         WHERE user_id = :userId
            AND sent_at >= :from
            AND sent_at <  :to
            AND (
@@ -27,7 +27,7 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
          LIMIT :limit
     """, nativeQuery = true)
     List<Object[]> findItemsByUserReadAndPeriod(
-            @Param("uid") long userId,
+            @Param("userId") long userId,
             @Param("read") String read,
             @Param("from") LocalDateTime fromInclusive,
             @Param("to") LocalDateTime toExclusive,
@@ -37,7 +37,7 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
     @Query(value = """
         SELECT COUNT(*)
           FROM notification_log
-         WHERE user_id = :uid
+         WHERE user_id = :userId
            AND sent_at >= :from
            AND sent_at <  :to
            AND (
@@ -47,7 +47,7 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
            )
     """, nativeQuery = true)
     long countByUserReadAndPeriod(
-            @Param("uid") long userId,
+            @Param("userId") long userId,
             @Param("read") String read,
             @Param("from") LocalDateTime fromInclusive,
             @Param("to") LocalDateTime toExclusive
@@ -58,12 +58,12 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
     @Query(value = """
         UPDATE notification_log
            SET read_at = NOW()
-         WHERE user_id = :uid
+         WHERE user_id = :userId
            AND read_at IS NULL
            AND notification_log_id IN (:ids)
     """, nativeQuery = true)
     int markAsRead(
-            @Param("uid") long userId,
+            @Param("userId") long userId,
             @Param("ids") List<Long> ids
     );
 
@@ -71,12 +71,12 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
     @Modifying
     @Query(value = """
         DELETE FROM notification_log
-         WHERE user_id = :uid
+         WHERE user_id = :userId
            AND sent_at >= :from
            AND sent_at <  :to
     """, nativeQuery = true)
     int deleteByUserAndPeriod(
-            @Param("uid") long userId,
+            @Param("userId") long userId,
             @Param("from") LocalDateTime fromInclusive,
             @Param("to") LocalDateTime toExclusive
     );
