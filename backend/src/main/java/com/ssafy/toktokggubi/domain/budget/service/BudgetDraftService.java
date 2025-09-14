@@ -3,7 +3,7 @@ package com.ssafy.toktokggubi.domain.budget.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.dto.CategoryAllocDto;
-import com.ssafy.toktokggubi.domain.budget.dto.DraftPatchRequest;
+import com.ssafy.toktokggubi.domain.budget.dto.DraftPatchRequestDto;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftSnapshotDto;
 import com.ssafy.toktokggubi.domain.budget.dto.FixedExpenseDto;
 import com.ssafy.toktokggubi.domain.budget.exception.BudgetException;
@@ -74,7 +74,7 @@ public class BudgetDraftService {
      *
      * ⚠ get→set 분리라 강한 원자성은 부족. 동시요청이 많다면 WATCH/MULTI 또는 Lua(CAS) 권장.
      */
-    public DraftSnapshotDto mergeAndSave(long userId, String budgetYm, DraftPatchRequest req) {
+    public DraftSnapshotDto mergeAndSave(long userId, String budgetYm, DraftPatchRequestDto req) {
         DraftSnapshotDto cur = getOrCreate(userId, budgetYm);
 
         // 1) 버전 체크

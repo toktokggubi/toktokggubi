@@ -7,9 +7,6 @@ import com.ssafy.toktokggubi.domain.budget.service.BudgetDraftService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -30,15 +27,15 @@ public class BudgetController {
     // import 생략: Operation, ApiResponse, ApiResponses 등
 
     @PostMapping("/draft/save/total")
-    public DraftSaveResponse saveDraftTotal(
-            @RequestBody DraftTotalRequest req) {
+    public DraftSaveResponseDto saveDraftTotal(
+            @RequestBody DraftTotalRequestDto req) {
 
 
         Long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
 
 
-        DraftPatchRequest patch = new DraftPatchRequest(
+        DraftPatchRequestDto patch = new DraftPatchRequestDto(
                 null,                       // expectedVersion 없음
                 req.totalAmount(),          // totalAmount만 세팅
                 null, null, null
@@ -47,10 +44,10 @@ public class BudgetController {
     }
 
     @PostMapping("/draft/save/fixed")
-    public DraftSaveResponse saveDraftFixed(
-                                            @RequestBody DraftFixedRequest  req) {
+    public DraftSaveResponseDto saveDraftFixed(
+                                            @RequestBody DraftFixedRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
-        DraftPatchRequest patch = new DraftPatchRequest(
+        DraftPatchRequestDto patch = new DraftPatchRequestDto(
                 req.expectedVersion(),
                 null,
                 req.fixedExpenses(),
@@ -61,11 +58,11 @@ public class BudgetController {
     }
 
     @PostMapping("/draft/save/categories")
-    public DraftSaveResponse saveDraftCategories(
+    public DraftSaveResponseDto saveDraftCategories(
 
-                                                 @RequestBody DraftCategoriesRequest  req) {
+                                                 @RequestBody DraftCategoriesRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
-        DraftPatchRequest patch = new DraftPatchRequest(
+        DraftPatchRequestDto patch = new DraftPatchRequestDto(
                 req.expectedVersion(),
                 null,
                 null,
@@ -77,10 +74,10 @@ public class BudgetController {
 
     /* 공통 저장 로직 (현재 달 고정) */
     /* 공통 저장 로직 (현재 달 고정) */
-    private DraftSaveResponse doSave(Long userId, DraftPatchRequest req) {
+    private DraftSaveResponseDto doSave(Long userId, DraftPatchRequestDto req) {
         String ym = ymResolver.nowYm();
         var snap = draftService.mergeAndSave(userId, ym, req);
-        return new DraftSaveResponse(
+        return new DraftSaveResponseDto(
                 "budget:draft:%d:%s".formatted(userId, ym),
                 snap.version(),
                 snap,
@@ -90,7 +87,7 @@ public class BudgetController {
 
     // BD-6 마지막 버튼 (commit)
     @PostMapping("/commit")
-    public BudgetCommitResponse commit(
+    public BudgetCommitResponseDto commit(
             ) {
         Long userId =SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();                       // ✅ 항상 현재 달

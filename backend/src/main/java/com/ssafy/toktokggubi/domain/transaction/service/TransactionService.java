@@ -1,19 +1,18 @@
 package com.ssafy.toktokggubi.domain.transaction.service;
 
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponse;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponse;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponse;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryItemDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponseDto;
 import com.ssafy.toktokggubi.domain.transaction.repository.TransactionCategoryRepository;
 import com.ssafy.toktokggubi.domain.transaction.repository.TransactionSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
-import java.util.LinkedHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -25,92 +24,137 @@ public class TransactionService {
     private static final DateTimeFormatter YMD = DateTimeFormatter.BASIC_ISO_DATE; // 20250901
     private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE; // 2025-09-01
 
-    /** 임의 기간(여러 달 가능) 합계 */
-    public TxSummaryResponse getSummaryByRange(long userId, LocalDate from, LocalDate to) {
-        var row = summaryRepo.sumForUserRange(
+    /** 임의 기간 합계 */
+    public TxSummaryResponseDto getSummaryByRange(long userId, LocalDate from, LocalDate to) {
+        Object[] row = summaryRepo.sumForUserRange(
                 userId,
-                from.format(YMD),
-                to.format(YMD)
+                from.format(YMD),  // "yyyyMMdd"
+                to.format(YMD)     // "yyyyMMdd"
         );
-        return new TxSummaryResponse(
-                from.format(ISO),
+
+        long totalAmount = toLong(row, 0);
+        long totalCount  = toLong(row, 1);
+
+        return new TxSummaryResponseDto(
+                from.format(ISO),  // "yyyy-MM-dd"
                 to.format(ISO),
-                row.totalAmount(),
-                row.totalCount()
+                totalAmount,
+                totalCount
         );
     }
 
+    /** 이번 달 카테고리별 합계/건수 요약 */
+    public TxCategorySummaryResponseDto getMonthlyByCategory(long userId, String ym) {
+        String ymPrefix = ym + "%";
+        var rows = categoryRepo.groupByCategoryRaw(userId, ymPrefix);
 
-    // 기존 TransactionService에 메서드 하나 추가
-    public TxCategorySummaryResponse getMonthlyByCategory(long userId, String ym) {
-        var items = categoryRepo.groupByCategory(userId, ym); // 레포에서 집계
-        return new TxCategorySummaryResponse(ym, items);
+        List<TxCategorySummaryItemDto> items = new ArrayList<>(rows.size());
+        for (Object[] r : rows) {
+            items.add(new TxCategorySummaryItemDto(
+                    toLong(r[0]),
+                    str(r[1]),
+                    toLong(r[2]),
+                    toLong(r[3])
+            ));
+        }
+        return new TxCategorySummaryResponseDto(ym, items);
     }
 
-    /** 이번 달 카테고리별 거래 목록 (sizePerCategory=2 고정 대신, 필요 시 파라미터로 바꿔도 됨) */
-    public TxCategoryListResponse getCurrentMonthCategoryList(long userId, String ym) {
-        String fromYmd = firstDayYmd(ym); // e.g. 20250901
-        String toYmd   = lastDayYmd(ym);  // e.g. 20250930
+    /** 이번 달 카테고리별 거래 목록 (프론트에서 sizePerCategory 잘라씀) */
+    public TxCategoryListResponseDto getCurrentMonthCategoryList(long userId, String ym) {
+        String fromYmd = firstDayYmd(ym);
+        String toYmd   = lastDayYmd(ym);
 
-        var totals = categoryRepo.findCategoryTotals(userId, fromYmd, toYmd);
-        var allTx  = categoryRepo.findCategoryAllTransactions(userId, fromYmd, toYmd);
+        // 상단 합계 블록
+        var totalsRows = categoryRepo.findCategoryTotalsRaw(userId, fromYmd, toYmd);
 
-        Map<Long, List<TxCategoryListResponse.TxItem>> itemsByCat = allTx.stream()
+        // 전체 거래 행
+        var txRows = categoryRepo.findCategoryAllTransactionsRaw(userId, fromYmd, toYmd);
+
+        // categoryId -> 거래목록 매핑
+        Map<Long, List<TxCategoryListResponseDto.TxItem>> itemsByCat = txRows.stream()
                 .collect(Collectors.groupingBy(
-                        TransactionCategoryRepository.CategoryTxRow::categoryId,
+                        r -> toLong(r[0]),                            // categoryId
                         LinkedHashMap::new,
-                        Collectors.mapping(r -> new TxCategoryListResponse.TxItem(
-                                r.transactionUniqueNo(),
-                                toIsoDateTime(r.ymd(), r.hms()),
-                                r.amount(),
-                                r.cardStatus(),
-                                r.merchantId(),
-                                r.merchantName(),
-                                r.userCardId(),
-                                r.cardName()
+                        Collectors.mapping(r -> new TxCategoryListResponseDto.TxItem(
+                                str(r[2]),                             // txNo
+                                toIsoDateTime(str(r[3]), str(r[4])),  // ymd/hms -> ISO
+                                toLong(r[5]),                          // amount
+                                str(r[6]),                             // cardStatus
+                                toLong(r[7]),                          // merchantId
+                                str(r[8]),                             // merchantName
+                                toLong(r[9]),                          // userCardId
+                                str(r[10])                             // cardName
                         ), Collectors.toList())
                 ));
 
-        List<TxCategoryListResponse.CategoryBlock> blocks = new ArrayList<>();
-        for (var t : totals) {
-            blocks.add(new TxCategoryListResponse.CategoryBlock(
-                    t.categoryId(), t.categoryName(), t.totalAmount(), t.count(),
-                    itemsByCat.getOrDefault(t.categoryId(), List.of())
+        // 카테고리 블록 조립
+        List<TxCategoryListResponseDto.CategoryBlock> blocks = new ArrayList<>(totalsRows.size());
+        for (Object[] t : totalsRows) {
+            long catId      = toLong(t[0]);
+            String catName  = str(t[1]);
+            long totalAmt   = toLong(t[2]);
+            long cnt        = toLong(t[3]);
+            blocks.add(new TxCategoryListResponseDto.CategoryBlock(
+                    catId, catName, totalAmt, cnt,
+                    itemsByCat.getOrDefault(catId, List.of())
             ));
         }
 
-        return new TxCategoryListResponse(
+        return new TxCategoryListResponseDto(
                 userId,
                 "current",
-                new TxCategoryListResponse.PeriodRange(fromYmd, toYmd),
+                new TxCategoryListResponseDto.PeriodRange(fromYmd, toYmd),
                 blocks
         );
     }
 
-    // --- helpers (YearMonth 안 씀) ---
-    private String firstDayYmd(String ym) {
+    /* ---------- helpers ---------- */
+    private static long toLong(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof Long l) return l;
+        if (o instanceof Integer i) return i.longValue();
+        if (o instanceof java.math.BigInteger bi) return bi.longValue();
+        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
+        if (o instanceof Number n) return n.longValue();
+        try { return Long.parseLong(o.toString()); } catch (Exception e) { return 0L; }
+    }
+
+    private static String str(Object o) { return o == null ? "" : o.toString(); }
+
+    private static String toIsoDateTime(String ymd, String hms) {
+        // ymd: YYYYMMDD, hms: HHMMSS
+        return ymd.substring(0,4) + "-" + ymd.substring(4,6) + "-" + ymd.substring(6,8)
+                + "T" + hms.substring(0,2) + ":" + hms.substring(2,4) + ":" + hms.substring(4,6);
+    }
+
+    private static void requireYm(String ym) {
+        if (ym == null || !ym.matches("\\d{6}")) {
+            throw new IllegalArgumentException("ym must be yyyyMM");
+        }
+    }
+
+    private static String firstDayYmd(String ym) {
         requireYm(ym);
         int y = Integer.parseInt(ym.substring(0, 4));
         int m = Integer.parseInt(ym.substring(4, 6));
         return String.format("%04d%02d01", y, m);
     }
 
-    private String lastDayYmd(String ym) {
+    private static String lastDayYmd(String ym) {
         requireYm(ym);
         int y = Integer.parseInt(ym.substring(0, 4));
         int m = Integer.parseInt(ym.substring(4, 6));
         int last = java.time.LocalDate.of(y, m, 1).lengthOfMonth();
         return String.format("%04d%02d%02d", y, m, last);
     }
-
-    private void requireYm(String ym) {
-        if (ym == null || !ym.matches("\\d{6}")) {
-            throw new IllegalArgumentException("ym must be yyyyMM");
-        }
+    private static long toLong(Object[] row, int idx) {
+        if (row == null || row.length <= idx || row[idx] == null) return 0L;
+        Object o = row[idx];
+        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
+        if (o instanceof java.math.BigInteger bi) return bi.longValue();
+        if (o instanceof Number n) return n.longValue();
+        try { return Long.parseLong(o.toString()); } catch (Exception e) { return 0L; }
     }
 
-    private static String toIsoDateTime(String ymd, String hms) {
-        return ymd.substring(0,4) + "-" + ymd.substring(4,6) + "-" + ymd.substring(6,8)
-                + "T" + hms.substring(0,2) + ":" + hms.substring(2,4) + ":" + hms.substring(4,6);
-    }
 }

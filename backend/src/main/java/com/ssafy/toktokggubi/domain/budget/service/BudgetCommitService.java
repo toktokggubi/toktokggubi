@@ -1,7 +1,7 @@
 package com.ssafy.toktokggubi.domain.budget.service;
 
 import com.ssafy.toktokggubi.domain.budget.dto.CategoryAllocDto;
-import com.ssafy.toktokggubi.domain.budget.dto.BudgetCommitResponse;
+import com.ssafy.toktokggubi.domain.budget.dto.BudgetCommitResponseDto;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftSnapshotDto;
 import com.ssafy.toktokggubi.domain.budget.dto.FixedExpenseDto;
 import com.ssafy.toktokggubi.domain.budget.entity.BudgetCategory;
@@ -28,7 +28,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,7 +43,7 @@ public class BudgetCommitService {
     private EntityManager em;
 
     @Transactional
-    public BudgetCommitResponse commit(Long userId, String budgetYm, Integer expectedVersion) {
+    public BudgetCommitResponseDto commit(Long userId, String budgetYm, Integer expectedVersion) {
 
         // 1) 중복 커밋 방지 (User 로드 없이 검사)
         if (umbRepo.existsByUser_UserIdAndBudgetYm(userId, budgetYm)) {
@@ -127,7 +126,7 @@ public class BudgetCommitService {
             draftService.delete(userId, budgetYm);
 
             // 9) 응답
-            return BudgetCommitResponse.committed(
+            return BudgetCommitResponseDto.committed(
                     umb.getUserMonthlyBudgetId(),
                     userId,
                     budgetYm,
