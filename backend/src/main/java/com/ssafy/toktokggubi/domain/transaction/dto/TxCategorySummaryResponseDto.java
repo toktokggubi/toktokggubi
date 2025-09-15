@@ -2,8 +2,8 @@ package com.ssafy.toktokggubi.domain.transaction.dto;
 
 import java.util.List;
 
-public record TxCategorySummaryResponse(
+public record TxCategorySummaryResponseDto(
         String month,
-        List<TxCategorySummaryItem> categories
+        List<TxCategorySummaryItemDto> categories
 ) {}
 

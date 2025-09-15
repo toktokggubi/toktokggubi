@@ -1,6 +1,6 @@
 package com.ssafy.toktokggubi.domain.budget.dto;
 
-public record DraftSaveResponse (
+public record DraftSaveResponseDto(
         String draftId,
         Integer version,
         DraftSnapshotDto snapshot,
