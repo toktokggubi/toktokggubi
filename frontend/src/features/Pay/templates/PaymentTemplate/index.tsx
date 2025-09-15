@@ -6,6 +6,7 @@ import {
   Dimensions,
   TouchableOpacity,
   PanResponder,
+  ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -41,10 +42,11 @@ function PaymentTemplate({
   onActiveGifticonChange,
   gifticonTopSection,
   gifticonBottomSection,
+  refreshControl,
 }: PaymentTemplateProps) {
   const router = useRouter();
   const carouselRef = useRef<Carousel<UserCard> | null>(null);
-  const [currentCardIndex, setCurrentCardIndex] = useState(activeCardIndex);
+  const isInitialized = useRef(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleBack = () => {
@@ -53,10 +55,14 @@ function PaymentTemplate({
 
   // 스와이프 제스처 처리
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => !isTransitioning,
+    onStartShouldSetPanResponder: () => {
+      
+      return !isTransitioning;
+    },
     onMoveShouldSetPanResponder: (evt, gestureState) => {
       // 수평 스와이프만 감지 (세로 스와이프는 무시)
-      return !isTransitioning && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      const shouldSet = !isTransitioning && Math.abs(gestureState.dx) > Math.abs(gestureState.dy) && Math.abs(gestureState.dx) > 10;
+      return shouldSet;
     },
     onPanResponderGrant: () => {
       // 제스처 시작 시 즉시 반응
@@ -107,14 +113,43 @@ function PaymentTemplate({
   useEffect(() => {
     if (!carouselRef.current) return;
     if (cards.length === 0) return;
+    
     const clamped = Math.max(0, Math.min(activeCardIndex, cards.length - 1));
-    carouselRef.current.snapToItem(clamped, false);
-    setCurrentCardIndex(clamped);
-  }, [activeCardIndex, cards.length]);
+    
+    
+    // 현재 캐러셀 인덱스 확인
+    const currentIndex = carouselRef.current.currentIndex;
+    
+    // 이미 올바른 위치에 있으면 스냅하지 않음
+    if (currentIndex === clamped) {
+      return;
+    }
+    
+    // 캐러셀이 준비될 때까지 약간의 지연
+    setTimeout(() => {
+      if (carouselRef.current) {
+        carouselRef.current.snapToItem(clamped, true);
+      }
+    }, 100);
+  }, [activeCardIndex]);
+
+  // 카드 탭으로 돌아올 때 activeCardIndex로 스냅
+  useEffect(() => {
+    if (selectedTab === 0 && carouselRef.current && cards.length > 0) {
+      const clamped = Math.max(0, Math.min(activeCardIndex, cards.length - 1));
+      
+      
+      // 약간의 지연 후 스냅
+      setTimeout(() => {
+        if (carouselRef.current) {
+          carouselRef.current.snapToItem(clamped, true);
+        }
+      }, 200); // 200ms 지연
+    }
+  }, [selectedTab, activeCardIndex, cards.length]);
 
   // 카드 인덱스 변경 처리
   const handleCardChange = (index: number) => {
-    setCurrentCardIndex(index);
     const id = cards[index]?.userCardId;
     if (id != null) onActiveCardChange?.(index, id);
   };
@@ -154,6 +189,14 @@ function PaymentTemplate({
         />
       </View>
 
+      {/* ScrollView로 감싸서 Pull-to-Refresh 지원 */}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={refreshControl}
+        showsVerticalScrollIndicator={false}
+      >
+
       {/* 카드 탭일 때 카드 캐러셀 표시 */}
       {selectedTab === 0 ? (
         cards.length === 0 ? (
@@ -184,8 +227,14 @@ function PaymentTemplate({
                   : String(index)
               }
               containerCustomStyle={styles.carouselContainer}
+              style={{ opacity: selectedTab === 0 ? 1 : 0, height: selectedTab === 0 ? 'auto' : 0 }}
             />
-            <PagerDots length={cards.length} activeIndex={currentCardIndex} />
+            <View style={{ opacity: selectedTab === 0 ? 1 : 0, height: selectedTab === 0 ? 'auto' : 0 }}>
+              <PagerDots 
+                length={cards.length} 
+                activeIndex={activeCardIndex} 
+              />
+            </View>
             {benefitsSection ? (
               <View style={{ marginTop: 8, marginBottom: 12 }} {...panResponder.panHandlers}>
                 {benefitsSection}
@@ -249,6 +298,7 @@ function PaymentTemplate({
           </View>
         </View>
       )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -282,6 +332,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   cardContainer: {
     flex: 1,
