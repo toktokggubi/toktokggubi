@@ -50,16 +50,28 @@ public class UserAuthService {
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
                 .nickname("사용자")
-                .gender(Gender.M) // 스키마 NOT NULL → 기본값 (UNKNOWN 권장)
+                .gender(Gender.M)
                 .status(UserStatus.INACTIVE)
                 .build();
-        userRepository.save(u);
-        TokenEnvelope tok = issueTokens(u.getUserId());
         return SignupEmailResponse.builder()
                 .userId(u.getUserId())
-                .message("회원 가입 완료")
-                .token(tok)
+                .message("회원 가입 시작. 프로필 작성 후 완료")
                 .build();
+    }
+
+    @Transactional
+    public TokenEnvelope createProfile(Long userId, ProfileCreateRequest req) {
+        User u = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        userRepository.save(u.toBuilder()
+                .nickname(req.nickname())
+                .gender(req.gender())
+                .ageGroup(req.ageGroup())
+                .jobTitle(req.jobTitle())
+                .monthlyIncome(req.monthlyIncome())
+                .status(com.ssafy.toktokggubi.domain.user.entity.UserStatus.ACTIVE)
+                .build());
+        return issueTokens(userId);
     }
 
     @Transactional(readOnly = true)

@@ -3,7 +3,9 @@ package com.ssafy.toktokggubi.domain.user.service;
 import com.ssafy.toktokggubi.domain.user.dto.request.*;
 import com.ssafy.toktokggubi.domain.user.dto.response.*;
 import com.ssafy.toktokggubi.domain.user.entity.User;
+import com.ssafy.toktokggubi.domain.user.entity.UserStatus;
 import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
+import com.ssafy.toktokggubi.global.dto.response.TokenEnvelope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,20 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserProfileService {
     private final UserRepository userRepository;
-
-    @Transactional
-    public void createProfile(Long userId, ProfileCreateRequest req) {
-        User u = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
-        userRepository.save(u.toBuilder()
-                .nickname(req.nickname())
-                .gender(req.gender())
-                .ageGroup(req.ageGroup())
-                .jobTitle(req.jobTitle())
-                .monthlyIncome(req.monthlyIncome())
-                .status(com.ssafy.toktokggubi.domain.user.entity.UserStatus.ACTIVE)
-                .build());
-    }
 
     @Transactional(readOnly = true)
     public ProfileResponse getProfile(Long userId) {

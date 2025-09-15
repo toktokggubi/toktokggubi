@@ -5,7 +5,9 @@ import com.ssafy.toktokggubi.domain.auth.dto.response.RefreshResponse;
 import com.ssafy.toktokggubi.domain.user.dto.request.*;
 import com.ssafy.toktokggubi.domain.user.dto.response.*;
 import com.ssafy.toktokggubi.domain.user.service.UserAuthService;
+import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
 import com.ssafy.toktokggubi.global.dto.response.MessageResponse;
+import com.ssafy.toktokggubi.global.dto.response.TokenEnvelope;
 import com.ssafy.toktokggubi.global.security.jwt.JwtProvider;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -15,29 +17,41 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @Tag(name = "유저 인증", description = "유저 인증 API")
 public class UserAuthController {
     private final UserAuthService authService;
+    private final UserProfileService profileService;
     private final JwtProvider jwtProvider;
 
-    @PostMapping("/auth/signup")
+    @PostMapping("/signup")
     public SignupEmailResponse signup(@RequestBody @Valid SignupEmailRequest req) {
         return authService.signup(req);
     }
 
-    @PostMapping("/auth/login")
+    @PostMapping("/signup/complete")
+    public LoginResponse complete(@RequestBody @Valid ProfileCreateRequest req,
+                                  @RequestParam Long userId) {
+        TokenEnvelope tok = authService.createProfile(userId, req);
+        return LoginResponse.builder()
+                .message("회원 가입 완료")
+                .userId(userId)
+                .token(tok)
+                .build();
+    }
+
+    @PostMapping("/login")
     public LoginResponse login(@RequestBody @Valid LoginEmailRequest req) {
         return authService.login(req);
     }
 
-    @PostMapping("/auth/token/refresh")
+    @PostMapping("/token/refresh")
     public RefreshResponse refresh(@RequestBody @Valid RefreshRequest req) {
         return authService.refresh(req);
     }
 
-    @PostMapping("/auth/logout")
+    @PostMapping("/logout")
     public ResponseEntity<MessageResponse> logout(
             @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String auth) {
 
