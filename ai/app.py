@@ -2,7 +2,8 @@ from flask import Flask, jsonify, render_template_string
 import pandas as pd
 import os
 import numpy as np
-from model_functions.ae_functions import run
+import model_functions.ae_functions as ae
+import model_functions.it_functions as it
 import logging
 import json
 
@@ -108,7 +109,7 @@ def autoencoder():
             return jsonify({"error": f"Data file not found at {data_path}"}), 404
         
         # Get anomalies using the autoencoder
-        results = run(data_path)
+        results = ae.run(data_path)
 
         anomalies_table = results['anomalies_df'].to_html(index=False)
         
@@ -126,6 +127,82 @@ def autoencoder():
     except Exception as e:
         logger.error(f"Error during autoencoder processing: {e}")
         return render_template_string(HTML_TEMPLATE, error=str(e), anomalies_table="", stats={})
+
+@app.route("/ai/isolationforest")
+def isolation_forest():
+    try:
+        logger.info("Starting Isolation Forest anomaly detection")
+        
+        # Load and preprocess data
+        data_path = os.path.join('data', 'payment_duck.csv')
+        if not os.path.exists(data_path):
+            error_msg = f"Data file not found at {data_path}"
+            logger.error(error_msg)
+            return jsonify({"error": error_msg}), 404
+        
+        logger.info(f"Processing data from {data_path}")
+        
+        # Get anomalies using the isolation forest
+        results = it.run(data_path)
+        
+        # Get total number of transactions for percentage calculation
+        total_transactions = len(pd.read_csv(data_path))
+        anomaly_count = len(results)
+        
+        if results.empty:
+            logger.info("No anomalies detected")
+            return render_template_string(
+                HTML_TEMPLATE, 
+                anomalies_table="<p>No anomalies detected.</p>", 
+                error=None, 
+                stats={
+                    "anomaly_count": 0,
+                    "anomaly_percentage": 0.0,
+                    "total_transactions": total_transactions,
+                    "total_amount": 0,
+                    "anomaly_categories": {}
+                },
+                timestamps=[],
+                amounts=[],
+                colors=[],
+                error_indices=[],
+                reconstruction_errors=[]
+            )
+        
+        # Convert results to HTML table
+        anomalies_table = results[['날짜', '시간', '대분류', '내용', '금액']].to_html(index=False)
+        stats = {
+            "anomaly_count": anomaly_count,
+            "anomaly_percentage": anomaly_count / total_transactions if total_transactions > 0 else 0,
+            "total_transactions": total_transactions,
+            "total_amount": results['금액'].sum(),
+            "anomaly_categories": results['대분류'].value_counts().to_dict()
+        }
+        
+        logger.info(f"Detected {len(results)} anomalies with total amount {stats['total_amount']}")
+        
+        return render_template_string(
+            HTML_TEMPLATE, 
+            anomalies_table=anomalies_table, 
+            error=None, 
+            stats=stats,
+            timestamps=results['날짜'].astype(str).tolist() if not results.empty else [],
+            amounts=results['금액'].tolist() if not results.empty else [],
+            colors=['red' if anomaly else 'blue' for anomaly in (results['anomaly'] == -1)] if 'anomaly' in results.columns else [],
+            error_indices=results.index.tolist() if not results.empty else [],
+            reconstruction_errors=[1.0] * len(results) if not results.empty else []  # Dummy values as these are required by template
+        )
+        
+    except Exception as e:
+        error_msg = f"Error during isolation forest processing: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return render_template_string(
+            HTML_TEMPLATE, 
+            error=error_msg, 
+            anomalies_table="", 
+            stats={"error": True}
+        )
+
 
 if __name__ == "__main__":
     # Create necessary directories
