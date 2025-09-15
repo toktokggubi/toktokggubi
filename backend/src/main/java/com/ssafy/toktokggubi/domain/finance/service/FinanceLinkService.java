@@ -14,11 +14,10 @@ public class FinanceLinkService {
     private final FinopenApiClient finopenApiClient;
     private final UserRepository userRepository;
 
-    /** 이메일을 기준으로 금융망 userKey를 확보하여 DB에 저장. 이미 있으면 그대로 반환 */
     @Transactional
-    public String ensureFinanceUserKey(User user) {
+    public void ensureFinanceUserKey(User user) {
         if (user.getFinanceUserKey() != null && !user.getFinanceUserKey().isBlank()) {
-            return user.getFinanceUserKey();
+            return;
         }
         String email = user.getEmail();
         if (email == null || email.isBlank()) {
@@ -27,10 +26,9 @@ public class FinanceLinkService {
 
         String userKey = finopenApiClient.search(email)
                 .map(FinMemberResponse::userKey)
-                .filter(k -> k != null && !k.isBlank())
+                .filter(k -> !k.isBlank())
                 .orElseGet(() -> finopenApiClient.create(email).userKey());
 
         userRepository.save(user.toBuilder().financeUserKey(userKey).build());
-        return userKey;
     }
 }
