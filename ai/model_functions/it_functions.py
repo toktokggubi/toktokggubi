@@ -21,7 +21,11 @@ def run(data_path):
     df['금액'] = df['금액'].replace({',': ''}, regex=True).astype(float)
     df['금액'] = df['금액'].abs()
     df = df[df['타입'] == '지출']
-    df['날짜'] = pd.to_datetime(df['날짜'])
+    
+    # Format date and time as strings in the specified format
+    df['날짜'] = pd.to_datetime(df['날짜']).dt.strftime('%Y-%m-%d')  # Format as '2025-09-15'
+    df['시간'] = pd.to_datetime(df['시간']).dt.strftime('%H:%M')     # Format as '14:30'
+    df['결제일시'] = pd.to_datetime(df['날짜'] + ' ' + df['시간'])   # Combine into datetime object
 
     # Encoding features with One-Hot Encoding
     logger.info("Encoding features with One-Hot Encoding")
@@ -31,8 +35,9 @@ def run(data_path):
     encoded_features = encoder.fit_transform(df[['대분류']]).toarray()
 
     # Feature Engineering
-    df['day_of_month'] = df['날짜'].dt.day
-    df['is_weekend'] = df['날짜'].dt.dayofweek.isin([5,6])
+    # Use 결제일시 (datetime) for feature engineering
+    df['day_of_month'] = df['결제일시'].dt.day
+    df['is_weekend'] = df['결제일시'].dt.dayofweek.isin([5,6])
 
     features = pd.concat([df[['금액', 'day_of_month', 'is_weekend']].reset_index(drop=True), pd.DataFrame(encoded_features, columns=encoder.get_feature_names_out(['대분류']))], axis=1)
     logger.info(features.describe())

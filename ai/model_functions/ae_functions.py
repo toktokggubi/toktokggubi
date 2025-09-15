@@ -20,9 +20,10 @@ def run(data_path):
     logger.info("Data Preprocessing")
     df = pd.read_csv(data_path)
 
-    df['날짜'] = pd.to_datetime(df['날짜'])
-    df['시간'] = pd.to_datetime(df['시간']).dt.time
-    df['결제일시'] = df.apply(lambda row: pd.Timestamp.combine(row['날짜'], row['시간']), axis=1)
+    # Format date and time as strings in the specified format
+    df['날짜'] = pd.to_datetime(df['날짜']).dt.strftime('%Y-%m-%d')  # Format as '2025-09-15'
+    df['시간'] = pd.to_datetime(df['시간']).dt.strftime('%H:%M')     # Format as '14:30'
+    df['결제일시'] = pd.to_datetime(df['날짜'] + ' ' + df['시간'])   # Combine into datetime object
 
     # 중복 제거
     df.drop_duplicates(subset=['날짜', '시간', '금액', '결제수단'], inplace=True)
@@ -38,9 +39,14 @@ def run(data_path):
     df['주말여부'] = df['요일'].apply(lambda x: 1 if x >= 5 else 0)
 
     # 3. 범주형 데이터 인코딩
-    # '대분류', '소분류', '결제수단' 같은 범주형 변수를 숫자로 변환합니다.
+    # Preserve original categories before one-hot encoding
     df = df.drop(columns=["소분류"])
-    # df = pd.get_dummies(df, columns=['대분류', '소분류', '결제수단'])
+    
+    # Store original category information
+    if '대분류' in df.columns:
+        category_mapping = df[['날짜', '시간', '내용', '금액', '대분류']].copy()
+    
+    # Create dummies for model training
     df = pd.get_dummies(df, columns=['대분류', '결제수단'])
 
     # 4. 금액 정규화 (Normalization)
@@ -106,23 +112,72 @@ def run(data_path):
     print("\n이상 거래로 탐지된 데이터:")
     print(anomalies[['결제일시', '금액', '내용', '재구성_손실']])
 
-    # 5. 이상 거래로 판단된 데이터를 CSV 파일로 저장
-    anomalies_to_export = anomalies[['결제일시', '금액', '내용', '재구성_손실']]
-
-    results = {
-        "anomalies_df": anomalies_to_export,
-        "stats": {
-            "total_transactions": len(df),
-            "anomaly_count": len(anomalies),
-            "anomaly_percentage": len(anomalies) / len(df) if len(df) > 0 else 0
-        },
-        "plot_data": {
-            "timestamps": df['결제일시'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist(),
-            "amounts": df['금액'].tolist(),
-            "colors": np.where(df['이상거래'] == 1, 'red', 'blue').tolist(),
-            "error_indices": df[df['이상거래'] == 1].index.tolist(),
-            "reconstruction_errors": df[df['이상거래'] == 1]['재구성_손실'].tolist()
-        }
+    # Prepare the result in the same format as isolation forest
+    if not anomalies.empty:
+        # Create a copy of the original data with categories
+        if 'category_mapping' in locals() and not category_mapping.empty:
+            # Merge with original categories using date, time, content, and amount as keys
+            results = df.loc[anomalies.index, ['날짜', '시간', '내용', '금액']].copy()
+            results = results.merge(
+                category_mapping,
+                on=['날짜', '시간', '내용', '금액'],
+                how='left',
+                suffixes=('', '_original')
+            )
+            
+            # If merge failed to find some categories, try with just date, time, and amount
+            if results['대분류'].isna().any():
+                temp = df.loc[anomalies.index, ['날짜', '시간', '금액']].copy()
+                temp = temp.merge(
+                    category_mapping[['날짜', '시간', '금액', '대분류']].drop_duplicates(),
+                    on=['날짜', '시간', '금액'],
+                    how='left'
+                )
+                results['대분류'] = results['대분류'].fillna(temp['대분류'])
+        else:
+            # Fallback if we don't have the original categories
+            results = df.loc[anomalies.index, ['날짜', '시간', '내용', '금액']].copy()
+            results['대분류'] = 'Unknown'
+        
+        # Add anomaly information
+        results['anomaly'] = -1
+        results['anomaly_score'] = anomalies['재구성_손실'].values
+        
+        # Convert date and time to string format for JSON serialization
+        if '날짜' in results.columns and pd.api.types.is_datetime64_any_dtype(results['날짜']):
+            results['날짜'] = results['날짜'].dt.strftime('%Y-%m-%d')
+        if '시간' in results.columns:
+            results['시간'] = results['시간'].astype(str)
+    else:
+        # Ensure we have all required columns even for empty results
+        results = pd.DataFrame(columns=['날짜', '시간', '대분류', '내용', '금액', 'anomaly', 'anomaly_score'])
+        
+    # Ensure all required columns exist in the results
+    for col in ['대분류', '내용']:
+        if col not in results.columns:
+            results[col] = 'Unknown'
+    
+    # Add additional information in the same format as isolation forest
+    stats = {
+        "total_transactions": len(df),
+        "anomaly_count": len(anomalies),
+        "anomaly_percentage": len(anomalies) / len(df) if len(df) > 0 else 0,
+        "total_amount": anomalies['금액'].sum() if not anomalies.empty else 0,
+        "anomaly_categories": {}
     }
+    
+    # Calculate anomaly categories from the results if available
+    if not anomalies.empty and '대분류' in results.columns:
+        stats["anomaly_categories"] = results['대분류'].value_counts().to_dict()
+    
+    # Prepare plot data
+    plot_data = {
+        "timestamps": df['결제일시'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist(),
+        "amounts": df['금액'].tolist(),
+        "colors": np.where(df['이상거래'] == 1, 'red', 'blue').tolist(),
+        "error_indices": df[df['이상거래'] == 1].index.tolist(),
+        "reconstruction_errors": df[df['이상거래'] == 1]['재구성_손실'].tolist() if not anomalies.empty else []
+    }
+    
     return results
 

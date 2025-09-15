@@ -204,6 +204,118 @@ def isolation_forest():
         )
 
 
+@app.route("/ai/combined")
+def combined_anomaly_detection():
+    try:
+        logger.info("Starting combined anomaly detection")
+        
+        # Load and preprocess data
+        data_path = os.path.join('data', 'payment_duck.csv')
+        if not os.path.exists(data_path):
+            error_msg = f"Data file not found at {data_path}"
+            logger.error(error_msg)
+            return jsonify({"error": error_msg}), 404
+        
+        # Get results from both models
+        logger.info("Running autoencoder model")
+        ae_results = ae.run(data_path)
+        
+        logger.info("Running isolation forest model")
+        if_results = it.run(data_path)
+        
+        # Convert both results to DataFrames if they're not already
+        if not isinstance(ae_results, pd.DataFrame):
+            ae_df = ae_results.get('anomalies_df', pd.DataFrame())
+        else:
+            ae_df = ae_results
+            
+        if not isinstance(if_results, pd.DataFrame):
+            if_df = if_results.get('anomalies_df', pd.DataFrame())
+        else:
+            if_df = if_results
+        
+        # Add source column to each DataFrame
+        if not ae_df.empty:
+            ae_df['detection_method'] = 'autoencoder'
+        if not if_df.empty:
+            if_df['detection_method'] = 'isolation_forest'
+        
+        # Combine results
+        combined_df = pd.concat([ae_df, if_df], ignore_index=True)
+        
+        # If we have duplicates (detected by both methods), keep only one copy
+        if not combined_df.empty and '날짜' in combined_df.columns and '시간' in combined_df.columns and '금액' in combined_df.columns:
+            combined_df = combined_df.drop_duplicates(subset=['날짜', '시간', '금액', '내용'])
+        
+        # Calculate statistics
+        total_transactions = len(pd.read_csv(data_path))
+        anomaly_count = len(combined_df)
+        
+        if combined_df.empty:
+            logger.info("No anomalies detected by either method")
+            return render_template_string(
+                HTML_TEMPLATE, 
+                anomalies_table="<p>No anomalies detected by either method.</p>", 
+                error=None, 
+                stats={
+                    "anomaly_count": 0,
+                    "anomaly_percentage": 0.0,
+                    "total_transactions": total_transactions,
+                    "total_amount": 0,
+                    "anomaly_categories": {}
+                },
+                timestamps=[],
+                amounts=[],
+                colors=[],
+                error_indices=[],
+                reconstruction_errors=[]
+            )
+        
+        # Prepare the results
+        stats = {
+            "anomaly_count": anomaly_count,
+            "anomaly_percentage": anomaly_count / total_transactions if total_transactions > 0 else 0,
+            "total_transactions": total_transactions,
+            "total_amount": combined_df['금액'].sum(),
+            "anomaly_categories": combined_df['대분류'].value_counts().to_dict()
+        }
+        
+        # Convert to HTML table
+        display_columns = ['날짜', '시간', '대분류', '내용', '금액', 'detection_method']
+        if 'anomaly_score' in combined_df.columns:
+            display_columns.append('anomaly_score')
+            
+        anomalies_table = combined_df[display_columns].to_html(index=False)
+        
+        logger.info(f"Combined detection found {anomaly_count} anomalies")
+        
+        # Prepare plot data (using autoencoder's plot data if available)
+        plot_data = {}
+        if hasattr(ae_results, 'get') and 'plot_data' in ae_results:
+            plot_data = ae_results['plot_data']
+        
+        return render_template_string(
+            HTML_TEMPLATE, 
+            anomalies_table=anomalies_table, 
+            error=None, 
+            stats=stats,
+            timestamps=plot_data.get('timestamps', []),
+            amounts=plot_data.get('amounts', []),
+            colors=plot_data.get('colors', []),
+            error_indices=plot_data.get('error_indices', []),
+            reconstruction_errors=plot_data.get('reconstruction_errors', [])
+        )
+        
+    except Exception as e:
+        error_msg = f"Error during combined anomaly detection: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return render_template_string(
+            HTML_TEMPLATE, 
+            error=error_msg, 
+            anomalies_table="", 
+            stats={}
+        )
+
 if __name__ == "__main__":
     # Create necessary directories
     os.makedirs('data', exist_ok=True)
