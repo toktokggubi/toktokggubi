@@ -4,6 +4,7 @@ import type { GifticonGridProps } from "./types";
 import type { Gifticon } from "@/features/User/model/gifticon/types";
 import { GifticonCard } from "@/features/User/ui/GifticonCard";
 import { gifticonImages } from "@/features/User/model/gifticon/images";
+import { calcDDay } from "@/features/User/model/gifticon/date";
 
 const GAP = 12;
 const NUM_COLUMNS = 2;
@@ -17,6 +18,7 @@ function GifticonGridImpl({ data, onSelect }: GifticonGridProps) {
           imageSource={src}
           title={item.label}
           brand={item.merchantName}
+          dDay={calcDDay(item.expiresAt)}
           onPress={() => onSelect(item, index)}
         />
       </View>

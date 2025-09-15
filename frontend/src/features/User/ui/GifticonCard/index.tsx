@@ -14,7 +14,7 @@ import {
 import type { GifticonCardProps } from "./types";
 
 const androidTight: TextStyle = Platform.select({
-  android: { includeFontPadding: false }, // ✅ 스타일로 적용
+  android: { includeFontPadding: false },
   default: {},
 })!;
 
@@ -23,14 +23,31 @@ function GifticonCardImpl({
   title,
   brand,
   onPress,
+  dDay,
 }: GifticonCardProps) {
   return (
     <Pressable
       onPress={onPress}
       style={s.card}
       android_ripple={{ borderless: false }}
+      accessibilityLabel={`${brand} ${title}${
+        typeof dDay === "number" ? `, D-${Math.max(0, dDay)}` : ""
+      }`}
     >
       <View style={s.thumbWrap}>
+        {/* D-Day Badge */}
+        {typeof dDay === "number" && (
+          <View style={s.badge}>
+            <Text style={[s.badgeTxt, androidTight]}>
+              {dDay > 0
+                ? `D-${dDay}`
+                : dDay === 0
+                ? "D-DAY"
+                : `D+${Math.abs(dDay)}`}
+            </Text>
+          </View>
+        )}
+
         <Image
           source={imageSource}
           style={s.thumb}
@@ -59,8 +76,28 @@ const s = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
     backgroundColor: colors.GRAY_LIGHT,
+    position: "relative",
   },
   thumb: { width: "100%", height: "100%" },
+
+  // ⬇ 배지 스타일
+  badge: {
+    position: "absolute",
+    top: 6,
+    left: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: colors.GRAY_DARK_ACTIVE, // 어두운 회색 배경
+    opacity: 0.9,
+    zIndex: 2,
+  },
+  badgeTxt: {
+    ...font.bold,
+    fontSize: 10,
+    lineHeight: 12,
+    color: "#fff",
+  },
 
   brand: {
     marginTop: 8,
