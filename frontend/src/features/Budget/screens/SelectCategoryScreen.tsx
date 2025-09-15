@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
+import { PanGestureHandler, State } from "react-native-gesture-handler";
+import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import SelectCategoryTemplate from "~features/Budget/templates/SelectCategoryTemplate";
 import {
@@ -107,21 +109,42 @@ export default function SelectCategoryScreen() {
     });
   }, [selected, totalAmount, fixedExpenses]);
 
+  const handlePanGesture = useCallback((event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      const threshold = 50; // 스와이프 최소 거리
+      
+      if (translationX > threshold) {
+        // 오른쪽으로 스와이프 - 이전 페이지
+        goPrev();
+      } else if (translationX < -threshold) {
+        // 왼쪽으로 스와이프 - 다음 페이지
+        if (selected.length > 0) {
+          goNext();
+        }
+      }
+    }
+  }, [goPrev, goNext, selected.length]);
+
   return (
-    <SelectCategoryTemplate
-      // 헤더
-      title="카테고리 선택"
-      subtitle="예산을 관리할 카테고리를 선택해주세요."
-      // 그리드
-      items={items}
-      selectedKeys={selected}
-      onToggle={toggle}
-      // 푸터
-      stepIndex={2}
-      stepTotal={5}
-      onPressPrev={goPrev}
-      onPressNext={goNext}
-      nextDisabled={selected.length === 0}
-    />
+    <PanGestureHandler onHandlerStateChange={handlePanGesture}>
+      <View style={{ flex: 1 }}>
+        <SelectCategoryTemplate
+          // 헤더
+          title="카테고리 선택"
+          subtitle="예산을 관리할 카테고리를 선택해주세요."
+          // 그리드
+          items={items}
+          selectedKeys={selected}
+          onToggle={toggle}
+          // 푸터
+          stepIndex={2}
+          stepTotal={5}
+          onPressPrev={goPrev}
+          onPressNext={goNext}
+          nextDisabled={selected.length === 0}
+        />
+      </View>
+    </PanGestureHandler>
   );
 }

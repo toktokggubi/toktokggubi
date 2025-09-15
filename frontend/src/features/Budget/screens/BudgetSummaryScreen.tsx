@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
+import { PanGestureHandler, State } from "react-native-gesture-handler";
+import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import BudgetSummaryTemplate from "~features/Budget/templates/BudgetSummaryTemplate";
 import BudgetConfirmModal from "~features/Budget/ui/molecules/BudgetConfirmModal";
@@ -129,23 +131,42 @@ export default function BudgetSummaryScreen() {
     setShowConfirmModal(false);
   }, []);
 
+  const handlePanGesture = useCallback((event: any) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      const threshold = 50; // 스와이프 최소 거리
+      
+      if (translationX > threshold) {
+        // 오른쪽으로 스와이프 - 이전 페이지
+        goPrev();
+      } else if (translationX < -threshold) {
+        // 왼쪽으로 스와이프 - 다음 페이지 (확정 모달 표시)
+        goNext();
+      }
+    }
+  }, [goPrev, goNext]);
+
   return (
     <>
-      <BudgetSummaryTemplate
-        month={currentMonth}
-        totalBudget={totalBudget}
-        variableBudget={variableBudget}
-        fixedIncludedBudget={fixedIncludedBudget}
-        fixedExcludedBudget={fixedExcludedBudget}
-        categoryBudgets={categoryBudgetsData}
-        fixedIncludedExpenses={fixedIncludedExpenses}
-        fixedExcludedExpenses={fixedExcludedExpenses}
-        onPressPrev={goPrev}
-        onPressNext={goNext}
-        stepIndex={4}
-        stepTotal={5}
-        nextLabel="확정"
-      />
+      <PanGestureHandler onHandlerStateChange={handlePanGesture}>
+        <View style={{ flex: 1 }}>
+          <BudgetSummaryTemplate
+            month={currentMonth}
+            totalBudget={totalBudget}
+            variableBudget={variableBudget}
+            fixedIncludedBudget={fixedIncludedBudget}
+            fixedExcludedBudget={fixedExcludedBudget}
+            categoryBudgets={categoryBudgetsData}
+            fixedIncludedExpenses={fixedIncludedExpenses}
+            fixedExcludedExpenses={fixedExcludedExpenses}
+            onPressPrev={goPrev}
+            onPressNext={goNext}
+            stepIndex={4}
+            stepTotal={5}
+            nextLabel="확정"
+          />
+        </View>
+      </PanGestureHandler>
 
       <BudgetConfirmModal
         visible={showConfirmModal}
