@@ -4,6 +4,7 @@ import type {
   Merchant,
 } from "@/features/Lucky/model/types";
 import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types";
+import type { ImageSourcePropType } from "react-native";
 
 export interface LuckyTemplateProps {
   year: number;
@@ -24,4 +25,6 @@ export interface LuckyTemplateProps {
   // 빵빵 카드(있으면 렌더)
   onPressNbbang?: () => void;
   onPressMolbbang?: () => void;
+  nImageSource: ImageSourcePropType;
+  molImageSource: ImageSourcePropType;
 }
