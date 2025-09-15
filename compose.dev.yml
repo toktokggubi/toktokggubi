@@ -1,16 +1,16 @@
 services:
-  frontend:
-    # Use the 'development' stage from the multi-stage Dockerfile
-    build:
-      context: ./frontend
-      target: development
-    ports:
-      - "3000:3000" # Expose frontend dev server port
-    volumes:
-      # Mount the local frontend code for hot-reloading
-      - ./frontend:/app
-      - /app/node_modules # Keep node_modules in container to avoid host conflicts
-    command: npm run dev # Start the React development server
+  # frontend:
+  #   # Use the 'development' stage from the multi-stage Dockerfile
+    # build:
+    #   context: ./frontend
+    #   target: development
+    # ports:
+    #   - "3000:3000" # Expose frontend dev server port
+    # volumes:
+    #   # Mount the local frontend code for hot-reloading
+    #   - ./frontend:/app
+    #   - /app/node_modules # Keep node_modules in container to avoid host conflicts
+    # command: npm run dev # Start the React development server
 
   backend:
     ports:
@@ -20,8 +20,9 @@ services:
       - SPRING_PROFILES_ACTIVE=dev # Activate 'dev' profile in Spring Boot
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For remote debugging
     depends_on:
-      - database
-      - ai
+      - mysql
+      - postgres
+      - rabbitmq
 
   ai:
     ports:
@@ -34,7 +35,7 @@ services:
       # Mount the development-specific Nginx configuration
       - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf
     depends_on:
-      - frontend # Nginx depends on frontend and backend for proxying
+      # - frontend # Nginx depends on frontend and backend for proxying
       - backend
       - ai
 
