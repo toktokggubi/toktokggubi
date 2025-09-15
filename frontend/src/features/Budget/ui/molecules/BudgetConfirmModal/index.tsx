@@ -2,7 +2,7 @@ import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import { krw } from "@/shared/utils/currency";
 import React from "react";
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface BudgetConfirmModalProps {
   visible: boolean;
@@ -20,23 +20,7 @@ export default function BudgetConfirmModal({
   onCancel,
 }: BudgetConfirmModalProps) {
   const handleConfirm = () => {
-    Alert.alert(
-      "예산 확정",
-      `${month} 예산 ${krw(
-        totalBudget
-      )}을(를) 최종 확정하시겠습니까?\n\n확정 후에는 수정할 수 없습니다.`,
-      [
-        {
-          text: "취소",
-          style: "cancel",
-        },
-        {
-          text: "확정",
-          style: "destructive",
-          onPress: onConfirm,
-        },
-      ]
-    );
+    onConfirm();
   };
 
   return (
