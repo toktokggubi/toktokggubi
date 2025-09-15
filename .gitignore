@@ -89,6 +89,7 @@ coverage/
 
 # Ignore PostgreSQL data directory
 database/data/
+database/data-ai/
 
 # Ignore Jenkins CI/CD files
 jenkins/
