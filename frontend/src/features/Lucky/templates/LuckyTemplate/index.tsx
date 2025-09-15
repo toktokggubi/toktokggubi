@@ -1,11 +1,14 @@
+// src/features/Lucky/templates/LuckyTemplate/index.tsx
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { Text, StyleSheet, View, ScrollView } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type { LuckyTemplateProps } from "./types";
 import { colors } from "@/shared/constants/colors";
 import { CategoryChips } from "@/features/Lucky/ui/CategoryChips";
 import { SaleCalendar } from "@/features/Lucky/ui/SaleCalendar";
 import { SaleEventList } from "@/features/Lucky/ui/SaleEventList";
 import { SeriesCards } from "@/features/Lucky/ui/SeriesCards";
+import { font } from "@/shared/typography/font";
 
 export default function LuckyTemplate({
   year,
@@ -20,51 +23,69 @@ export default function LuckyTemplate({
   eventsForDay,
   onPressNbbang,
   onPressMolbbang,
+
+  /** 🔹 추가: 외부에서 주입받는 이미지 */
+  nImageSource,
+  molImageSource,
 }: LuckyTemplateProps) {
-  // ✅ 방어: 혹시 상위에서 실수로 undefined를 넘겨도 안전하게
   const safeEvents = Array.isArray(events) ? events : [];
   const safeMerchants = Array.isArray(merchants) ? merchants : [];
   const safeList = Array.isArray(eventsForDay) ? eventsForDay : [];
 
   return (
-    <View style={s.container}>
-      <Text style={s.header}>세일</Text>
+    <SafeAreaView
+      style={s.container}
+      edges={["top", "bottom", "left", "right"]}
+    >
+      <ScrollView
+        contentContainerStyle={s.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={s.header}>세일</Text>
 
-      <CategoryChips value={category} onChange={onChangeCategory} />
+        <CategoryChips value={category} onChange={onChangeCategory} />
 
-      <View style={{ height: 8 }} />
+        <SaleCalendar
+          year={year}
+          month={month}
+          events={safeEvents}
+          merchants={safeMerchants}
+          selectedDay={selectedDay ?? null}
+          onSelectDay={onSelectDay}
+          onChangeMonth={onChangeMonth}
+        />
 
-      <SaleCalendar
-        year={year}
-        month={month}
-        events={safeEvents}
-        merchants={safeMerchants}
-        selectedDay={selectedDay ?? null}
-        onSelectDay={onSelectDay}
-        onChangeMonth={onChangeMonth}
-      />
+        <SaleEventList items={safeList} />
 
-      <SaleEventList items={safeList} />
+        {(onPressNbbang || onPressMolbbang) && (
+          <>
+            <View style={s.spacerLarge} />
+            <SeriesCards
+              onPressNbbang={onPressNbbang ?? (() => {})}
+              onPressMolbbang={onPressMolbbang ?? (() => {})}
+              /** 🔹 여기서 전달 */
+              nImageSource={nImageSource}
+              molImageSource={molImageSource}
+            />
+          </>
+        )}
 
-      {(onPressNbbang || onPressMolbbang) && (
-        <>
-          <View style={{ height: 16 }} />
-          <SeriesCards
-            onPressNbbang={onPressNbbang ?? (() => {})}
-            onPressMolbbang={onPressMolbbang ?? (() => {})}
-          />
-        </>
-      )}
-    </View>
+        <View style={s.bottomSpace} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FBFF", padding: 16 },
+  container: { flex: 1, backgroundColor: "#F8FBFF" },
+  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },
   header: {
     fontSize: 20,
-    fontWeight: "900",
     color: colors.BLUE_DARKER,
     marginBottom: 8,
+    ...font.bold,
   },
+  spacerLarge: { height: 24 },
+  bottomSpace: { height: 24 },
 });

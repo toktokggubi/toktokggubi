@@ -2,7 +2,7 @@ import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import { krw } from "@/shared/utils/currency";
 import React, { useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BudgetCopy from "~features/Budget/ui/molecules/BudgetCopy";
 import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
@@ -35,30 +35,14 @@ export default function CategoryBudgetTemplate({
         <BudgetCopy title={title} subtitle={subtitle} />
       </View>
 
-      {/* 2) 메인 콘텐츠 영역 */}
-      <View style={styles.content}>
-        {/* 전체 예산 안내 */}
+      {/* 2) 전체 예산 안내 - 고정 위치 */}
+      <View style={styles.budgetInfo}>
         <Text style={styles.totalLine}>
           전체 예산은{" "}
           <Text style={styles.totalEmph}>{krw(availableNextMonth)}</Text>{" "}
           입니다.
         </Text>
-
-        {/* 수정 안내 문구 */}
-        <Text style={styles.editHint}>
-          카테고리별 금액을 클릭하여 수정할 수 있습니다.
-        </Text>
-
-        {/* 카테고리 리스트 */}
-        <View style={styles.listBox}>
-          <CategoryBudgetList
-            items={items}
-            disabled={disabled}
-            onChangeItem={onChangeItem}
-            gap={12}
-          />
-        </View>
-
+        
         {/* 남은/초과 금액 안내 - 남은 금액이 0이 아닐 때만 표시 */}
         {rest !== 0 && (
           <Text style={styles.remained}>
@@ -77,7 +61,37 @@ export default function CategoryBudgetTemplate({
         )}
       </View>
 
-      {/* 3) 푸터 (이전/다음) - 동일 좌표 고정 */}
+      {/* 3) 키보드 회피 영역 */}
+      <KeyboardAvoidingView 
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'android' ? 'padding' : 'padding'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
+      >
+        {/* 스크롤 가능한 메인 콘텐츠 영역 */}
+        <ScrollView 
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* 수정 안내 문구 */}
+          <Text style={styles.editHint}>
+            카테고리별 금액을 클릭하여 수정할 수 있습니다.
+          </Text>
+
+          {/* 카테고리 리스트 */}
+          <View style={styles.listBox}>
+            <CategoryBudgetList
+              items={items}
+              disabled={disabled}
+              onChangeItem={onChangeItem}
+              gap={12}
+            />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* 4) 푸터 (이전/다음) - 동일 좌표 고정 */}
       <BudgetWizardFooter
         stepIndex={stepIndex}
         stepTotal={stepTotal}
@@ -108,35 +122,53 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
   },
-  content: {
-    flex: 1,
+  budgetInfo: {
     paddingHorizontal: 24,
-    marginTop: 16,
-    gap: 16,
+    paddingVertical: 16,
+    backgroundColor: colors.BACKGROUND_PRIMARY,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.GRAY_LIGHT,
+    gap: 4,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20, // footer와의 간격 확보
   },
   totalLine: {
     fontSize: 16,
     color: colors.GRAY_DARK,
+    textAlign: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 10,
+    borderColor: colors.BLUE_LIGHT,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    ...font.bold,
   },
   totalEmph: {
     ...font.bold,
-    color: colors.BLUE_NORMAL,
+    color: "#000000",
   },
   editHint: {
     fontSize: 14,
     color: colors.GRAY_NORMAL,
     textAlign: "center",
-    marginTop: 8,
-    marginBottom: 4,
+    marginBottom: 16,
   },
   listBox: {
-    marginTop: 8,
     gap: 12,
   },
   remained: {
-    marginTop: 16,
     textAlign: "center",
-    fontSize: 16,
+    fontSize: 14,
     ...font.bold,
   },
   leftAmount: {

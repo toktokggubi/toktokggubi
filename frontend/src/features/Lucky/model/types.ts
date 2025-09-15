@@ -1,15 +1,8 @@
-// src/features/Lucky/model/types.ts
 import { z } from "zod";
+import { CATEGORY_VALUES, type Category } from "@/shared/constants/categories";
 
-export const categorySchema = z.enum([
-  "cafe",
-  "movie",
-  "shopping",
-  "life",
-  "burger",
-  "etc",
-]);
-export type Category = z.infer<typeof categorySchema>;
+export const categorySchema = z.enum(CATEGORY_VALUES);
+export type { Category }; // 공용 타입 재노출
 
 export interface Merchant {
   id: string;
@@ -22,14 +15,14 @@ export const saleEventSchema = z.object({
   merchantId: z.string(),
   category: categorySchema,
   title: z.string(),
-  startDate: z.string(), // ISO (YYYY-MM-DD)
-  endDate: z.string(), // ISO
+  startDate: z.string(), // YYYY-MM-DD
+  endDate: z.string(), // YYYY-MM-DD
   note: z.string().optional(),
 });
 export type SaleEvent = z.infer<typeof saleEventSchema>;
 
 export interface MonthParams {
-  year: number; // e.g., 2025
+  year: number;
   month: number; // 1-12
   category: Category;
 }
