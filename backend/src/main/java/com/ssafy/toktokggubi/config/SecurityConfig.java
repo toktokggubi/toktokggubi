@@ -39,8 +39,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/auth/signup", "/auth/login", "/auth/password/reset",
-                                "/auth/token/refresh", "/auth/kakao/login", "/auth/logout").permitAll()
+                        .requestMatchers("/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
+                                "/auth/token/refresh", "/auth/kakao/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

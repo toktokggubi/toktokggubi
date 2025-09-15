@@ -48,18 +48,21 @@ public class UserAuthService {
     public SignupEmailResponse signup(SignupEmailRequest req) {
         if (userRepository.existsByEmail(req.email()))
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        User u = User.builder()
+
+        User saved = userRepository.save(User.builder()
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
-                .nickname("사용자") // 스키마 NOT NULL 때문에 임시값
-                .gender(Gender.M) // 스키마 NOT NULL 때문에 임시값
+                .nickname("사용자")
+                .gender(Gender.M)
                 .status(UserStatus.INACTIVE)
-                .build();
+                .build());
 
-        financeLinkService.ensureFinanceUserKey(u);
+        financeLinkService.ensureFinanceUserKey(saved);
+
+        String signupToken = jwtProvider.createSignupToken(saved.getUserId());
 
         return SignupEmailResponse.builder()
-                .userId(u.getUserId())
+                .signupToken(signupToken)
                 .message("회원 가입 시작. 프로필 작성 후 완료")
                 .build();
     }
@@ -93,10 +96,12 @@ public class UserAuthService {
 
     @Transactional
     public RefreshResponse refresh(RefreshRequest req) {
-        Long userId = jwtProvider.parseUserId(req.refreshToken());
-        String stored = refreshStore.get(userId).orElseThrow(() -> new BadCredentialsException("리프레시 토큰이 없습니다."));
-        if (!stored.equals(req.refreshToken())) throw new BadCredentialsException("리프레시 토큰이 일치하지 않습니다.");
-        TokenEnvelope tok = issueTokens(userId); // rotate
+        Long userId = jwtProvider.parseRefreshUserId(req.refreshToken());
+        String stored = refreshStore.get(userId)
+                .orElseThrow(() -> new BadCredentialsException("리프레시 토큰이 없습니다."));
+        if (!stored.equals(req.refreshToken()))
+            throw new BadCredentialsException("리프레시 토큰이 일치하지 않습니다.");
+        TokenEnvelope tok = issueTokens(userId);
         return new RefreshResponse(tok);
     }
 

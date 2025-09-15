@@ -26,52 +26,64 @@ public class KakaoAuthService {
     private final RefreshTokenStore refreshStore;
     private final FinanceLinkService financeLinkService;
 
+    private TokenEnvelope issueTokens(Long userId) {
+        String access = jwtProvider.createAccessToken(userId);
+        String refresh = jwtProvider.createRefreshToken(userId);
+        refreshStore.save(userId, refresh, Duration.ofDays(jwtProvider.getRefreshExpDays()));
+        return TokenEnvelope.builder()
+                .accessToken(access)
+                .expiresIn(jwtProvider.getAccessExpMinutes() * 60)
+                .refreshToken(refresh)
+                .refreshExpiresIn(jwtProvider.getRefreshExpDays() * 24L * 3600L)
+                .tokenType("Bearer")
+                .build();
+    }
+
     @Transactional
     public KakaoLoginResponse login(KakaoLoginRequest req) {
         KakaoMe me = kakaoApiClient.me(req.accessToken());
         Long kakaoId = me.id();
 
-        String email, nickname;
-        if (me.kakao_account() != null && me.kakao_account().get("email") != null) {
-            email = me.kakao_account().get("email").toString();
-        } else {
-            email = null;
+        String email = (me.kakao_account() != null && me.kakao_account().get("email") != null)
+                ? me.kakao_account().get("email").toString() : null;
+        String nickname = (me.properties() != null && me.properties().get("nickname") != null)
+                ? me.properties().get("nickname").toString() : null;
+
+        User user = userRepository.findByKakaoSub(String.valueOf(kakaoId)).orElse(null);
+
+        if (user == null) {
+            user = userRepository.save(User.builder()
+                    .email(email != null ? email : ("kakao-" + kakaoId + "@toktokggubi.com"))
+                    .password(null)
+                    .nickname(nickname != null ? nickname : "사용자")
+                    .gender(Gender.M)
+                    .kakaoSub(String.valueOf(kakaoId))
+                    .status(UserStatus.INACTIVE)
+                    .build());
+        } else if (user.getStatus() == UserStatus.WITHDRAWN) {
+            user = userRepository.save(user.toBuilder()
+                    .status(UserStatus.INACTIVE)
+                    .email(email != null ? email : user.getEmail())
+                    .nickname(nickname != null ? nickname : user.getNickname())
+                    .build());
         }
-        if (me.properties() != null && me.properties().get("nickname") != null) {
-            nickname = me.properties().get("nickname").toString();
+
+        financeLinkService.ensureFinanceUserKey(user);
+
+        if (user.getStatus() == UserStatus.ACTIVE) {
+            TokenEnvelope token = issueTokens(user.getUserId());
+            return KakaoLoginResponse.builder()
+                    .message("카카오 로그인 완료")
+                    .userId(user.getUserId())
+                    .token(token)
+                    .build();
         } else {
-            nickname = null;
+            String signupToken = jwtProvider.createSignupToken(user.getUserId());
+            return KakaoLoginResponse.builder()
+                    .message("카카오 로그인 성공. 프로필 작성 후 완료하세요.")
+                    .userId(user.getUserId())
+                    .signupToken(signupToken)
+                    .build();
         }
-
-        User u = userRepository.findByKakaoSub(String.valueOf(kakaoId)).orElseGet(() ->
-                userRepository.save(User.builder()
-                        .email(email != null ? email : ("kakao-" + kakaoId + "@toktokggubi.com"))
-                        .password(null)
-                        .nickname(nickname != null ? nickname : "사용자") // 스키마 NOT NULL 때문에 임시값
-                        .gender(Gender.M) // 스키마 NOT NULL 때문에 임시값
-                        .kakaoSub(String.valueOf(kakaoId))
-                        .status(UserStatus.INACTIVE)
-                        .build())
-        );
-
-        financeLinkService.ensureFinanceUserKey(u);
-
-        String access = jwtProvider.createAccessToken(u.getUserId(), u.getEmail());
-        String refresh = jwtProvider.createRefreshToken(u.getUserId());
-        refreshStore.save(u.getUserId(), refresh, Duration.ofDays(jwtProvider.getRefreshExpDays()));
-
-        TokenEnvelope token = TokenEnvelope.builder()
-                .accessToken(access)
-                .expiresIn(jwtProvider.getAccessExpMinutes()*60)
-                .refreshToken(refresh)
-                .refreshExpiresIn(jwtProvider.getRefreshExpDays()*24L*3600L)
-                .tokenType("Bearer")
-                .build();
-
-        return KakaoLoginResponse.builder()
-                .message("카카오 로그인 완료")
-                .userId(u.getUserId())
-                .token(token)
-                .build();
     }
 }

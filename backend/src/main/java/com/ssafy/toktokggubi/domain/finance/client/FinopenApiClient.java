@@ -29,8 +29,15 @@ public class FinopenApiClient {
             ResponseEntity<FinMemberResponse> res =
                     finopenRestTemplate.postForEntity(url, req, FinMemberResponse.class);
             return Optional.ofNullable(res.getBody());
-        } catch (HttpClientErrorException.NotFound e) {
-            return Optional.empty();
+        } catch (HttpClientErrorException e) {
+            // 미등록 시 400(E4003)을 보냄
+            if (e.getStatusCode().is4xxClientError()) {
+                e.getResponseBodyAsString();
+                if (e.getResponseBodyAsString().contains("\"E4003\"")) {
+                    return Optional.empty();
+                }
+            }
+            throw e;
         }
     }
 
