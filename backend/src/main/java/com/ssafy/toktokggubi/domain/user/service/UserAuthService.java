@@ -2,6 +2,7 @@ package com.ssafy.toktokggubi.domain.user.service;
 
 import com.ssafy.toktokggubi.domain.auth.dto.request.RefreshRequest;
 import com.ssafy.toktokggubi.domain.auth.dto.response.RefreshResponse;
+import com.ssafy.toktokggubi.domain.finance.service.FinanceLinkService;
 import com.ssafy.toktokggubi.domain.user.dto.request.*;
 import com.ssafy.toktokggubi.domain.user.dto.response.*;
 import com.ssafy.toktokggubi.domain.user.entity.Gender;
@@ -28,6 +29,7 @@ public class UserAuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenStore refreshStore;
     private final TokenRevocationService tokenRevoke;
+    private final FinanceLinkService financeLinkService;
 
     private TokenEnvelope issueTokens(Long userId) {
         String access = jwtProvider.createAccessToken(userId);
@@ -49,10 +51,13 @@ public class UserAuthService {
         User u = User.builder()
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
-                .nickname("사용자")
-                .gender(Gender.M)
+                .nickname("사용자") // 스키마 NOT NULL 때문에 임시값
+                .gender(Gender.M) // 스키마 NOT NULL 때문에 임시값
                 .status(UserStatus.INACTIVE)
                 .build();
+
+        financeLinkService.ensureFinanceUserKey(u);
+
         return SignupEmailResponse.builder()
                 .userId(u.getUserId())
                 .message("회원 가입 시작. 프로필 작성 후 완료")

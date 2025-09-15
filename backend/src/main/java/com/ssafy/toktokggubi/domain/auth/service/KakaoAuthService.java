@@ -3,6 +3,7 @@ package com.ssafy.toktokggubi.domain.auth.service;
 import com.ssafy.toktokggubi.domain.auth.dto.request.KakaoLoginRequest;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoLoginResponse;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
+import com.ssafy.toktokggubi.domain.finance.service.FinanceLinkService;
 import com.ssafy.toktokggubi.domain.user.entity.Gender;
 import com.ssafy.toktokggubi.domain.user.entity.User;
 import com.ssafy.toktokggubi.domain.user.entity.UserStatus;
@@ -23,6 +24,7 @@ public class KakaoAuthService {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
     private final RefreshTokenStore refreshStore;
+    private final FinanceLinkService financeLinkService;
 
     @Transactional
     public KakaoLoginResponse login(KakaoLoginRequest req) {
@@ -41,7 +43,7 @@ public class KakaoAuthService {
             nickname = null;
         }
 
-        User user = userRepository.findByKakaoSub(String.valueOf(kakaoId)).orElseGet(() ->
+        User u = userRepository.findByKakaoSub(String.valueOf(kakaoId)).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(email != null ? email : ("kakao-" + kakaoId + "@toktokggubi.com"))
                         .password(null)
@@ -52,9 +54,11 @@ public class KakaoAuthService {
                         .build())
         );
 
-        String access = jwtProvider.createAccessToken(user.getUserId(), user.getEmail());
-        String refresh = jwtProvider.createRefreshToken(user.getUserId());
-        refreshStore.save(user.getUserId(), refresh, Duration.ofDays(jwtProvider.getRefreshExpDays()));
+        financeLinkService.ensureFinanceUserKey(u);
+
+        String access = jwtProvider.createAccessToken(u.getUserId(), u.getEmail());
+        String refresh = jwtProvider.createRefreshToken(u.getUserId());
+        refreshStore.save(u.getUserId(), refresh, Duration.ofDays(jwtProvider.getRefreshExpDays()));
 
         TokenEnvelope token = TokenEnvelope.builder()
                 .accessToken(access)
@@ -66,7 +70,7 @@ public class KakaoAuthService {
 
         return KakaoLoginResponse.builder()
                 .message("카카오 로그인 완료")
-                .userId(user.getUserId())
+                .userId(u.getUserId())
                 .token(token)
                 .build();
     }
