@@ -15,10 +15,7 @@ export default function CategoryBudgetList({
   getLabel = (n: CategoryName) => n,
   gap = 12,
 }: CategoryBudgetListProps) {
-  // 5개 이상일 때 스크롤 가능하도록 설정
-  const shouldScroll = items.length > 5;
-  const maxHeight = shouldScroll ? 5 * (64 + gap) - gap : undefined; // 5개 아이템 높이 + 간격
-
+  // 부모 ScrollView를 사용하므로 자체 스크롤 비활성화
   const content = (
     <View style={[styles.list, { gap }]}>
       {items.map(({ name, amount }) => (
@@ -37,26 +34,11 @@ export default function CategoryBudgetList({
     </View>
   );
 
-  if (shouldScroll) {
-    return (
-      <ScrollView
-        style={[styles.scrollContainer, { maxHeight }]}
-        showsVerticalScrollIndicator={true}
-        nestedScrollEnabled={true}
-      >
-        {content}
-      </ScrollView>
-    );
-  }
-
   return content;
 }
 
 const styles = StyleSheet.create({
   list: {
-    width: "100%",
-  },
-  scrollContainer: {
     width: "100%",
   },
 });
