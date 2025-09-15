@@ -1,4 +1,6 @@
+import type { Category } from "@/shared/constants/categories";
+
 export interface CategoryChipsProps {
-  value: "cafe" | "movie" | "shopping" | "life" | "burger" | "etc";
-  onChange: (next: CategoryChipsProps["value"]) => void;
+  value: Category;
+  onChange: (next: Category) => void;
 }

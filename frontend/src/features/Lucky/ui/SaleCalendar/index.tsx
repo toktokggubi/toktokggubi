@@ -9,13 +9,14 @@ import {
 import type { SaleCalendarProps } from "./types";
 import { colors } from "@/shared/constants/colors";
 import { Feather } from "@expo/vector-icons";
+import { font } from "@/shared/typography/font";
 
 const CELL_H = 64; // 날짜 셀 높이
 const CELL_PAD_X = 6; // 셀 좌우 패딩(s.cell.padding과 일치)
 const CELL_PAD_Y = 6; // 셀 상하 패딩
-const BAR_INSET_X = 2; // 막대 좌우 추가 여백(미세 보정)
+const BAR_INSET_X = 0; // 막대 좌우 추가 여백(미세 보정)
 const BAR_HEIGHT = 14; // 막대 높이
-const BAR_RADIUS = 7; // 막대 라운드
+
 const DOW = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
 type BarColor = "yellow" | "blue";
@@ -246,14 +247,10 @@ function SaleCalendarImpl({
               accessibilityLabel={day ? `${month}월 ${day}일` : undefined}
             >
               {day ? (
-                <View
-                  style={[
-                    s.dayWrap,
-                    isSelected && s.dayWrapSel,
-                    hasEvent && s.dayWrapEvent,
-                  ]}
-                >
-                  <Text style={s.day}>{day}</Text>
+                <View style={s.dayWrap}>
+                  <View style={[s.dayCircle, isSelected && s.dayCircleSel]}>
+                    <Text style={[s.day, isSelected && s.daySel]}>{day}</Text>
+                  </View>
                 </View>
               ) : null}
             </Pressable>
@@ -317,7 +314,7 @@ function SaleCalendarImpl({
 }
 
 export const SaleCalendar = memo(SaleCalendarImpl);
-
+const CIRCLE = 28;
 const s = StyleSheet.create({
   wrap: {
     padding: 14,
@@ -332,7 +329,7 @@ const s = StyleSheet.create({
   navRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center", // ✅ 가운데 묶기
+    justifyContent: "center",
     marginBottom: 6,
   },
   navBtn: {
@@ -342,7 +339,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 14,
     backgroundColor: "transparent",
-    marginHorizontal: 6, // ✅ 월 텍스트와 간격
+    marginHorizontal: 6,
   },
   navBtnPressed: {
     opacity: 0.5, // 탭 시 피드백
@@ -380,15 +377,24 @@ const s = StyleSheet.create({
     paddingVertical: CELL_PAD_Y,
   },
   dayWrap: {
-    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 2,
+    paddingVertical: 0,
   },
-  dayWrapSel: {
-    backgroundColor: "#eef6ff",
+
+  dayCircle: {
+    minWidth: CIRCLE,
+    aspectRatio: 1, // 가로=세로
+    borderRadius: CIRCLE / 2,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
   },
-  dayWrapEvent: {},
+  dayCircleSel: {
+    backgroundColor: colors.BLUE_LIGHT,
+    // 혹시 기기에 따라 borderRadius가 덮이는 이슈가 있으면 안전빵:
+    borderRadius: 9999,
+  },
   day: {
     fontSize: 12,
     lineHeight: 16,
@@ -396,12 +402,14 @@ const s = StyleSheet.create({
     color: colors.BLUE_DARK_ACTIVE,
     textAlign: "center",
   },
+  daySel: {
+    color: colors.BLUE_DARKER, // 진한 배경이면 "#fff"로
+  },
 
   // ▼ 형광펜 막대
   bar: {
     position: "absolute",
     height: BAR_HEIGHT,
-    borderRadius: BAR_RADIUS,
     paddingHorizontal: 8,
     justifyContent: "center",
     alignItems: "center",
@@ -410,7 +418,7 @@ const s = StyleSheet.create({
     width: "100%",
     textAlign: "center",
     fontSize: 10,
-    fontWeight: "800",
+    ...font.bold,
     includeFontPadding: false,
   },
 });

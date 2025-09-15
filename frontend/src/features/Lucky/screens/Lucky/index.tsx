@@ -1,23 +1,25 @@
 // src/features/Lucky/screens/Lucky/index.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { View, ActivityIndicator } from "react-native";
 import LuckyTemplate from "@/features/Lucky/templates/LuckyTemplate";
 import { useSalesByMonth } from "@/features/Lucky/model/hooks";
 import type { Category } from "@/features/Lucky/model/types";
 import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types";
-import { router } from "expo-router"; // (이미 있으면 생략)
+import { useRouter } from "expo-router"; // ✅ 변경: 훅 사용
 
 const now = new Date();
 
 export default function LuckyScreen() {
-  // ✅ month/year를 state로
+  const router = useRouter(); // ✅ 훅으로 라우터 가져오기
+
+  // month/year를 state로
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
-  const [category, setCategory] = useState<Category>("cafe");
+  const [category, setCategory] = useState<Category>("cafe_snack");
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
-  // ✅ 훅에 state 사용
+  // 훅에 state 사용
   const { data, isLoading } = useSalesByMonth(year, month, category);
 
   const eventsForDay: SaleEventListItem[] = useMemo(() => {
@@ -52,6 +54,15 @@ export default function LuckyScreen() {
       });
   }, [data, selectedDay]);
 
+  // ✅ 이동 핸들러 (useCallback으로 메모이즈)
+  const handlePressNbbang = useCallback(() => {
+    router.push("/nbbang");
+  }, [router]);
+
+  const handlePressMolbbang = useCallback(() => {
+    router.push("/molbbang");
+  }, [router]);
+
   if (isLoading || !data) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
@@ -62,8 +73,8 @@ export default function LuckyScreen() {
 
   return (
     <LuckyTemplate
-      year={year} // ✅ state 전달
-      month={month} // ✅ state 전달
+      year={year}
+      month={month}
       category={category}
       selectedDay={selectedDay}
       onChangeCategory={(c) => {
@@ -79,8 +90,10 @@ export default function LuckyScreen() {
       eventsForDay={eventsForDay}
       events={data.events}
       merchants={data.merchants}
-      onPressNbbang={() => router.push("/(tabs)/lucky/nbbang")}
-      onPressMolbbang={() => router.push("/(tabs)/lucky/molbbang")}
+      nImageSource={require("@/assets/images/illustration/n_bbang.png")}
+      molImageSource={require("@/assets/images/illustration/mol_bbang.png")}
+      onPressNbbang={handlePressNbbang}
+      onPressMolbbang={handlePressMolbbang}
     />
   );
 }
