@@ -69,7 +69,6 @@ export default function PersonalInfoScreen() {
     if (!data.monthlyIncome || isNaN(data.monthlyIncome))
       return Alert.alert("알림", "월 소득을 숫자로 입력해 주세요.");
 
-    console.log("payload:", data);
     Alert.alert("OK", JSON.stringify(data, null, 2));
   };
 
