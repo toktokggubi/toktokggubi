@@ -17,9 +17,13 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+
 import java.util.List;
 
 @Configuration
+
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -43,6 +47,7 @@ public class SecurityConfig {
     }
 
     @Bean
+
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
@@ -60,3 +65,4 @@ public class SecurityConfig {
         return src;
     }
 }
+

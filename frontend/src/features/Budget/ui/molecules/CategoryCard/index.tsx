@@ -1,7 +1,8 @@
-import React, { memo } from "react";
-import { Pressable, View, Text, Image, StyleSheet } from "react-native";
-import type { CategoryCardProps } from "./types";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React, { memo } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import type { CategoryCardProps } from "./types";
 
 function CategoryCard({
   name,
@@ -74,7 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   icon: { width: 56, height: 56 },
-  label: { fontSize: 14, fontWeight: "600", color: "#262B31", lineHeight: 18 },
+  label: { fontSize: 14, ...font.medium, color: "#262B31", lineHeight: 18 },
   labelSelected: { color: colors.BLUE_NORMAL },
   labelDisabled: { color: "#97A1AF" },
 });

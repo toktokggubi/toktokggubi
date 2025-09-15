@@ -9,7 +9,7 @@ const MypageScreen = () => {
     <MyPageTemplate
       cardImage={cardImg}
       gifticonImage={giftImg}
-      onPressCard={() => router.push("/cards")}
+      onPressCard={() => router.push("/cards" as Href)}
       onPressGifticon={() => router.push("/gifticons" as Href)}
     />
   );

@@ -1,8 +1,9 @@
-import React, { memo } from "react";
-import { View, Text, StyleSheet, Pressable } from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React, { memo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { FixedExpenseRowProps } from "./types";
-import { rowHeights, nameMaxLines } from "./variants";
+import { nameMaxLines, rowHeights } from "./variants";
 
 function FixedExpenseRowImpl({ item, onPress }: FixedExpenseRowProps) {
   return (
@@ -85,5 +86,5 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxOn: { backgroundColor: colors.BLUE_NORMAL },
-  check: { color: "#fff", fontWeight: "700" },
+  check: { color: "#fff", ...font.bold },
 });

@@ -1,15 +1,16 @@
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Ionicons } from "@expo/vector-icons";
 import React, { memo } from "react";
 import {
-  View,
-  Text,
-  TextInput,
+  Keyboard,
   Pressable,
   StyleSheet,
-  Keyboard,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import type { SearchBarProps } from "./types";
-import { colors } from "@/shared/constants/colors";
 
 function SearchBarImpl({
   value,
@@ -72,7 +73,7 @@ const s = StyleSheet.create({
   },
   searchLabel: {
     fontSize: 14,
-    fontWeight: "600",
+    ...font.medium,
     color: colors.BLUE_LIGHT_ACTIVE,
   },
   input: {

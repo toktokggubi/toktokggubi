@@ -1,5 +1,6 @@
-import { StyleSheet, Dimensions } from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Dimensions, StyleSheet } from "react-native";
 
 const { height } = Dimensions.get("window");
 
@@ -39,7 +40,7 @@ export const introTemplateStyles = StyleSheet.create({
   },
   hl: {
     color: "#3B82F6",
-    fontWeight: "700",
+    ...font.bold,
   },
 
   // 마스코트

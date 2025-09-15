@@ -1,5 +1,17 @@
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, RefreshControl } from "react-native";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useCallback,
+} from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+} from "react-native";
 import PaymentTemplate from "../templates/PaymentTemplate";
 import { getUserCards } from "@/features/User/api/cardService";
 import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
@@ -81,17 +93,20 @@ export default function PaymentScreen() {
   const [tab, setTab] = useState(0);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const activeCardIndexRef = useRef(0);
-  
+
   // activeCardIndex와 ref 동기화
   useEffect(() => {
     activeCardIndexRef.current = activeCardIndex;
   }, [activeCardIndex]);
-  
+
   // activeCardIndex가 0으로 리셋되는 것을 방지
-  const handleActiveCardChange = useCallback((index: number, cardId: number) => {
-    setActiveCardIndex(index);
-  }, []);
-  
+  const handleActiveCardChange = useCallback(
+    (index: number, cardId: number) => {
+      setActiveCardIndex(index);
+    },
+    []
+  );
+
   // 탭 변경 시에도 activeCardIndex 유지
   useEffect(() => {
     // 카드 탭으로 돌아올 때 activeCardIndex 강제 업데이트
@@ -100,7 +115,7 @@ export default function PaymentScreen() {
       setActiveCardIndex(currentIndex);
     }
   }, [tab]);
-  
+
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null);
   const cards: UserCard[] = useMemo(() => getUserCards(), []);
   const [gifticons, setGifticons] = useState<Gifticon[]>([]);
@@ -109,7 +124,7 @@ export default function PaymentScreen() {
 
   const userCardId = cards[activeCardIndex]?.userCardId ?? 0;
   const q = useCardBenefits(userCardId);
-  
+
   // userCardId가 변경될 때 강제로 쿼리 무효화
   useEffect(() => {
     if (userCardId > 0) {
@@ -121,18 +136,19 @@ export default function PaymentScreen() {
   const benefits = q.data?.benefits ?? [];
   const benefitNames = benefits.map((b) => b.franchiseName).filter(Boolean);
 
-
-
   // 주변 장소 검색 옵션을 안정화
-  const nearbyPlacesOptions = useMemo(() => ({
-    categoryCodes: SEARCH_CATEGORIES,
-    radius: 1000, // 1km
-    pages: 5, // 5페이지로 증가 (더 많은 가맹점)
-    size: 15, // 카카오 API 최대 허용값
-    sort: "distance" as const, // 거리순 정렬
-    dedupe: true, // 중복 제거
-    delayMsBetweenCalls: 100, // API 호출 간격
-  }), []);
+  const nearbyPlacesOptions = useMemo(
+    () => ({
+      categoryCodes: SEARCH_CATEGORIES,
+      radius: 1000, // 1km
+      pages: 5, // 5페이지로 증가 (더 많은 가맹점)
+      size: 15, // 카카오 API 최대 허용값
+      sort: "distance" as const, // 거리순 정렬
+      dedupe: true, // 중복 제거
+      delayMsBetweenCalls: 100, // API 호출 간격
+    }),
+    []
+  );
 
   // 주변 장소 검색 (카테고리 기반) - 거리순으로 정렬됨
   const {
@@ -151,37 +167,42 @@ export default function PaymentScreen() {
       nearbyFetching,
       hasPlaces: allNearbyPlaces.length > 0,
       placesCount: allNearbyPlaces.length,
-      error: nearbyError
+      error: nearbyError,
     });
   }
 
   // 1단계: 가까운 가맹점들 (거리순으로 정렬하고 최대 10개로 제한)
   const nearbyPlaces = useMemo(() => {
     if (!allNearbyPlaces || allNearbyPlaces.length === 0) return [];
-    
+
     // 거리순으로 정렬 (거리 정보가 없으면 이름순으로 정렬)
     const sortedPlaces = allNearbyPlaces.sort((a, b) => {
       const distanceA = a.distance ? parseFloat(a.distance) : Infinity;
       const distanceB = b.distance ? parseFloat(b.distance) : Infinity;
-      
+
       // 거리가 같으면 이름순으로 정렬
       if (distanceA === distanceB) {
         return a.place_name.localeCompare(b.place_name);
       }
-      
+
       return distanceA - distanceB;
     });
-    
+
     // 최대 10개로 제한 (거리순 정렬 유지)
     const limitedPlaces = sortedPlaces.slice(0, 10);
-    
-    
+
     return limitedPlaces;
   }, [allNearbyPlaces]);
 
   // 2단계: 각 가맹점에 맞는 카드 혜택 찾기
   const placesWithBenefits = useMemo(() => {
-    if (!nearbyPlaces || nearbyPlaces.length === 0 || !benefits || benefits.length === 0) return [];
+    if (
+      !nearbyPlaces ||
+      nearbyPlaces.length === 0 ||
+      !benefits ||
+      benefits.length === 0
+    )
+      return [];
 
     return nearbyPlaces.map((place) => {
       // 이 가맹점에 맞는 혜택들 찾기
@@ -193,20 +214,22 @@ export default function PaymentScreen() {
         place,
         benefits: matchingBenefits,
         benefitCount: matchingBenefits.length,
-        totalDiscount: matchingBenefits.reduce((sum, b) => sum + (b.discountRate || 0), 0),
+        totalDiscount: matchingBenefits.reduce(
+          (sum, b) => sum + (b.discountRate || 0),
+          0
+        ),
       };
     });
   }, [nearbyPlaces, benefits]);
 
   // 3단계: 모든 가맹점을 거리순으로 정렬 (혜택 유무 관계없이)
   const sortedPlacesWithBenefits = useMemo(() => {
-    return placesWithBenefits
-      .sort((a, b) => {
-        // 거리순으로만 정렬 (가까운 순)
-        const distanceA = parseFloat(a.place.distance || "0");
-        const distanceB = parseFloat(b.place.distance || "0");
-        return distanceA - distanceB;
-      });
+    return placesWithBenefits.sort((a, b) => {
+      // 거리순으로만 정렬 (가까운 순)
+      const distanceA = parseFloat(a.place.distance || "0");
+      const distanceB = parseFloat(b.place.distance || "0");
+      return distanceA - distanceB;
+    });
   }, [placesWithBenefits]);
 
   // 최종 가맹점 목록 (모든 가맹점, 거리순) - useMemo로 최적화
@@ -214,9 +237,8 @@ export default function PaymentScreen() {
     return sortedPlacesWithBenefits.map((item) => item.place);
   }, [sortedPlacesWithBenefits]);
 
-
   const hasNearby = finalNearbyPlaces && finalNearbyPlaces.length > 0;
-  
+
   // nearbyNames도 useMemo로 최적화
   const nearbyNames = useMemo(() => {
     return finalNearbyPlaces ? finalNearbyPlaces.map((p) => p.place_name) : [];
@@ -274,55 +296,63 @@ export default function PaymentScreen() {
   const getCardBenefitsForCard = useCallback((userCardId: number) => {
     // 실제로는 API에서 가져와야 하지만, 여기서는 간단히 하드코딩
     const mockBenefits = {
-      101: [ // 국민 청춘카드
+      101: [
+        // 국민 청춘카드
         { franchiseName: "스타벅스", discountRate: 25.0 },
         { franchiseName: "맘스터치", discountRate: 20.0 },
         { franchiseName: "세븐일레븐", discountRate: 10.0 },
       ],
-      202: [ // 삼성 탭탭오
+      202: [
+        // 삼성 탭탭오
         { franchiseName: "이마트", discountRate: 15.0 },
         { franchiseName: "CGV", discountRate: 12.0 },
         { franchiseName: "세븐일레븐", discountRate: 8.0 },
       ],
-      303: [ // 신한 Deep
+      303: [
+        // 신한 Deep
         { franchiseName: "CGV", discountRate: 30.0 },
         { franchiseName: "스타벅스", discountRate: 15.0 },
         { franchiseName: "맘스터치", discountRate: 10.0 },
         { franchiseName: "GS25", discountRate: 12.0 },
       ],
     };
-    
+
     return mockBenefits[userCardId as keyof typeof mockBenefits] || [];
   }, []);
 
   // 해당 장소에서 혜택이 가장 큰 카드 찾기
-  const findBestCardForPlace = useCallback((place: KakaoPlace) => {
-    let bestCardIndex = -1;
-    let maxTotalDiscount = 0;
-    
-    cards.forEach((card, cardIndex) => {
-      // 각 카드의 혜택 정보 가져오기
-      const cardBenefits = getCardBenefitsForCard(card.userCardId);
-      if (!cardBenefits || cardBenefits.length === 0) return;
-      
-      // 해당 장소와 매칭되는 혜택들 찾기
-      const matchingBenefits = cardBenefits.filter(benefit => 
-        isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
-      );
-      
-      // 총 할인율 계산
-      const totalDiscount = matchingBenefits.reduce((sum, benefit) => sum + benefit.discountRate, 0);
-      
-      // 가장 큰 혜택을 가진 카드 업데이트
-      if (totalDiscount > maxTotalDiscount) {
-        maxTotalDiscount = totalDiscount;
-        bestCardIndex = cardIndex;
-      }
-    });
-    
-    
-    return bestCardIndex;
-  }, [cards, getCardBenefitsForCard]);
+  const findBestCardForPlace = useCallback(
+    (place: KakaoPlace) => {
+      let bestCardIndex = -1;
+      let maxTotalDiscount = 0;
+
+      cards.forEach((card, cardIndex) => {
+        // 각 카드의 혜택 정보 가져오기
+        const cardBenefits = getCardBenefitsForCard(card.userCardId);
+        if (!cardBenefits || cardBenefits.length === 0) return;
+
+        // 해당 장소와 매칭되는 혜택들 찾기
+        const matchingBenefits = cardBenefits.filter((benefit) =>
+          isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
+        );
+
+        // 총 할인율 계산
+        const totalDiscount = matchingBenefits.reduce(
+          (sum, benefit) => sum + benefit.discountRate,
+          0
+        );
+
+        // 가장 큰 혜택을 가진 카드 업데이트
+        if (totalDiscount > maxTotalDiscount) {
+          maxTotalDiscount = totalDiscount;
+          bestCardIndex = cardIndex;
+        }
+      });
+
+      return bestCardIndex;
+    },
+    [cards, getCardBenefitsForCard]
+  );
 
   // Pull-to-Refresh 핸들러
   const onRefresh = useCallback(async () => {
@@ -342,7 +372,7 @@ export default function PaymentScreen() {
   const handlePlaceSelect = (place: KakaoPlace) => {
     setSelectedPlace(place);
     bottomSheetRef.current?.close();
-    
+
     // 해당 장소에서 혜택이 가장 큰 카드 찾기
     const bestCardForPlace = findBestCardForPlace(place);
     if (bestCardForPlace !== -1) {
@@ -452,25 +482,31 @@ export default function PaymentScreen() {
 
       {/* 로딩 인디케이터 - 첫 로딩일 때만 표시 */}
       {nearbyLoading && allNearbyPlaces.length === 0 && (
-        <View style={{
-          position: 'absolute',
-          top: 100,
-          left: 0,
-          right: 0,
-          alignItems: 'center',
-          zIndex: 1000,
-        }}>
-          <View style={{
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            paddingHorizontal: 20,
-            paddingVertical: 10,
-            borderRadius: 20,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-          }}>
+        <View
+          style={{
+            position: "absolute",
+            top: 100,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+            zIndex: 1000,
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              borderRadius: 20,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
             <ActivityIndicator size="small" color="white" />
-            <Text style={{ color: 'white', fontSize: 14 }}>주변 가맹점을 찾는 중...</Text>
+            <Text style={{ color: "white", fontSize: 14 }}>
+              주변 가맹점을 찾는 중...
+            </Text>
           </View>
         </View>
       )}
@@ -482,7 +518,6 @@ export default function PaymentScreen() {
         onPlaceSelect={handlePlaceSelect}
         isFetching={nearbyFetching}
       />
-      
     </>
   );
 }

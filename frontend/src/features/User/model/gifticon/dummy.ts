@@ -10,7 +10,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 120,
     status: "ACTIVE",
     imageKey: "starbucks1",
-    createdAt: "2025-08-01T09:00:00Z", // ✅ 추가
+    createdAt: "2025-08-01T09:00:00Z",
   },
   {
     gifticonId: 2,
@@ -21,7 +21,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 61,
     status: "ACTIVE",
     imageKey: "starbucks2",
-    createdAt: "2025-08-15T12:00:00Z", // ✅ 추가
+    createdAt: "2025-08-15T12:00:00Z",
   },
   {
     gifticonId: 3,
@@ -32,7 +32,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 10,
     status: "ACTIVE",
     imageKey: "bhc1",
-    createdAt: "2025-07-20T18:30:00Z", // ✅ 추가
+    createdAt: "2025-07-20T18:30:00Z",
   },
   {
     gifticonId: 6,
@@ -43,7 +43,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 221,
     status: "ACTIVE",
     imageKey: "cgv1",
-    createdAt: "2025-06-01T11:00:00Z", // ✅ 추가
+    createdAt: "2025-06-01T11:00:00Z",
   },
   {
     gifticonId: 7,
@@ -54,7 +54,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 11,
     status: "ACTIVE",
     imageKey: "cu1",
-    createdAt: "2025-09-01T10:00:00Z", // ✅ 추가
+    createdAt: "2025-09-01T10:00:00Z",
   },
   {
     gifticonId: 8,
@@ -65,7 +65,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 33,
     status: "ACTIVE",
     imageKey: "cu2",
-    createdAt: "2025-09-05T14:00:00Z", // ✅ 추가
+    createdAt: "2025-09-05T14:00:00Z",
   },
   {
     gifticonId: 9,
@@ -76,7 +76,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 58,
     status: "ACTIVE",
     imageKey: "gs1",
-    createdAt: "2025-08-28T09:30:00Z", // ✅ 추가
+    createdAt: "2025-08-28T09:30:00Z",
   },
   {
     gifticonId: 10,
@@ -87,7 +87,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 16,
     status: "ACTIVE",
     imageKey: "mc1",
-    createdAt: "2025-09-07T17:20:00Z", // ✅ 추가
+    createdAt: "2025-09-07T17:20:00Z",
   },
   {
     gifticonId: 11,
@@ -98,7 +98,7 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 79,
     status: "ACTIVE",
     imageKey: "mc2",
-    createdAt: "2025-08-10T13:45:00Z", // ✅ 추가
+    createdAt: "2025-08-10T13:45:00Z",
   },
   {
     gifticonId: 12,
@@ -109,6 +109,6 @@ export const dummyGifticons: Gifticon[] = [
     remainingDays: 94,
     status: "ACTIVE",
     imageKey: "mega1",
-    createdAt: "2025-09-03T08:10:00Z", // ✅ 추가
+    createdAt: "2025-09-03T08:10:00Z",
   },
 ];

@@ -1,12 +1,9 @@
-import React, { memo, useState, useCallback } from "react";
-import { Modal, Pressable, View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import type {
-  CardActionMenuProps,
-  CardActionMenuControlledProps,
-  MenuViewProps,
-} from "./types";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Ionicons } from "@expo/vector-icons";
+import React, { memo, useCallback, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import type { CardActionMenuProps, MenuViewProps } from "./types";
 
 const TXT = colors.BLUE_DARK;
 
@@ -100,7 +97,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   item: { paddingHorizontal: 14, paddingVertical: 12 },
-  text: { color: TXT, fontSize: 14, fontWeight: "500" },
+  text: { color: TXT, fontSize: 14, ...font.medium },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: "#E7EBF2",

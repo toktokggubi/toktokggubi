@@ -1,14 +1,8 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Modal,
-  Pressable,
-  Alert,
-} from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import { krw } from "@/shared/utils/currency";
+import React from "react";
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface BudgetConfirmModalProps {
   visible: boolean;
@@ -28,7 +22,9 @@ export default function BudgetConfirmModal({
   const handleConfirm = () => {
     Alert.alert(
       "예산 확정",
-      `${month} 예산 ${krw(totalBudget)}을(를) 최종 확정하시겠습니까?\n\n확정 후에는 수정할 수 없습니다.`,
+      `${month} 예산 ${krw(
+        totalBudget
+      )}을(를) 최종 확정하시겠습니까?\n\n확정 후에는 수정할 수 없습니다.`,
       [
         {
           text: "취소",
@@ -112,7 +108,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.GRAY_DARK,
     marginBottom: 8,
   },
@@ -135,7 +131,7 @@ const styles = StyleSheet.create({
   },
   budgetAmount: {
     fontSize: 24,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.BLUE_NORMAL,
   },
   warningBox: {
@@ -174,12 +170,12 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: colors.GRAY_DARK,
   },
   confirmButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: "#fff",
   },
 });

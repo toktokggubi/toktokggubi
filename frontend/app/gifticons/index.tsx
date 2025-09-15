@@ -1,2 +1,2 @@
-import GifticonScreen from "@/features/User/screens/GifticonsScreen";
-export default GifticonScreen;
+import GifticonsScreen from "@/features/User/screens/GifticonsScreen";
+export default GifticonsScreen;

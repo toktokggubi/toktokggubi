@@ -1,11 +1,12 @@
-import React, { memo } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
-import type { BenefitsListProps } from "./types";
 import {
   CATEGORY_ICON_BY_NAME,
   CATEGORY_ICON_FALLBACK,
 } from "@/shared/constants/categoryIcons";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React, { memo } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
+import type { BenefitsListProps } from "./types";
 
 function Row({
   name,
@@ -70,7 +71,7 @@ const s = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "800",
+    ...font.bold,
     color: colors.BLUE_DARKER,
     marginBottom: 6,
   },
@@ -87,11 +88,11 @@ const s = StyleSheet.create({
     fontSize: 14,
     color: colors.BLUE_DARKER,
   },
-  franchise: { fontSize: 14, fontWeight: "700", color: colors.BLUE_DARKER },
-  percent: { fontWeight: "700", color: colors.BLUE_DARKER },
+  franchise: { fontSize: 14, ...font.bold, color: colors.BLUE_DARKER },
+  percent: { ...font.bold, color: colors.BLUE_DARKER },
   rowTexts: { flex: 1 },
   desc: { marginTop: 2, color: colors.GRAY_DARK, fontSize: 13 },
-  bold: { fontWeight: "700" },
+  bold: { ...font.bold },
   empty: { alignItems: "center", justifyContent: "center" },
   emptyText: { color: colors.GRAY_NORMAL },
 });

@@ -1,5 +1,6 @@
+import { font } from "@/shared/typography/font";
 import React, { memo } from "react";
-import { Pressable, Image, Text, StyleSheet } from "react-native";
+import { Image, Pressable, StyleSheet, Text } from "react-native";
 import type { MenuTileProps } from "./types";
 
 function MenuTileImpl({ label, image, onPress, disabled }: MenuTileProps) {
@@ -39,7 +40,7 @@ const s = StyleSheet.create({
   pressed: { opacity: 0.92 },
   disabled: { opacity: 0.5 },
   image: { width: 72, height: 72, resizeMode: "contain", marginBottom: 10 },
-  label: { fontSize: 14, fontWeight: "700", color: "#1f2937" },
+  label: { fontSize: 14, ...font.bold, color: "#1f2937" },
 });
 
 export default memo(MenuTileImpl);

@@ -1,19 +1,20 @@
 // src/features/User/screens/Cards/index.tsx
-import React, { useLayoutEffect, useState, useCallback } from "react";
+import { getUserCards, syncUserCards } from "@/features/User/api/cardService";
+import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
+import CardCarouselTemplate from "@/features/User/templates/CardTemplate";
+import { CardActionMenu } from "@/features/User/ui/CardActionMeun";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useNavigation } from "expo-router";
+import React, { useCallback, useLayoutEffect, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
-  View,
+  Alert,
   Pressable,
   StyleSheet,
+  View,
 } from "react-native";
-import { router, useNavigation } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import CardCarouselTemplate from "@/features/User/templates/CardTemplate";
-import { getUserCards, syncUserCards } from "@/features/User/api/cardService";
-import { CardActionMenu } from "@/features/User/ui/CardActionMeun";
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
-import { colors } from "@/shared/constants/colors";
 
 const BG = colors.BACKGROUND_PRIMARY;
 const TXT = colors.BLUE_DARKER;
@@ -73,7 +74,7 @@ export default function CardsScreen() {
       headerTintColor: TXT,
       headerStyle: { backgroundColor: BG },
       headerShadowVisible: false,
-      headerTitleStyle: { fontSize: 18, fontWeight: "800" },
+      headerTitleStyle: { fontSize: 18, ...font.bold },
       headerLeft: () => (
         <Pressable
           onPress={() => router.back()}

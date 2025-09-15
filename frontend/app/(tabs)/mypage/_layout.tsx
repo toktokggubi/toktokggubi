@@ -12,7 +12,7 @@ export default function MyPageStackLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen
-        name="cards/index"
+        name="cards"
         options={{
           headerShown: true,
           title: "나의 카드",

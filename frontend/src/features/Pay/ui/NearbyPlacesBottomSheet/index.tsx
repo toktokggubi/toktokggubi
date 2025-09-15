@@ -1,11 +1,24 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, ActivityIndicator } from "react-native";
-import { BottomSheetScrollView, BottomSheetFlatList } from "@gorhom/bottom-sheet";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  ActivityIndicator,
+} from "react-native";
+import {
+  BottomSheetScrollView,
+  BottomSheetFlatList,
+} from "@gorhom/bottom-sheet";
 // import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppBottomSheet from "@/features/Auth/ui/BottomSheetList";
 import type { BottomSheetRef } from "@/features/Auth/ui/BottomSheetList/types";
-import type { KakaoPlace } from "@/shared/types/location.types";
 import { colors } from "@/shared/constants/colors";
+import type { KakaoPlace } from "@/shared/types/location.types";
+import { font } from "@/shared/typography/font";
+
 import type { NearbyPlacesBottomSheetProps } from "./types";
 
 const NearbyPlacesBottomSheet = React.forwardRef<
@@ -13,29 +26,34 @@ const NearbyPlacesBottomSheet = React.forwardRef<
   Omit<NearbyPlacesBottomSheetProps, "ref">
 >(function NearbyPlacesBottomSheet({ places, onPlaceSelect, isFetching }, ref) {
   // const insets = useSafeAreaInsets();
-  
-  // 안드로이드 네비게이션 바 높이 (대략적)
-  const bottomPadding = Platform.OS === 'android' ? 60 : 20;
-  
-  // 거리 계산 함수 (Haversine 공식)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371e3; // 지구 반지름 (미터)
-    const φ1 = lat1 * Math.PI/180;
-    const φ2 = lat2 * Math.PI/180;
-    const Δφ = (lat2-lat1) * Math.PI/180;
-    const Δλ = (lon2-lon1) * Math.PI/180;
 
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  // 안드로이드 네비게이션 바 높이 (대략적)
+  const bottomPadding = Platform.OS === "android" ? 60 : 20;
+
+  // 거리 계산 함수 (Haversine 공식)
+  const calculateDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371e3; // 지구 반지름 (미터)
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
     return R * c; // 미터 단위
   };
 
   const renderPlaceItem = ({ item }: { item: KakaoPlace }) => {
     let distance = "거리 정보 없음";
-    
+
     if (item.distance) {
       distance = `${Math.round(parseFloat(item.distance))}m`;
     } else if (item.x && item.y) {
@@ -44,11 +62,16 @@ const NearbyPlacesBottomSheet = React.forwardRef<
       const currentLng = 127.29811;
       const placeLat = parseFloat(item.y);
       const placeLng = parseFloat(item.x);
-      
-      const calculatedDistance = calculateDistance(currentLat, currentLng, placeLat, placeLng);
+
+      const calculatedDistance = calculateDistance(
+        currentLat,
+        currentLng,
+        placeLat,
+        placeLng
+      );
       distance = `${Math.round(calculatedDistance)}m`;
     }
-    
+
     return (
       <TouchableOpacity
         style={styles.placeItem}
@@ -73,23 +96,23 @@ const NearbyPlacesBottomSheet = React.forwardRef<
       enablePanDownToClose={true}
     >
       <View style={styles.container}>
-               <View style={styles.header}>
-                 <View style={styles.headerContent}>
-                   <Text style={styles.title}>주변 가맹점</Text>
-                   <Text style={styles.subtitle}>1km 이내</Text>
-                 </View>
-                 {isFetching && (
-                   <View style={styles.refreshIndicator}>
-                     <ActivityIndicator size="small" color={colors.BLUE_NORMAL} />
-                     <Text style={styles.refreshText}>업데이트 중...</Text>
-                   </View>
-                 )}
-               </View>
-        
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.title}>주변 가맹점</Text>
+            <Text style={styles.subtitle}>1km 이내</Text>
+          </View>
+          {isFetching && (
+            <View style={styles.refreshIndicator}>
+              <ActivityIndicator size="small" color={colors.BLUE_NORMAL} />
+              <Text style={styles.refreshText}>업데이트 중...</Text>
+            </View>
+          )}
+        </View>
+
         <BottomSheetScrollView
           contentContainerStyle={[
             styles.listContainer,
-            { paddingBottom: bottomPadding } // 하단 여백 추가
+            { paddingBottom: bottomPadding }, // 하단 여백 추가
           ]}
           style={styles.flatList}
           showsVerticalScrollIndicator={true}
@@ -101,8 +124,8 @@ const NearbyPlacesBottomSheet = React.forwardRef<
             </View>
           ))}
         </BottomSheetScrollView>
-        
-        {/* 만약 BottomSheetScrollView가 안 되면 이걸로 시도해보세요 */}
+
+        {/* 만약 BottomSheetScrollView가 안 되면 이걸로 시도 */}
         {/* 
         <ScrollView
           contentContainerStyle={[
@@ -137,16 +160,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
     marginBottom: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   headerContent: {
     flex: 1,
   },
   refreshIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   refreshText: {
@@ -155,7 +178,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
+    ...font.bold,
     color: colors.BLUE_DARKER,
     marginBottom: 4,
   },
@@ -185,7 +208,7 @@ const styles = StyleSheet.create({
   },
   placeName: {
     fontSize: 16,
-    fontWeight: "600",
+    ...font.medium,
     color: "#1e293b",
     marginBottom: 4,
   },
@@ -201,7 +224,7 @@ const styles = StyleSheet.create({
   },
   distanceText: {
     fontSize: 12,
-    fontWeight: "600",
+    ...font.medium,
     color: "white",
   },
 });
