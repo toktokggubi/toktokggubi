@@ -47,7 +47,9 @@ export default function FixedExpenseList({
             style={s.addRow}
             accessibilityLabel="항목 추가"
           >
-            <Text style={s.addText}>＋</Text>
+            <View style={s.addRowContent}>
+              <Text style={s.addText}>＋</Text>
+            </View>
           </Pressable>
         }
       />
@@ -102,10 +104,21 @@ const s = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.BLUE_LIGHT,
-    alignItems: "center",
-    justifyContent: "center",
     backgroundColor: "#fff",
     marginTop: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  addText: { fontSize: 20, color: colors.BLUE_NORMAL },
+  addRowContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addText: { 
+    fontSize: 20, 
+    color: colors.BLUE_NORMAL,
+    textAlign: "center",
+    lineHeight: 20,
+  },
 });
