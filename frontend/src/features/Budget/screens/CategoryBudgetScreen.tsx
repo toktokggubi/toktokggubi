@@ -1,6 +1,4 @@
 import { useCallback, useMemo, useState } from "react";
-import { PanGestureHandler, State } from "react-native-gesture-handler";
-import { View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import CategoryBudgetTemplate from "~features/Budget/templates/CategoryBudgetTemplate";
 import type { CategoryBudgetItem } from "~features/Budget/templates/CategoryBudgetTemplate/types";
@@ -120,36 +118,17 @@ export default function CategoryBudgetScreen() {
     });
   }, [items, totalAmount, fixedExpenses, selectedCategories]);
 
-  const handlePanGesture = useCallback((event: any) => {
-    if (event.nativeEvent.state === State.END) {
-      const { translationX } = event.nativeEvent;
-      const threshold = 50; // 스와이프 최소 거리
-      
-      if (translationX > threshold) {
-        // 오른쪽으로 스와이프 - 이전 페이지
-        goPrev();
-      } else if (translationX < -threshold) {
-        // 왼쪽으로 스와이프 - 다음 페이지
-        goNext();
-      }
-    }
-  }, [goPrev, goNext]);
-
   return (
-    <PanGestureHandler onHandlerStateChange={handlePanGesture}>
-      <View style={{ flex: 1 }}>
-        <CategoryBudgetTemplate
-          availableNextMonth={availableNextMonth}
-          items={items}
-          onChangeItem={onChangeItem}
-          onPressPrev={goPrev}
-          onPressNext={goNext}
-          stepIndex={3}
-          stepTotal={5}
-          title="카테고리별 예산 설정"
-          subtitle="꺼비가 회원님의 정보를 바탕으로 제안했어요."
-        />
-      </View>
-    </PanGestureHandler>
+    <CategoryBudgetTemplate
+      availableNextMonth={availableNextMonth}
+      items={items}
+      onChangeItem={onChangeItem}
+      onPressPrev={goPrev}
+      onPressNext={goNext}
+      stepIndex={3}
+      stepTotal={5}
+      title="카테고리별 예산 설정"
+      subtitle="꺼비가 회원님의 정보를 바탕으로 제안했어요."
+    />
   );
 }
