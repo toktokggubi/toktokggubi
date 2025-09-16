@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { TransactionRow } from "../TransactionRow";
 import { TransactionListProps, Transaction } from "./types";
 
@@ -8,40 +8,38 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   onTransactionPress,
   emptyMessage = "거래 내역이 없습니다.",
 }) => {
-  const renderTransaction = ({ item }: { item: Transaction }) => (
-    <TransactionRow
-      merchantName={item.merchantName}
-      category={item.category}
-      paymentMethod={item.paymentMethod}
-      amount={item.amount}
-      onPress={() => onTransactionPress?.(item)}
-    />
-  );
-
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>{emptyMessage}</Text>
-    </View>
-  );
+  if (transactions.length === 0) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>{emptyMessage}</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={transactions}
-        renderItem={renderTransaction}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmpty}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
+      <View style={styles.listContent}>
+        {transactions.map((item, index) => (
+          <View key={item.id}>
+            <TransactionRow
+              merchantName={item.merchantName}
+              category={item.category}
+              paymentMethod={item.paymentMethod}
+              amount={item.amount}
+              date={item.date}
+              onPress={() => onTransactionPress?.(item)}
+            />
+            {index < transactions.length - 1 && <View style={styles.separator} />}
+          </View>
+        ))}
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    backgroundColor: "transparent",
   },
   listContent: {
     paddingVertical: 4,

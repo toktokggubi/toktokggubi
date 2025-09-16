@@ -25,22 +25,14 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
   // 카테고리 아이콘
   const categoryIcon = !isTotalType && category ? CATEGORY_ICON_BY_NAME[label] : null;
 
-  const handlePress = () => {
-    if (isTotalType) {
-      onPress?.();
-    } else {
-      onUsageDetailsPress?.();
-    }
-  };
-
   return (
     <TouchableOpacity
-      onPress={handlePress}
+      onPress={onPress}
       style={[
         styles.container,
         isTotalType ? styles.totalContainer : styles.categoryContainer,
       ]}
-      disabled={!onPress && !onUsageDetailsPress}
+      disabled={!onPress}
     >
       {/* 상단 텍스트 */}
       <View style={styles.textRow}>
@@ -81,6 +73,7 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
         <TouchableOpacity 
           style={styles.usageDetailsContainer}
           onPress={onUsageDetailsPress}
+          activeOpacity={0.7}
         >
           <Text style={styles.usageDetailsText}>사용내역</Text>
           <Text style={styles.chevron}>{isExpanded ? "▲" : "▼"}</Text>

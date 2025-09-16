@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { ProgressRow } from "../ProgressRow";
 import { TransactionList } from "../TransactionList";
 import { ProgressListProps, CategoryBudget, Transaction } from "./types";
@@ -18,35 +18,6 @@ export const ProgressList: React.FC<ProgressListProps> = ({
     setExpandedCategory(expandedCategory === category ? null : category);
   };
 
-  const renderCategoryBudget = ({ item }: { item: CategoryBudget }) => {
-    const isExpanded = expandedCategory === item.category;
-    const categoryTransactions = transactions[item.category] || [];
-
-    return (
-      <View>
-        <ProgressRow
-          type="category"
-          category={item.category}
-          currentAmount={item.currentAmount}
-          totalAmount={item.totalAmount}
-          onPress={() => onCategoryPress?.(item.category)}
-          isExpanded={isExpanded}
-          onUsageDetailsPress={() => handleUsageDetailsPress(item.category)}
-        />
-        
-        {/* 토글된 거래 내역 */}
-        {isExpanded && categoryTransactions.length > 0 && (
-          <View style={styles.transactionContainer}>
-            <TransactionList
-              transactions={categoryTransactions}
-              onTransactionPress={(transaction) => console.log("거래 내역 클릭:", transaction)}
-            />
-          </View>
-        )}
-      </View>
-    );
-  };
-
   return (
     <View style={styles.container}>
       {/* 제목 */}
@@ -55,14 +26,39 @@ export const ProgressList: React.FC<ProgressListProps> = ({
       </View>
 
       {/* 카테고리별 예산 리스트 */}
-      <FlatList
-        data={categoryBudgets}
-        renderItem={renderCategoryBudget}
-        keyExtractor={(item) => item.category}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
+      <View style={styles.listContent}>
+        {categoryBudgets.map((item, index) => {
+          const isExpanded = expandedCategory === item.category;
+          const categoryTransactions = transactions[item.category] || [];
+
+          return (
+            <View key={item.category}>
+              <ProgressRow
+                type="category"
+                category={item.category}
+                currentAmount={item.currentAmount}
+                totalAmount={item.totalAmount}
+                onPress={() => onCategoryPress?.(item.category)}
+                isExpanded={isExpanded}
+                onUsageDetailsPress={() => handleUsageDetailsPress(item.category)}
+              />
+              
+              {/* 토글된 거래 내역 */}
+              {isExpanded && categoryTransactions.length > 0 && (
+                <View style={styles.transactionContainer}>
+                  <TransactionList
+                    transactions={categoryTransactions}
+                    onTransactionPress={(transaction) => console.log("거래 내역 클릭:", transaction)}
+                  />
+                </View>
+              )}
+              
+              {/* 구분선 */}
+              {index < categoryBudgets.length - 1 && <View style={styles.separator} />}
+            </View>
+          );
+        })}
+      </View>
     </View>
   );
 };

@@ -1,11 +1,14 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Dimensions } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { HomeTemplateProps } from "./types";
-import { ProgressRow } from "../../ui/ProgressRow";
-import { CharacterBackground } from "../../ui/CharacterBackground";
+import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
+import { CircularProgress } from "../../ui/CircularProgress";
 import { ProgressList } from "../../ui/ProgressList";
 import { colors } from "@/shared/constants/colors";
 import { krw } from "@/shared/utils/currency";
+
+const { width: screenWidth } = Dimensions.get("window");
 
 export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   totalBudget,
@@ -17,59 +20,52 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   onCategoryPress,
 }) => {
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* 전체 예산 섹션 */}
-      <View style={styles.budgetSection}>
-        <ProgressRow
-          type="total"
+    <SafeAreaView style={styles.safeArea}>
+      {/* 전체 화면을 차지하는 CharacterBackground */}
+      <CharacterBackground 
+        message={characterMessage}
+        progressPercentage={(totalBudget.currentAmount / totalBudget.totalAmount) * 100}
+        size={screenWidth}
+      >
+        <CircularProgress
           currentAmount={totalBudget.currentAmount}
           totalAmount={totalBudget.totalAmount}
-          onPress={onTotalBudgetPress}
+          month="12월"
+          size={Math.min(150, (screenWidth - 60) * 0.6)}
         />
-        
-        {/* 사용가능금액 */}
-        <View style={styles.availableAmountContainer}>
-          <Text style={styles.availableAmountLabel}>사용가능금액</Text>
-          <Text style={styles.availableAmountValue}>{krw(availableAmount)}</Text>
-        </View>
+      </CharacterBackground>
+
+      {/* 카테고리별 사용현황 - CharacterBackground 위에 오버레이 */}
+      <View style={styles.overlayContainer}>
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <ProgressList
+            categoryBudgets={categoryBudgets}
+            transactions={transactions}
+            onCategoryPress={onCategoryPress}
+            title="카테고리별 사용현황"
+          />
+        </ScrollView>
       </View>
-
-      {/* 캐릭터 배경 */}
-      <CharacterBackground message={characterMessage} />
-
-      {/* 카테고리별 사용현황 */}
-      <ProgressList
-        categoryBudgets={categoryBudgets}
-        transactions={transactions}
-        onCategoryPress={onCategoryPress}
-        title="카테고리별 사용현황"
-      />
-    </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: colors.BACKGROUND_PRIMARY,
   },
-  budgetSection: {
-    paddingTop: 16,
-    paddingBottom: 4,
+  overlayContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10,
+    paddingTop: 260, // CharacterBackground 아래쪽부터 시작 (더 여백 줄임)
   },
-  availableAmountContainer: {
-    alignItems: "center",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  availableAmountLabel: {
-    fontSize: 13,
-    color: colors.GRAY_NORMAL,
-    marginBottom: 3,
-  },
-  availableAmountValue: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: colors.GRAY_DARKER,
+  scrollContainer: {
+    flex: 1,
+    backgroundColor: "transparent",
   },
 });

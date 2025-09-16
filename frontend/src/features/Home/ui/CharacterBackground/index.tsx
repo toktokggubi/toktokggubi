@@ -1,44 +1,58 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
-import { CharacterBackgroundProps } from "./types";
+import { View, Text, StyleSheet, Image } from "react-native";
 import { colors } from "@/shared/constants/colors";
 
-const { width: screenWidth } = Dimensions.get("window");
+interface CharacterBackgroundProps {
+  message: string;
+  children?: React.ReactNode;
+  progressPercentage?: number;
+  size?: number;
+}
 
 export const CharacterBackground: React.FC<CharacterBackgroundProps> = ({
-  message = "아직은 넉넉하다꺼비",
-  showSpeechBubble = true,
+  message,
+  children,
+  progressPercentage = 0,
+  size = 120,
 }) => {
   return (
     <View style={styles.container}>
-      {/* 하단 지형 (언덕) */}
-      <View style={styles.ground} />
-      
-      {/* 물 그릇 (bowl) */}
-      <Image
-        source={require("@/assets/images/illustration/bowl.png")}
-        style={styles.bowl}
+      {/* Bowl 이미지 - 화면 상단에 위치 */}
+      <Image 
+        source={require("@/assets/images/illustration/bowl.png")} 
+        style={styles.bowlImage}
         resizeMode="contain"
       />
       
-      {/* 물 (water) */}
-      <Image
-        source={require("@/assets/images/illustration/water.png")}
-        style={styles.water}
+      {/* Water 이미지 - bowl 아래에 위치, 화면 전체 가로폭 */}
+      <Image 
+        source={require("@/assets/images/illustration/water.png")} 
+        style={[
+          styles.waterImage,
+          { 
+            height: `${85 + (progressPercentage / 100) * 30}%`, // 높이 줄여서 탭과의 여백 줄임
+            top: "35%" // 화면 상단에서 35% 지점에서 시작 (bowl 아래)
+          }
+        ]}
+        resizeMode="stretch"
+      />
+      
+      {/* 캐릭터 - water 시작 높이에 위치 */}
+      <Image 
+        source={require("@/assets/images/character/big-character-02.png")} 
+        style={styles.characterImage}
         resizeMode="contain"
       />
       
-      {/* 캐릭터 */}
-      <Image
-        source={require("@/assets/images/character/big-character-02.png")}
-        style={styles.character}
-        resizeMode="contain"
-      />
+      {/* 캐릭터 메시지 */}
+      <View style={styles.messageContainer}>
+        <Text style={styles.messageText}>{message}</Text>
+      </View>
       
-      {/* 말풍선 */}
-      {showSpeechBubble && (
-        <View style={styles.speechBubble}>
-          <Text style={styles.speechText}>{message}</Text>
+      {/* 자식 컴포넌트 (CircularProgress 등) */}
+      {children && (
+        <View style={styles.childrenContainer}>
+          {children}
         </View>
       )}
     </View>
@@ -47,64 +61,70 @@ export const CharacterBackground: React.FC<CharacterBackgroundProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: screenWidth,
-    height: 260,
-    position: "relative",
-    justifyContent: "center",
     alignItems: "center",
-  },
-  ground: {
+    justifyContent: "center",
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     bottom: 0,
-    width: screenWidth,
-    height: 120,
-    backgroundColor: colors.BLUE_LIGHT,
-    borderTopLeftRadius: screenWidth / 2,
-    borderTopRightRadius: screenWidth / 2,
+    width: "100%",
+    height: "100%",
   },
-  bowl: {
+  bowlImage: {
     position: "absolute",
-    top: 20,
-    width: screenWidth * 0.8,
-    height: 200,
-    zIndex: 3,
+    width: "60%",
+    height: "30%",
+    top: "10%",
+    left: "3%", // 왼쪽으로 이동 (기본값은 0%)
+    zIndex: 1, // bowl이 가장 뒤에
   },
-  water: {
+  waterImage: {
     position: "absolute",
-    top: 40,
-    width: screenWidth * 0.6,
-    height: 120,
-    zIndex: 1,
+    width: "100%",
+    zIndex: 2, // water가 bowl보다 앞에
   },
-  character: {
+  characterImage: {
     position: "absolute",
-    bottom: 40,
-    width: 120,
-    height: 120,
-    zIndex: 10,
+    width: 150, // 크기 증가
+    height: 150,
+    top: "25%",
+    left: "20%",
+    zIndex: 3, // character가 가장 앞에
   },
-  speechBubble: {
+  messageContainer: {
     position: "absolute",
-    top: 60,
-    right: screenWidth * 0.15,
-    backgroundColor: colors.BLUE_LIGHT,
-    borderRadius: 16,
+    top: "25%",
+    left: "5%",
+    backgroundColor: colors.BACKGROUND_PRIMARY,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    zIndex: 4,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.BLUE_LIGHT,
+    zIndex: 5,
+  },
+  messageText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.BLUE_NORMAL,
+    textAlign: "center",
+  },
+  childrenContainer: {
+    position: "absolute",
+    top: "10%",
+    right: "10%",
+    zIndex: 4, // bowl 위에 위치
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 20,
+    padding: 10,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  speechText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.GRAY_DARKER,
-    textAlign: "center",
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
