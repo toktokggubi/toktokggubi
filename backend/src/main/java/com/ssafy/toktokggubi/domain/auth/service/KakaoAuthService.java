@@ -1,5 +1,6 @@
 package com.ssafy.toktokggubi.domain.auth.service;
 
+import com.ssafy.toktokggubi.domain.auth.client.KakaoApiClient;
 import com.ssafy.toktokggubi.domain.auth.dto.request.KakaoLoginRequest;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoLoginResponse;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
