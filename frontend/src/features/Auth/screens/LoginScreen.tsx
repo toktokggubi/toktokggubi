@@ -20,7 +20,7 @@ export default function LoginScreen() {
         }}
         onNavigateSignUp={() => router.push("/auth/signup")}
         errorMessage={undefined}
-        headerImageSource={require("@/assets/images/character/character-01.png")}
+        headerImageSource={require("@/assets/images/character/big-character-01.png")}
         showSocialLogin
         onPressKakao={() => {
           /* 카카오 로그인 로직 */

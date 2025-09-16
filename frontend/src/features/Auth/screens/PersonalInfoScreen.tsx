@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import {
   Alert,
   FlatList,
@@ -6,9 +6,11 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ScrollView,
+  Keyboard,
 } from "react-native";
 import type BottomSheet from "@gorhom/bottom-sheet";
-import { BottomSheetFlatList } from "@gorhom/bottom-sheet";
+import { SafeAreaView as SafeAreaViewContext } from "react-native-safe-area-context";
 import AppBottomSheet from "~features/Auth/ui/BottomSheetList";
 import PersonalInfoTemplate from "../templates/PersonalInfoTemplate";
 import { useRouter } from "expo-router";
@@ -22,11 +24,16 @@ const AGE_GROUP_OPTIONS = [
   "60대 이상",
 ] as const;
 const JOB_TITLE_OPTIONS = [
-  "개발자",
-  "디자이너",
-  "기획자",
-  "마케터",
-  "데이터 분석가",
+  "직장인",
+  "전문직",
+  "공무원",
+  "자영업",
+  "학생",
+  "주부",
+  "무직",
+  "프리랜서",
+  "군인",
+  "농업인",
   "기타",
 ];
 
@@ -46,11 +53,29 @@ export default function PersonalInfoScreen() {
   const ageSheetRef = useRef<BottomSheet>(null);
   const jobSheetRef = useRef<BottomSheet>(null);
 
-  const openAgeSheet = () => ageSheetRef.current?.snapToIndex(0);
-  const openJobSheet = () => jobSheetRef.current?.snapToIndex(0);
+  const openAgeSheet = () => {
+    Keyboard.dismiss(); // 키보드가 열려있으면 먼저 닫기
+    ageSheetRef.current?.snapToIndex(0);
+  };
+  const openJobSheet = () => {
+    Keyboard.dismiss(); // 키보드가 열려있으면 먼저 닫기
+    jobSheetRef.current?.snapToIndex(0);
+  };
 
   const closeAgeSheet = () => ageSheetRef.current?.close();
   const closeJobSheet = () => jobSheetRef.current?.close();
+
+  // 키보드가 숨겨질 때 바텀시트도 닫기
+  useEffect(() => {
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      closeAgeSheet();
+      closeJobSheet();
+    });
+
+    return () => {
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
 
   // 제출
   const handleSubmit = () => {
@@ -96,18 +121,38 @@ export default function PersonalInfoScreen() {
       );
     };
 
-  const AgeItem = useMemo(
-    () =>
-      renderOption(
-        "연령대",
-        (v: string) => setAgeGroup(v as any),
-        closeAgeSheet
-      ),
-    []
+  const AgeItem = ({ item }: { item: string }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setAgeGroup(item as any);
+        closeAgeSheet();
+      }}
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E2E8F0",
+      }}
+    >
+      <Text style={{ fontSize: 16 }}>{item}</Text>
+    </TouchableOpacity>
   );
-  const JobItem = useMemo(
-    () => renderOption("직무", (v: string) => setJobTitle(v), closeJobSheet),
-    []
+
+  const JobItem = ({ item }: { item: string }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setJobTitle(item);
+        closeJobSheet();
+      }}
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E2E8F0",
+      }}
+    >
+      <Text style={{ fontSize: 16 }}>{item}</Text>
+    </TouchableOpacity>
   );
 
   const onNavigateWelcome = () => {
@@ -127,24 +172,33 @@ export default function PersonalInfoScreen() {
         onPressJobTitle={openJobSheet}
         onChangeMonthlyIncome={setMonthlyIncome}
         onSubmit={onNavigateWelcome}
+        rightLabel="만원"
+        headerImageSource={require("@/assets/images/character/big-character-03.png")}
       />
       {/* 연령대 시트 */}
-      <AppBottomSheet ref={ageSheetRef} snapPoints={["40%"]} initialIndex={-1}>
-        <BottomSheetFlatList
-          data={AGE_GROUP_OPTIONS as unknown as string[]}
-          keyExtractor={(i) => i}
-          renderItem={AgeItem}
-          contentContainerStyle={{ paddingVertical: 8 }}
-        />
+      <AppBottomSheet ref={ageSheetRef} snapPoints={["65%"]} initialIndex={-1}>
+        <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
+          <ScrollView 
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingVertical: 8, paddingBottom: 50, flexGrow: 1 }}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
+            {AGE_GROUP_OPTIONS.map((item) => (
+              <AgeItem key={item} item={item} />
+            ))}
+          </ScrollView>
+        </SafeAreaViewContext>
       </AppBottomSheet>
       {/* 직무 시트 */}
-      <AppBottomSheet ref={jobSheetRef} snapPoints={["40%"]} initialIndex={-1}>
-        <BottomSheetFlatList
-          data={JOB_TITLE_OPTIONS}
-          keyExtractor={(i) => i}
-          renderItem={JobItem}
-          contentContainerStyle={{ paddingVertical: 8 }}
-        />
+      <AppBottomSheet ref={jobSheetRef} snapPoints={["90%"]} initialIndex={-1}>
+        <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
+          <View style={{ flex: 1, paddingVertical: 8, paddingBottom: 100 }}>
+            {JOB_TITLE_OPTIONS.map((item) => (
+              <JobItem key={item} item={item} />
+            ))}
+          </View>
+        </SafeAreaViewContext>
       </AppBottomSheet>
     </SafeAreaView>
   );
