@@ -18,6 +18,7 @@ services:
       - mysql
       - postgres
       - rabbitmq
+      - redis
     env_file:
       - .env
     volumes:
