@@ -109,6 +109,8 @@ services:
     build:
       context: ./nginx # Build from the Dockerfile in the ./nginx directory
     restart: always
+    ports:
+      - "80:80" 
     depends_on:
       # - frontend
       - backend
