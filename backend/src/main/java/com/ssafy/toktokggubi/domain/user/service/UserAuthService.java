@@ -2,6 +2,7 @@ package com.ssafy.toktokggubi.domain.user.service;
 
 import com.ssafy.toktokggubi.domain.auth.dto.request.RefreshRequest;
 import com.ssafy.toktokggubi.domain.auth.dto.response.RefreshResponse;
+import com.ssafy.toktokggubi.domain.finance.service.FinanceLinkService;
 import com.ssafy.toktokggubi.domain.user.dto.request.*;
 import com.ssafy.toktokggubi.domain.user.dto.response.*;
 import com.ssafy.toktokggubi.domain.user.entity.Gender;
@@ -28,6 +29,7 @@ public class UserAuthService {
     private final JwtProvider jwtProvider;
     private final RefreshTokenStore refreshStore;
     private final TokenRevocationService tokenRevoke;
+    private final FinanceLinkService financeLinkService;
 
     private TokenEnvelope issueTokens(Long userId) {
         String access = jwtProvider.createAccessToken(userId);
@@ -46,20 +48,38 @@ public class UserAuthService {
     public SignupEmailResponse signup(SignupEmailRequest req) {
         if (userRepository.existsByEmail(req.email()))
             throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
-        User u = User.builder()
+
+        User saved = userRepository.save(User.builder()
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
                 .nickname("사용자")
-                .gender(Gender.M) // 스키마 NOT NULL → 기본값 (UNKNOWN 권장)
+                .gender(Gender.M)
                 .status(UserStatus.INACTIVE)
-                .build();
-        userRepository.save(u);
-        TokenEnvelope tok = issueTokens(u.getUserId());
+                .build());
+
+        financeLinkService.ensureFinanceUserKey(saved);
+
+        String signupToken = jwtProvider.createSignupToken(saved.getUserId());
+
         return SignupEmailResponse.builder()
-                .userId(u.getUserId())
-                .message("회원 가입 완료")
-                .token(tok)
+                .signupToken(signupToken)
+                .message("회원 가입 시작. 프로필 작성 후 완료")
                 .build();
+    }
+
+    @Transactional
+    public TokenEnvelope createProfile(Long userId, ProfileCreateRequest req) {
+        User u = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+        userRepository.save(u.toBuilder()
+                .nickname(req.nickname())
+                .gender(req.gender())
+                .ageGroup(req.ageGroup())
+                .jobTitle(req.jobTitle())
+                .monthlyIncome(req.monthlyIncome())
+                .status(com.ssafy.toktokggubi.domain.user.entity.UserStatus.ACTIVE)
+                .build());
+        return issueTokens(userId);
     }
 
     @Transactional(readOnly = true)
@@ -76,10 +96,12 @@ public class UserAuthService {
 
     @Transactional
     public RefreshResponse refresh(RefreshRequest req) {
-        Long userId = jwtProvider.parseUserId(req.refreshToken());
-        String stored = refreshStore.get(userId).orElseThrow(() -> new BadCredentialsException("리프레시 토큰이 없습니다."));
-        if (!stored.equals(req.refreshToken())) throw new BadCredentialsException("리프레시 토큰이 일치하지 않습니다.");
-        TokenEnvelope tok = issueTokens(userId); // rotate
+        Long userId = jwtProvider.parseRefreshUserId(req.refreshToken());
+        String stored = refreshStore.get(userId)
+                .orElseThrow(() -> new BadCredentialsException("리프레시 토큰이 없습니다."));
+        if (!stored.equals(req.refreshToken()))
+            throw new BadCredentialsException("리프레시 토큰이 일치하지 않습니다.");
+        TokenEnvelope tok = issueTokens(userId);
         return new RefreshResponse(tok);
     }
 

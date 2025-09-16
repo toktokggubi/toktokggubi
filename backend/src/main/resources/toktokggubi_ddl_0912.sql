@@ -238,7 +238,7 @@ CREATE TABLE `card_transaction` (
                                     `merchant_id`           BIGINT      NOT NULL,
                                     `card_status`           VARCHAR(20) NOT NULL DEFAULT 'APPROVED' COMMENT 'ENUM(`APPROVED`, `CANCEL`, `DECLINED`)',
                                     `transaction_ymd`       CHAR(8)     NOT NULL,
-                                    `transaction_hms`       CHAR(6)     NOT NULL,
+                                    `transaction_hms`       VARCHAR(6)  NOT NULL,
                                     `payment_balance`       BIGINT      NOT NULL,
                                     `created_at`            DATETIME    NOT NULL DEFAULT NOW(),
                                     CONSTRAINT `PK_CARD_TRANSACTION` PRIMARY KEY (`transaction_unique_no`),

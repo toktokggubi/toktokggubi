@@ -1,4 +1,4 @@
-package com.ssafy.toktokggubi.domain.auth.service;
+package com.ssafy.toktokggubi.domain.auth.client;
 
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
 import lombok.RequiredArgsConstructor;

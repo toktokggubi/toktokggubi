@@ -7,9 +7,11 @@ import React, {
 } from "react";
 import BottomSheet, {
   BottomSheetView,
+  BottomSheetScrollView,
   BottomSheetBackdrop,
   BottomSheetBackdropProps,
 } from "@gorhom/bottom-sheet";
+import { KeyboardAvoidingView, Platform } from "react-native";
 import type { AppBottomSheetProps, BottomSheetRef } from "./types";
 
 const AppBottomSheet = forwardRef<BottomSheet, AppBottomSheetProps>(
@@ -64,11 +66,23 @@ const AppBottomSheet = forwardRef<BottomSheet, AppBottomSheetProps>(
         enablePanDownToClose={enablePanDownToClose}
         backdropComponent={renderBackdrop}
         style={[{ zIndex: 10, elevation: 10 }, style]}
-        enableDynamicSizing={true}
         onChange={handleChange}
         {...rest}
       >
-        <BottomSheetView style={{ flex: 1 }}>{children}</BottomSheetView>
+        <KeyboardAvoidingView 
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={0}
+        >
+          <BottomSheetScrollView 
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+          >
+            {children}
+          </BottomSheetScrollView>
+        </KeyboardAvoidingView>
       </BottomSheet>
     );
   }

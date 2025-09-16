@@ -37,15 +37,6 @@ public class UserController {
         return new MessageResponse("탈퇴 완료");
     }
 
-    @PostMapping("/profile")
-    @ResponseStatus(HttpStatus.OK)
-    public MessageResponse createProfile(@RequestBody @Valid ProfileCreateRequest req) {
-        Long uid = SecurityUtils.currentUserIdOrNull();
-        if (uid == null) throw new IllegalStateException("인증 필요");
-        profileService.createProfile(uid, req);
-        return new MessageResponse("개인정보 저장 완료");
-    }
-
     @GetMapping("/profile")
     public ProfileResponse getProfile() {
         Long uid = SecurityUtils.currentUserIdOrNull();

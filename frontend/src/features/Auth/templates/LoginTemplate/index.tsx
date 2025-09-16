@@ -25,11 +25,16 @@ export default function LoginTemplate({
   headerImageSource,
 }: LoginTemplateProps) {
   return (
-    <KeyboardAvoidingView style={style.avoiding}>
+    <KeyboardAvoidingView 
+      style={style.avoiding}
+      behavior="padding"
+      keyboardVerticalOffset={0}
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={style.wrap}>
             <View>
@@ -37,7 +42,7 @@ export default function LoginTemplate({
                 <Image
                   source={headerImageSource}
                   resizeMode="contain"
-                  style={{ marginTop: -100 }}
+                  style={{ width: 150, height: 100 }}
                 />
               )}
             </View>
@@ -113,11 +118,13 @@ const style = StyleSheet.create({
   introWrap: {
     flexDirection: "row",
     justifyContent: "flex-start",
+    alignItems: "baseline",
     paddingHorizontal: 16,
   },
   introBold: {
     fontSize: 24,
     ...font.bold,
+    lineHeight: 45,
     color: "#0E3159",
   },
   introNormal: {
@@ -127,8 +134,8 @@ const style = StyleSheet.create({
   },
   wrap: {
     flex: 1,
-    justifyContent: "center",
     backgroundColor: "#F8FBFF",
+    paddingTop: 140,
   },
   container: {
     paddingHorizontal: 16,
