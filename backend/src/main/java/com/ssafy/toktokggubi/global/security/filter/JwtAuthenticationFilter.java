@@ -1,4 +1,5 @@
 package com.ssafy.toktokggubi.global.security.filter;
+
 import com.ssafy.toktokggubi.global.security.jwt.JwtProvider;
 import com.ssafy.toktokggubi.global.security.token.TokenRevocationService;
 import jakarta.servlet.FilterChain;
@@ -27,21 +28,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, @NotNull HttpServletResponse res, @NotNull FilterChain chain)
             throws ServletException, IOException {
+
         String auth = req.getHeader(HttpHeaders.AUTHORIZATION);
+
         if (auth != null && auth.startsWith("Bearer ")) {
             String token = auth.substring(7);
             try {
-                if (tokenRevoke.isRevoked(token)) {
-                    chain.doFilter(req, res);
-                    return;
+                if (!tokenRevoke.isRevoked(token)) {
+                    Long userId = jwtProvider.parseAccessUserId(token);
+
+                    var principal = new User(String.valueOf(userId), "N/A", Collections.emptyList());
+                    var authToken = new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
-                Long userId = jwtProvider.parseUserId(token);
-                var principal = new User(String.valueOf(userId), "N/A", Collections.emptyList());
-                var authToken = new UsernamePasswordAuthenticationToken(principal, token, principal.getAuthorities());
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception ignored) { }
         }
+
         chain.doFilter(req, res);
     }
 }
