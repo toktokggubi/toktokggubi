@@ -11,8 +11,6 @@ function SeriesCardsImpl({
   nImageSource,
   molImageSource,
 }: SeriesCardsProps) {
-  console.log("SeriesCards nImageSource", nImageSource);
-  console.log("SeriesCards molImageSource", molImageSource);
   return (
     <View>
       <Text style={s.title}>빵빵 시리즈</Text>
