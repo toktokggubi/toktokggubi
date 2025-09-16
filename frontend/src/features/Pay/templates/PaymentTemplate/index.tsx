@@ -12,6 +12,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  ScrollView,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -42,10 +43,11 @@ function PaymentTemplate({
   onActiveGifticonChange,
   gifticonTopSection,
   gifticonBottomSection,
+  refreshControl,
 }: PaymentTemplateProps) {
   const router = useRouter();
   const carouselRef = useRef<Carousel<UserCard> | null>(null);
-  const [currentCardIndex, setCurrentCardIndex] = useState(activeCardIndex);
+  const isInitialized = useRef(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const handleBack = () => {
@@ -54,7 +56,9 @@ function PaymentTemplate({
 
   // 스와이프 제스처 처리
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => !isTransitioning,
+    onStartShouldSetPanResponder: () => {
+      return !isTransitioning;
+    },
     onMoveShouldSetPanResponder: (evt, gestureState) => {
       // 수평 스와이프만 감지 (세로 스와이프는 무시)
       return (
@@ -112,14 +116,41 @@ function PaymentTemplate({
   useEffect(() => {
     if (!carouselRef.current) return;
     if (cards.length === 0) return;
+
     const clamped = Math.max(0, Math.min(activeCardIndex, cards.length - 1));
-    carouselRef.current.snapToItem(clamped, false);
-    setCurrentCardIndex(clamped);
-  }, [activeCardIndex, cards.length]);
+
+    // 현재 캐러셀 인덱스 확인
+    const currentIndex = carouselRef.current.currentIndex;
+
+    // 이미 올바른 위치에 있으면 스냅하지 않음
+    if (currentIndex === clamped) {
+      return;
+    }
+
+    // 캐러셀이 준비될 때까지 약간의 지연
+    setTimeout(() => {
+      if (carouselRef.current) {
+        carouselRef.current.snapToItem(clamped, true);
+      }
+    }, 100);
+  }, [activeCardIndex]);
+
+  // 카드 탭으로 돌아올 때 activeCardIndex로 스냅
+  useEffect(() => {
+    if (selectedTab === 0 && carouselRef.current && cards.length > 0) {
+      const clamped = Math.max(0, Math.min(activeCardIndex, cards.length - 1));
+
+      // 약간의 지연 후 스냅
+      setTimeout(() => {
+        if (carouselRef.current) {
+          carouselRef.current.snapToItem(clamped, true);
+        }
+      }, 200); // 200ms 지연
+    }
+  }, [selectedTab, activeCardIndex, cards.length]);
 
   // 카드 인덱스 변경 처리
   const handleCardChange = (index: number) => {
-    setCurrentCardIndex(index);
     const id = cards[index]?.userCardId;
     if (id != null) onActiveCardChange?.(index, id);
   };
@@ -159,113 +190,135 @@ function PaymentTemplate({
         />
       </View>
 
-      {/* 카드 탭일 때 카드 캐러셀 표시 */}
-      {selectedTab === 0 ? (
-        cards.length === 0 ? (
-          <View style={[styles.cardContainer, styles.empty]}>
-            <Text style={styles.emptyText}>등록된 카드가 없어요</Text>
-          </View>
-        ) : (
-          <View style={styles.cardContainer}>
-            {cardTopSection ? (
-              <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                {cardTopSection}
-              </View>
-            ) : null}
-            <Carousel<UserCard>
-              ref={carouselRef}
-              data={cards}
-              renderItem={renderCard}
-              sliderWidth={SCREEN_W}
-              itemWidth={benefitsSection ? ITEM_W : ITEM_W_LARGE}
-              inactiveSlideScale={0.92}
-              inactiveSlideOpacity={1}
-              activeSlideAlignment="center"
-              vertical={false}
-              onSnapToItem={handleCardChange}
-              keyExtractor={(item, index) =>
-                item?.userCardId != null
-                  ? String(item.userCardId)
-                  : String(index)
-              }
-              containerCustomStyle={styles.carouselContainer}
-            />
-            <PagerDots length={cards.length} activeIndex={currentCardIndex} />
-            {benefitsSection ? (
-              <View
-                style={{ marginTop: 8, marginBottom: 12 }}
-                {...panResponder.panHandlers}
-              >
-                {benefitsSection}
-              </View>
-            ) : null}
-            {cardBottomSection ? (
-              <View
-                style={{ marginTop: 8, marginBottom: 12 }}
-                {...panResponder.panHandlers}
-              >
-                {cardBottomSection}
-              </View>
-            ) : null}
-          </View>
-        )
-      ) : (
-        // 기프티콘 탭일 때 children 표시
-        <View style={styles.cardContainer}>
-          {gifticonTopSection ? (
-            <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-              {gifticonTopSection}
-            </View>
-          ) : null}
-
-          {gifticons.length === 0 ? (
+      {/* ScrollView로 감싸서 Pull-to-Refresh 지원 */}
+      <ScrollView
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={refreshControl}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* 카드 탭일 때 카드 캐러셀 표시 */}
+        {selectedTab === 0 ? (
+          cards.length === 0 ? (
             <View style={[styles.cardContainer, styles.empty]}>
-              <Text style={styles.emptyText}>보유한 기프티콘이 없어요</Text>
+              <Text style={styles.emptyText}>등록된 카드가 없어요</Text>
             </View>
           ) : (
-            <>
-              <Carousel<Gifticon>
-                ref={giftCarouselRef}
-                data={gifticons}
-                renderItem={({ item }) => <GifticonSlide gifticon={item} />}
+            <View style={styles.cardContainer}>
+              {cardTopSection ? (
+                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                  {cardTopSection}
+                </View>
+              ) : null}
+              <Carousel<UserCard>
+                ref={carouselRef}
+                data={cards}
+                renderItem={renderCard}
                 sliderWidth={SCREEN_W}
-                itemWidth={GIFTICON_ITEM_W}
+                itemWidth={benefitsSection ? ITEM_W : ITEM_W_LARGE}
                 inactiveSlideScale={0.92}
                 inactiveSlideOpacity={1}
                 activeSlideAlignment="center"
                 vertical={false}
-                onSnapToItem={handleGiftChange}
-                // 타입 에러 나면 keyExtractor는 지워도 OK
-                keyExtractor={(item, idx) =>
-                  item?.gifticonId != null
-                    ? String(item.gifticonId)
-                    : String(idx)
+                onSnapToItem={handleCardChange}
+                keyExtractor={(item, index) =>
+                  item?.userCardId != null
+                    ? String(item.userCardId)
+                    : String(index)
                 }
                 containerCustomStyle={styles.carouselContainer}
+                style={{
+                  opacity: selectedTab === 0 ? 1 : 0,
+                  height: selectedTab === 0 ? "auto" : 0,
+                }}
               />
-              <PagerDots
-                length={gifticons.length}
-                activeIndex={currentGiftIndex}
-              />
-            </>
-          )}
+              <View
+                style={{
+                  opacity: selectedTab === 0 ? 1 : 0,
+                  height: selectedTab === 0 ? "auto" : 0,
+                }}
+              >
+                <PagerDots
+                  length={cards.length}
+                  activeIndex={activeCardIndex}
+                />
+              </View>
+              {benefitsSection ? (
+                <View
+                  style={{ marginTop: 8, marginBottom: 12 }}
+                  {...panResponder.panHandlers}
+                >
+                  {benefitsSection}
+                </View>
+              ) : null}
+              {cardBottomSection ? (
+                <View
+                  style={{ marginTop: 8, marginBottom: 12 }}
+                  {...panResponder.panHandlers}
+                >
+                  {cardBottomSection}
+                </View>
+              ) : null}
+            </View>
+          )
+        ) : (
+          // 기프티콘 탭일 때 children 표시
+          <View style={styles.cardContainer}>
+            {gifticonTopSection ? (
+              <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                {gifticonTopSection}
+              </View>
+            ) : null}
 
-          {gifticonBottomSection ? (
+            {gifticons.length === 0 ? (
+              <View style={[styles.cardContainer, styles.empty]}>
+                <Text style={styles.emptyText}>보유한 기프티콘이 없어요</Text>
+              </View>
+            ) : (
+              <>
+                <Carousel<Gifticon>
+                  ref={giftCarouselRef}
+                  data={gifticons}
+                  renderItem={({ item }) => <GifticonSlide gifticon={item} />}
+                  sliderWidth={SCREEN_W}
+                  itemWidth={GIFTICON_ITEM_W}
+                  inactiveSlideScale={0.92}
+                  inactiveSlideOpacity={1}
+                  activeSlideAlignment="center"
+                  vertical={false}
+                  onSnapToItem={handleGiftChange}
+                  // 타입 에러 나면 keyExtractor는 지워도 OK
+                  keyExtractor={(item, idx) =>
+                    item?.gifticonId != null
+                      ? String(item.gifticonId)
+                      : String(idx)
+                  }
+                  containerCustomStyle={styles.carouselContainer}
+                />
+                <PagerDots
+                  length={gifticons.length}
+                  activeIndex={currentGiftIndex}
+                />
+              </>
+            )}
+
+            {gifticonBottomSection ? (
+              <View
+                style={styles.gifticonBottomContainer}
+                {...panResponder.panHandlers}
+              >
+                {gifticonBottomSection}
+              </View>
+            ) : null}
             <View
-              style={styles.gifticonBottomContainer}
+              style={styles.instructionContainer}
               {...panResponder.panHandlers}
             >
-              {gifticonBottomSection}
+              <Text style={styles.instructionText}>바코드를 찍어주세요</Text>
             </View>
-          ) : null}
-          <View
-            style={styles.instructionContainer}
-            {...panResponder.panHandlers}
-          >
-            <Text style={styles.instructionText}>바코드를 찍어주세요</Text>
           </View>
-        </View>
-      )}
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -299,6 +352,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   cardContainer: {
     flex: 1,

@@ -64,7 +64,7 @@ const AppBottomSheet = forwardRef<BottomSheet, AppBottomSheetProps>(
         enablePanDownToClose={enablePanDownToClose}
         backdropComponent={renderBackdrop}
         style={[{ zIndex: 10, elevation: 10 }, style]}
-        enableDynamicSizing={false}
+        enableDynamicSizing={true}
         onChange={handleChange}
         {...rest}
       >

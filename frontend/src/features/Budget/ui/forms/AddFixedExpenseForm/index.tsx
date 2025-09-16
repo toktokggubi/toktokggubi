@@ -216,8 +216,8 @@ const s = StyleSheet.create({
   },
   inline: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
   checkbox: {
-    width: 22,
-    height: 22,
+    width: 24,
+    height: 24,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.BLUE_NORMAL,
@@ -225,7 +225,13 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxOn: { backgroundColor: colors.BLUE_NORMAL },
-  checkMark: { color: "#fff", ...font.bold },
+  checkMark: { 
+    color: "#fff", 
+    fontSize: 16,
+    fontWeight: "bold",
+    lineHeight: 16,
+    textAlign: "center",
+  },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

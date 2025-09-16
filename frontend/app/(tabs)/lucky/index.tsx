@@ -1,7 +1,3 @@
-import { View } from "react-native";
-
-const LuckyScreen = () => {
-  return <View></View>;
-};
-
+// app/(tabs)/lucky/index.tsx
+import LuckyScreen from "@/features/Lucky/screens/Lucky";
 export default LuckyScreen;

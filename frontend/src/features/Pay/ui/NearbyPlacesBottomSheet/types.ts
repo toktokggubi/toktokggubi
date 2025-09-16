@@ -5,4 +5,5 @@ export interface NearbyPlacesBottomSheetProps {
   ref: React.RefObject<BottomSheetRef>;
   places: KakaoPlace[];
   onPlaceSelect: (place: KakaoPlace) => void;
+  isFetching?: boolean;
 }
