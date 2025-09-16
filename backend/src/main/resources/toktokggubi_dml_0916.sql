@@ -28,76 +28,80 @@ INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('교촌치킨', '
 INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('올리브영', '/images/franchise/oliveyoung.png');
 
 -- ========== merchant ==========
+-- 스타벅스
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
-                                                                                        (800001, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
+                                                                                        (14844, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
                                                                                          (SELECT category_id FROM category WHERE name='카페/간식'),
                                                                                          '스타벅스 대전중앙로R점'),
-                                                                                        (800002, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
+                                                                                        (14845, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
                                                                                          (SELECT category_id FROM category WHERE name='카페/간식'),
                                                                                          '스타벅스 대전노은점'),
-                                                                                        (800003, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
+                                                                                        (14846, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
                                                                                          (SELECT category_id FROM category WHERE name='카페/간식'),
                                                                                          '스타벅스 대전시청역점');
 
+-- 메가박스
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
-                                                                                        (800101, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
+                                                                                        (14847, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          '메가박스 대전'),
-                                                                                        (800102, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
+                                                                                        (14848, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          '메가박스 대전중앙로'),
-                                                                                        (800103, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
+                                                                                        (14849, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          '메가박스 대전신세계 아트&사이언스');
 
+-- CGV
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
-                                                                                        (800201, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
+                                                                                        (14850, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          'CGV 대전'),
-                                                                                        (800202, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
+                                                                                        (14851, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          'CGV 대전가수원'),
-                                                                                        (800203, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
+                                                                                        (14852, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          'CGV 대전가오'),
-                                                                                        (800204, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
+                                                                                        (14853, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          'CGV 대전탄방'),
-                                                                                        (800205, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
+                                                                                        (14854, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          'CGV 대전터미널'),
-                                                                                        (800206, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
+                                                                                        (14855, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          'CGV 유성노은');
 
+-- 롯데시네마
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
-                                                                                        (800301, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
+                                                                                        (14856, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          '롯데시네마 대전'),
-                                                                                        (800302, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
+                                                                                        (14857, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          '롯데시네마 대전둔산'),
-                                                                                        (800303, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
+                                                                                        (14858, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
                                                                                          (SELECT category_id FROM category WHERE name='문화'),
                                                                                          '롯데시네마 대전센트럴');
 
+-- 올리브영
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
-                                                                                        (800401, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
+                                                                                        (14859, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
                                                                                          (SELECT category_id FROM category WHERE name='뷰티/미용'),
                                                                                          '올리브영 대전상대점'),
-                                                                                        (800402, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
+                                                                                        (14860, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
                                                                                          (SELECT category_id FROM category WHERE name='뷰티/미용'),
                                                                                          '올리브영 대전터미널점'),
-                                                                                        (800403, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
+                                                                                        (14861, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
                                                                                          (SELECT category_id FROM category WHERE name='뷰티/미용'),
                                                                                          '올리브영 대전송촌점'),
-                                                                                        (800404, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
+                                                                                        (14862, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
                                                                                          (SELECT category_id FROM category WHERE name='뷰티/미용'),
                                                                                          '올리브영 대전역점'),
-                                                                                        (800405, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
+                                                                                        (14863, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
                                                                                          (SELECT category_id FROM category WHERE name='뷰티/미용'),
                                                                                          '올리브영 대전중앙(은행동)');
-
 -- ========== card_issuer ==========
 INSERT INTO `card_issuer` (`card_issuer_code`, `card_issuer_name`) VALUES
                                                                        ('1001','KB국민카드'),
