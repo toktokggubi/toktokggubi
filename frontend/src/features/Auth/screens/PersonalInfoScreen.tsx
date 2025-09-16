@@ -1,0 +1,205 @@
+import React, { useMemo, useRef, useState, useEffect } from "react";
+import {
+  Alert,
+  FlatList,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  View,
+  ScrollView,
+  Keyboard,
+} from "react-native";
+import type BottomSheet from "@gorhom/bottom-sheet";
+import { SafeAreaView as SafeAreaViewContext } from "react-native-safe-area-context";
+import AppBottomSheet from "~features/Auth/ui/BottomSheetList";
+import PersonalInfoTemplate from "../templates/PersonalInfoTemplate";
+import { useRouter } from "expo-router";
+
+const AGE_GROUP_OPTIONS = [
+  "10대",
+  "20대",
+  "30대",
+  "40대",
+  "50대",
+  "60대 이상",
+] as const;
+const JOB_TITLE_OPTIONS = [
+  "직장인",
+  "전문직",
+  "공무원",
+  "자영업",
+  "학생",
+  "주부",
+  "무직",
+  "프리랜서",
+  "군인",
+  "농업인",
+  "기타",
+];
+
+const router = useRouter();
+
+export default function PersonalInfoScreen() {
+  // 입력 상태 (문자열로 유지 → 제출 시 숫자 변환)
+  const [nickname, setNickname] = useState("");
+  const [gender, setGender] = useState<"M" | "F">("M");
+  const [ageGroup, setAgeGroup] = useState<
+    `${(typeof AGE_GROUP_OPTIONS)[number]}` | ""
+  >("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [monthlyIncome, setMonthlyIncome] = useState("");
+
+  // BottomSheet refs
+  const ageSheetRef = useRef<BottomSheet>(null);
+  const jobSheetRef = useRef<BottomSheet>(null);
+
+  const openAgeSheet = () => {
+    Keyboard.dismiss(); // 키보드가 열려있으면 먼저 닫기
+    ageSheetRef.current?.snapToIndex(0);
+  };
+  const openJobSheet = () => {
+    Keyboard.dismiss(); // 키보드가 열려있으면 먼저 닫기
+    jobSheetRef.current?.snapToIndex(0);
+  };
+
+  const closeAgeSheet = () => ageSheetRef.current?.close();
+  const closeJobSheet = () => jobSheetRef.current?.close();
+
+  // 키보드가 숨겨질 때 바텀시트도 닫기
+  useEffect(() => {
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      closeAgeSheet();
+      closeJobSheet();
+    });
+
+    return () => {
+      keyboardDidHideListener?.remove();
+    };
+  }, []);
+
+  // 제출
+  const handleSubmit = () => {
+    const data = {
+      nickname: (nickname ?? "").trim(),
+      gender,
+      ageGroup: (ageGroup || "").trim(),
+      jobTitle: (jobTitle || "").trim(),
+      monthlyIncome: Number((monthlyIncome || "0").replace(/[^0-9]/g, "")),
+    };
+
+    // 간단 검증
+    if (!data.nickname) return Alert.alert("알림", "닉네임을 입력해 주세요.");
+    if (!data.ageGroup) return Alert.alert("알림", "연령대를 선택해 주세요.");
+    if (!data.jobTitle) return Alert.alert("알림", "직무를 선택해 주세요.");
+    if (!data.monthlyIncome || isNaN(data.monthlyIncome))
+      return Alert.alert("알림", "월 소득을 숫자로 입력해 주세요.");
+
+    Alert.alert("OK", JSON.stringify(data, null, 2));
+  };
+
+  const renderOption = (
+    label: string,
+    onPick: (v: string) => void,
+    onClose: () => void
+  ) =>
+    function Item({ item }: { item: string }) {
+      return (
+        <TouchableOpacity
+          onPress={() => {
+            onPick(item);
+            onClose();
+          }}
+          style={{
+            paddingHorizontal: 16,
+            paddingVertical: 14,
+            borderBottomWidth: 1,
+            borderBottomColor: "#E2E8F0",
+          }}
+        >
+          <Text style={{ fontSize: 16 }}>{item}</Text>
+        </TouchableOpacity>
+      );
+    };
+
+  const AgeItem = ({ item }: { item: string }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setAgeGroup(item as any);
+        closeAgeSheet();
+      }}
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E2E8F0",
+      }}
+    >
+      <Text style={{ fontSize: 16 }}>{item}</Text>
+    </TouchableOpacity>
+  );
+
+  const JobItem = ({ item }: { item: string }) => (
+    <TouchableOpacity
+      onPress={() => {
+        setJobTitle(item);
+        closeJobSheet();
+      }}
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E2E8F0",
+      }}
+    >
+      <Text style={{ fontSize: 16 }}>{item}</Text>
+    </TouchableOpacity>
+  );
+
+  const onNavigateWelcome = () => {
+    router.push("/auth/welcome");
+  };
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <PersonalInfoTemplate
+        nickname={nickname}
+        gender={gender}
+        ageGroup={ageGroup}
+        jobTitle={jobTitle}
+        monthlyIncome={monthlyIncome}
+        onChangeNickname={setNickname}
+        onChangeGender={setGender}
+        onPressAgeGroup={openAgeSheet}
+        onPressJobTitle={openJobSheet}
+        onChangeMonthlyIncome={setMonthlyIncome}
+        onSubmit={onNavigateWelcome}
+        rightLabel="만원"
+        headerImageSource={require("@/assets/images/character/big-character-03.png")}
+      />
+      {/* 연령대 시트 */}
+      <AppBottomSheet ref={ageSheetRef} snapPoints={["65%"]} initialIndex={-1}>
+        <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
+          <ScrollView 
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingVertical: 8, paddingBottom: 50, flexGrow: 1 }}
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
+            {AGE_GROUP_OPTIONS.map((item) => (
+              <AgeItem key={item} item={item} />
+            ))}
+          </ScrollView>
+        </SafeAreaViewContext>
+      </AppBottomSheet>
+      {/* 직무 시트 */}
+      <AppBottomSheet ref={jobSheetRef} snapPoints={["90%"]} initialIndex={-1}>
+        <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
+          <View style={{ flex: 1, paddingVertical: 8, paddingBottom: 100 }}>
+            {JOB_TITLE_OPTIONS.map((item) => (
+              <JobItem key={item} item={item} />
+            ))}
+          </View>
+        </SafeAreaViewContext>
+      </AppBottomSheet>
+    </SafeAreaView>
+  );
+}

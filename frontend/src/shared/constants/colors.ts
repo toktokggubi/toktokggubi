@@ -1,0 +1,33 @@
+export const colors = {
+  // 🔵 Blue
+  BLUE_LIGHT: "#eaf4ff",
+  BLUE_LIGHT_HOVER: "#def1ff",
+  BLUE_LIGHT_ACTIVE: "#bcd1ff",
+  BLUE_NORMAL: "#288cff",
+  BLUE_NORMAL_HOVER: "#247ee6",
+  BLUE_NORMAL_ACTIVE: "#2070cc",
+  BLUE_DARK: "#1e69bf",
+  BLUE_DARK_HOVER: "#185499",
+  BLUE_DARK_ACTIVE: "#123773",
+  BLUE_DARKER: "#0e3159",
+
+  // 🟡 Yellow
+  YELLOW_LIGHT: "#fffbe6",
+  YELLOW_LIGHT_HOVER: "#fffdf0",
+  YELLOW_LIGHT_ACTIVE: "#fffdb0",
+  YELLOW_NORMAL: "#ffff00",
+
+  // ⚫ Gray
+  GRAY_LIGHT: "#f1f1f2",
+  GRAY_LIGHT_HOVER: "#e9eaec",
+  GRAY_LIGHT_ACTIVE: "#d2d3d7",
+  GRAY_NORMAL: "#6e727f",
+  GRAY_NORMAL_HOVER: "#636772",
+  GRAY_NORMAL_ACTIVE: "#585b66",
+  GRAY_DARK: "#53565f",
+  GRAY_DARK_HOVER: "#42444c",
+  GRAY_DARK_ACTIVE: "#313339",
+  GRAY_DARKER: "#27282c",
+
+  BACKGROUND_PRIMARY: "#F8FBFF",
+};

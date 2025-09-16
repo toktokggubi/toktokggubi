@@ -1,24 +1,72 @@
 services:
   # Database Service (PostgreSQL by default, change image for MySQL)
-  database:
+  postgres:
     image: postgres:15
     ports:
       - "5432:5432"
     environment:
       # These environment variables configure the PostgreSQL container
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       # Persist database data to avoid losing it when containers restart
-      - ./database/data:/var/lib/postgresql/data
+      - ./database/postgres:/var/lib/postgresql/data
       # Initialize database with a script if init.sql exists
       # - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    env_file:
+      - .env
+    volumes:
+      - ./database/mysql-data:/var/lib/mysql
+      - ./backend/src/main/resources/toktokggubi_ddl_0912.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+    restart: always
+
+  rabbitmq:
+    image: 'rabbitmq:management'
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   # AI Service (Flask)
   ai:
-    build: ./ai # Build from the Dockerfile in the ./ai directory
+    build:
+      context: ./ai # Build from the Dockerfile in the ./ai directory
     restart: always
     # Environment variables for AI service, if any
     # environment:
@@ -26,26 +74,42 @@ services:
 
   # Backend Service (Spring Boot with Gradle)
   backend:
-    build: ./backend # Build from the Dockerfile in the ./backend directory
+    build:
+      context: ./backend # Build from the Dockerfile in the ./backend directory
     restart: always
+    ports:
+      - "8080:8080" # Expose backend server port
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       # Spring Boot database connection properties (using environment variables from .env)
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${DB_NAME}
-      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
-      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       # Other common environment variables for backend
 
   # Frontend Service (React)
-  frontend:
-    build: ./frontend # Build from the Dockerfile in the ./frontend directory
-    restart: always
+  # frontend:
+  #   build:
+  #     context: ./frontend # Build from the Dockerfile in the ./frontend directory
+  #   restart: always
     # Frontend will be configured with specific build targets/ports in override files
 
   # Nginx Reverse Proxy
   nginx:
-    build: ./nginx # Build from the Dockerfile in the ./nginx directory
+    build:
+      context: ./nginx # Build from the Dockerfile in the ./nginx directory
     restart: always
     depends_on:
-      - frontend
+      # - frontend
       - backend
       - ai # Nginx might proxy to AI service directly too
