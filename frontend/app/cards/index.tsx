@@ -1,3 +1,2 @@
-// app/(tabs)/mypage/cards/index.tsx
-import CardsScreen from "@/features/User/screens/CardsScreen";
+import CardsScreen from "@/features/User/screens/CardScreen";
 export default CardsScreen;

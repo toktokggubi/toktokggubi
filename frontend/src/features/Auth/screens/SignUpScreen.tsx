@@ -56,6 +56,7 @@ export default function SignUpScreen() {
         errorMessage={generalErr}
         submitting={false}
         disabled={!id || !pw || !cpw}
+        headerImageSource={require("@/assets/images/character/big-character-02.png")}
       />
     </SafeAreaView>
   );

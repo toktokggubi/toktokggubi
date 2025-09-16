@@ -1,3 +1,5 @@
+import type { ImageSourcePropType } from "react-native";
+
 export interface PersonalInfoData {
   nickname: string;
   gender: "M" | "F";
@@ -26,4 +28,8 @@ export interface PersonalInfoTemplateProps {
   // helper labels (선택)
   nicknameHelperText?: string;
   incomeHelperText?: string;
+  rightLabel?: string; // 우측 라벨 (단위 등)
+
+  // 헤더 이미지
+  headerImageSource?: ImageSourcePropType;
 }

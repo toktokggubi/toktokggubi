@@ -41,6 +41,11 @@ services:
     environment:
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
     
   # AI Service (Flask)
   ai:
@@ -66,6 +71,8 @@ services:
       mysql:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       # Spring Boot database connection properties (using environment variables from .env)

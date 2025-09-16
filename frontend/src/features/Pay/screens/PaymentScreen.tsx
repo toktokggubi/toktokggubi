@@ -160,17 +160,6 @@ export default function PaymentScreen() {
     invalidateCache: invalidateNearbyCache,
   } = useNearbyPlacesQuery(KAKAO_KEY, [], nearbyPlacesOptions);
 
-  // 디버깅을 위한 로그
-  if (__DEV__) {
-    console.log("🎯 PaymentScreen 상태:", {
-      nearbyLoading,
-      nearbyFetching,
-      hasPlaces: allNearbyPlaces.length > 0,
-      placesCount: allNearbyPlaces.length,
-      error: nearbyError,
-    });
-  }
-
   // 1단계: 가까운 가맹점들 (거리순으로 정렬하고 최대 10개로 제한)
   const nearbyPlaces = useMemo(() => {
     if (!allNearbyPlaces || allNearbyPlaces.length === 0) return [];
