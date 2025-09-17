@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { colors } from "@/shared/constants/colors";
 
 
@@ -39,10 +40,10 @@ export const CharacterBackground: React.FC<CharacterBackgroundProps> = ({
       />
       
       {/* 캐릭터 - water 시작 높이에 위치 */}
-      <Image 
-        source={require("@/assets/images/character/big-character-02.png")} 
+      <ExpoImage 
+        source={require("@/assets/images/character/character-jump.gif")} 
         style={styles.characterImage}
-        resizeMode="contain"
+        contentFit="contain"
       />
       
       {/* 캐릭터 메시지 */}
@@ -89,13 +90,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 150, // 크기 증가
     height: 150,
-    top: "25%",
-    left: "20%",
+    top: "23%",
+    left: "15%",
     zIndex: 3, // character가 가장 앞에
   },
   messageContainer: {
     position: "absolute",
-    top: "25%",
+    top: "23%",
     left: "5%",
     backgroundColor: colors.BACKGROUND_PRIMARY,
     paddingHorizontal: 12,
