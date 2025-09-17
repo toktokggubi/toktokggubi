@@ -1,6 +1,6 @@
-package com.ssafy.toktokggubi.domain.user.repository;
+package com.ssafy.toktokggubi.domain.wallet.repository;
 
-import com.ssafy.toktokggubi.domain.user.entity.UserAccount;
+import com.ssafy.toktokggubi.domain.wallet.entity.UserAccount;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

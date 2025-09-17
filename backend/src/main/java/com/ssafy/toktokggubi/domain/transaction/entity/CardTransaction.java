@@ -2,7 +2,7 @@ package com.ssafy.toktokggubi.domain.transaction.entity;
 
 import com.ssafy.toktokggubi.domain.merchant.entity.Merchant;
 import com.ssafy.toktokggubi.domain.user.entity.User;
-import com.ssafy.toktokggubi.domain.user.entity.UserCard;
+import com.ssafy.toktokggubi.domain.wallet.entity.UserCard;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
