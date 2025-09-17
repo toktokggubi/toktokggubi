@@ -1,5 +1,6 @@
-package com.ssafy.toktokggubi.domain.user.entity;
+package com.ssafy.toktokggubi.domain.wallet.entity;
 
+import com.ssafy.toktokggubi.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 

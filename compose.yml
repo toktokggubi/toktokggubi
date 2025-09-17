@@ -30,7 +30,7 @@ services:
       - .env
     volumes:
       - ./database/mysql-data:/var/lib/mysql
-      - ./backend/src/main/resources/toktokggubi_ddl_0912.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/src/main/resources/toktokggubi_ddl.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
       interval: 10s
@@ -81,6 +81,12 @@ services:
       - "8080:8080" # Expose backend server port
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,3 +121,5 @@ services:
       # - frontend
       - backend
       - ai # Nginx might proxy to AI service directly too
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
