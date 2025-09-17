@@ -112,19 +112,9 @@ const styles = StyleSheet.create({
   },
   childrenContainer: {
     position: "absolute",
-    top: "10%",
-    right: "10%",
-    zIndex: 4, // bowl 위에 위치
-    backgroundColor: "rgba(255, 255, 255, 0.9)",
-    borderRadius: 20,
-    padding: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    top: "20%",
+    right: "17%",
+    zIndex: 4,
+    backgroundColor: "transparent",
   },
 });
