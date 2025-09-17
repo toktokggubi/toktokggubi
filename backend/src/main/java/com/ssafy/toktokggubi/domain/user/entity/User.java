@@ -50,7 +50,7 @@ public class User {
     @Column(name = "kakao_sub", length = 128)
     private String kakaoSub;
 
-    @Column(name = "finance_user_key", length = 36)
+    @Column(name = "finance_user_key", columnDefinition = "char(36)")
     private String financeUserKey;
 
     @CreationTimestamp

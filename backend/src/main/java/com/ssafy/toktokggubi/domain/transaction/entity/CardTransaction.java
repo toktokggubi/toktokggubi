@@ -51,7 +51,7 @@ public class CardTransaction {
     private String transactionYmd; // YYYYMMDD
 
 
-    @Column(name = "transaction_hms", nullable = false, columnDefinition = "char(6)")
+    @Column(name = "transaction_hms", nullable = false,  length = 6)
     private String transactionHms; // HHMMSS
 
 
