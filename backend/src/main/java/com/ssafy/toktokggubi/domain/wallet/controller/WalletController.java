@@ -7,6 +7,7 @@ import com.ssafy.toktokggubi.domain.wallet.dto.request.PaymentRequest;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.PaymentResponse;
 import com.ssafy.toktokggubi.domain.wallet.service.WalletService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/wallet")
+@Tag(name = "사용자 지갑", description = "사용자 지갑 카드 API")
 public class WalletController {
 
     private final WalletService walletService;
