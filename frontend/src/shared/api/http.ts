@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosHeaders } from "axios";
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { queryClient } from "@/shared/lib/queryClient";
 
@@ -6,14 +7,28 @@ import { queryClient } from "@/shared/lib/queryClient";
 // 1) 공용 axios 인스턴스
 // ─────────────────────────────────────────────────────────────
 export const http = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: Platform.OS === "android" ? "http://127.0.0.1:8080" : "http://localhost:8080",
   timeout: 10_000,
+  withCredentials: false,
 });
 
 // ─────────────────────────────────────────────────────────────
 // 2) Request 인터셉터: 액세스 토큰 자동 주입
 // ─────────────────────────────────────────────────────────────
+const AUTH_FREE = [
+  "/auth/signup",
+  "/auth/login",
+  "/auth/kakao/login",
+  "/auth/password/reset",
+  "/auth/token/refresh",
+];
+
 http.interceptors.request.use(async (config) => {
+  // 비인증 엔드포인트는 토큰 주입 X
+  if (AUTH_FREE.some((p) => config.url?.startsWith(p))) {
+    return config;
+  }
+  
   const token = await SecureStore.getItemAsync("access_token");
   if (token) {
     config.headers = new AxiosHeaders({
@@ -64,15 +79,11 @@ http.interceptors.response.use(
   async (error: AxiosError) => {
     const config = (error.config ?? {}) as RetryConfig;
     const status = error.response?.status;
-
-    // (1) 새로고침/로그인 요청 자체의 401은 그대로 실패 처리
     const url = String(config.url ?? "");
-    if (
-      url.includes("/auth/token/refresh") ||
-      url.includes("/auth/login") ||
-      url.includes("/auth/kakao/login")
-    ) {
-      throw error;
+
+    // (1) 비인증 엔드포인트에서 401이면 리프레시 시도 금지하고 그대로 내보냄
+    if (AUTH_FREE.some((p) => url.startsWith(p))) {
+      return Promise.reject(error);
     }
 
     // (2) 401이 아니거나 이미 재시도한 요청이면 통과

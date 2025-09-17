@@ -17,8 +17,10 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
       rightLabel,
       variant = "default",
       passwordToggle,
+      onTogglePassword,
       secureTextEntry,
       placeholderTextColor,
+      error,
       ...rest
     },
     ref
@@ -35,10 +37,10 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
             {topLabel}
           </Text>
         ) : null}
-        <View style={[styles.inputWrapper, v.wrapper]}>
+        <View style={[styles.inputWrapper, v.wrapper, error && styles.errorWrapper]}>
           <TextInput
             ref={ref}
-            style={[styles.input, v.input]}
+            style={[styles.input, v.input, error && styles.errorInput]}
             placeholderTextColor={placeholderTextColor ?? v.placeholder.color}
             secureTextEntry={passwordToggle ? hidden : secureTextEntry}
             {...rest}
@@ -48,7 +50,10 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
           )}
           {passwordToggle && (
             <TouchableOpacity
-              onPress={() => setHidden((p) => !p)}
+              onPress={() => {
+                setHidden((p) => !p);
+                onTogglePassword?.();
+              }}
               style={styles.eyeBtn}
             >
               <Text style={{ opacity: 0.5 }}>{hidden ? "👁️‍🗨️" : "👁️"}</Text>
@@ -56,7 +61,11 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
           )}
         </View>
 
-        {bottomLabel ? (
+        {error ? (
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
+        ) : bottomLabel ? (
           <Text
             style={[
               styles.bottomLabel,
@@ -82,14 +91,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     minHeight: 44,
+    borderColor: "#E2E8F0",
+  },
+  errorWrapper: {
+    borderColor: "#EF4444",
   },
   input: { flex: 1, fontSize: 16, paddingVertical: 10 },
+  errorInput: {
+    color: "#EF4444",
+  },
   eyeBtn: { padding: 6, marginLeft: 4 },
   bottomLabel: {
     marginTop: 4,
     paddingHorizontal: 16,
     fontSize: 12,
     color: "#D2D3D7",
+  },
+  errorText: {
+    marginTop: 4,
+    paddingHorizontal: 16,
+    fontSize: 12,
+    color: "#EF4444",
   },
   topLabel: {
     marginBottom: 4,

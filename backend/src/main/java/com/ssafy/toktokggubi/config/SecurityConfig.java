@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint((req, res, e) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                         .accessDeniedHandler((req, res, e) -> res.sendError(HttpServletResponse.SC_FORBIDDEN))
                 )
+                // JWT 필터는 인증이 필요한 엔드포인트에서만 적용
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
