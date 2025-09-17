@@ -40,6 +40,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-websocket'      // WebSocket 서버
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'     // Redis 연동
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'      // 서버사이드 템플릿 엔진
+    implementation("org.springframework.boot:spring-boot-starter-actuator")      // actuator
 
     // ===== Spring AI =====
     implementation 'org.springframework.ai:spring-ai-starter-model-openai'       // Spring AI(OpenAI 연동)
