@@ -26,6 +26,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final TokenRevocationService tokenRevoke;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String m = request.getMethod();
+        if ("OPTIONS".equalsIgnoreCase(m)) return true; // CORS preflight
+
+        String p = request.getServletPath();
+        return p.startsWith("/actuator")      // health, info 등
+                || p.startsWith("/v3/api-docs")   // OpenAPI
+                || p.startsWith("/swagger-ui")    // Swagger UI
+                || "/swagger-ui.html".equals(p);
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest req, @NotNull HttpServletResponse res, @NotNull FilterChain chain)
             throws ServletException, IOException {
 
