@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
 import { colors } from "@/shared/constants/colors";
 
+
 interface CharacterBackgroundProps {
   message: string;
   children?: React.ReactNode;

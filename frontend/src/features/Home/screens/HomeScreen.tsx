@@ -1,16 +1,19 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { HomeTemplate } from "../templates/HomeTemplate";
 import { colors } from "@/shared/constants/colors";
+import { HomeData } from "../templates/HomeTemplate/types";
 
 // 임시 데이터 - 실제로는 API에서 가져올 데이터
-const mockData = {
+const mockData: HomeData = {
   totalBudget: {
     currentAmount: 40000,
     totalAmount: 500000,
   },
   availableAmount: 460000,
   characterMessage: "아직은 넉넉하다꺼비",
+  month: "12월",
+  listTitle: "카테고리별 사용현황",
   categoryBudgets: [
     { category: "food" as const, currentAmount: 10000, totalAmount: 30000 },
     { category: "cafe_snack" as const, currentAmount: 5000, totalAmount: 20000 },
@@ -41,6 +44,37 @@ const mockData = {
 };
 
 export const HomeScreen: React.FC = () => {
+  // API 연동을 위한 상태 관리
+  const [data, setData] = useState<HomeData>(mockData);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // 컴포넌트 마운트 시 데이터 로드
+  useEffect(() => {
+    loadHomeData();
+  }, []);
+
+  // API 호출 함수 (나중에 실제 API로 교체)
+  const loadHomeData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // TODO: 실제 API 호출로 교체
+      // const response = await homeApi.getHomeData();
+      // setData(response.data);
+      
+      // 현재는 mockData 사용
+      await new Promise(resolve => setTimeout(resolve, 500)); // 로딩 시뮬레이션
+      setData(mockData);
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTotalBudgetPress = () => {
     console.log("전체 예산 상세 보기");
     // TODO: 전체 예산 상세 화면으로 이동
@@ -54,11 +88,13 @@ export const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <HomeTemplate
-        totalBudget={mockData.totalBudget}
-        availableAmount={mockData.availableAmount}
-        characterMessage={mockData.characterMessage}
-        categoryBudgets={mockData.categoryBudgets}
-        transactions={mockData.transactions}
+        totalBudget={data.totalBudget}
+        availableAmount={data.availableAmount}
+        characterMessage={data.characterMessage}
+        categoryBudgets={data.categoryBudgets}
+        transactions={data.transactions}
+        month={data.month}
+        listTitle={data.listTitle}
         onTotalBudgetPress={handleTotalBudgetPress}
         onCategoryPress={handleCategoryPress}
       />
