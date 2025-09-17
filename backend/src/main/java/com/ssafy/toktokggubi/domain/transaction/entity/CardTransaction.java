@@ -47,11 +47,11 @@ public class CardTransaction {
     private CardStatus cardStatus = CardStatus.APPROVED;
 
 
-    @Column(name = "transaction_ymd", nullable = false, columnDefinition = "char(8)")
+    @Column(name = "transaction_ymd", nullable = false, length = 8)
     private String transactionYmd; // YYYYMMDD
 
 
-    @Column(name = "transaction_hms", nullable = false,  length = 6)
+    @Column(name = "transaction_hms", nullable = false, length = 6)
     private String transactionHms; // HHMMSS
 
 
