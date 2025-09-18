@@ -2,8 +2,10 @@ package com.ssafy.toktokggubi.global.file;
 
 import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,13 +31,16 @@ public class FileStorage {
             case "image/jpeg" -> ".jpg";
             case "image/png"  -> ".png";
             case "image/webp" -> ".webp";
-            default -> ".bin";
+            default -> throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "이미지 파일만 업로드할 수 있습니다(jpg, png, webp).");
         };
+
         String filename = UUID.randomUUID().toString().replace("-", "") + ext;
         Path target = root.resolve(gifticonDir).resolve(filename);
+        Files.createDirectories(target.getParent());
         Files.write(target, file.getBytes());
 
-        // URL은 /images/** 로 매핑됨 (FileStorageConfig)
+        // DB에는 이 URL을 저장 -> 프론트는 그대로 요청해서 표시
         String url = "/images/" + gifticonDir + "/" + filename;
         return new SavedFile(filename, url, target);
     }
