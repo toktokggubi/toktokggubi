@@ -70,6 +70,10 @@ dependencies {
     // ===== OpenAI 공식 SDK (Spring AI 대신 직접 쓸 때) =====
     implementation "com.openai:openai-java:3.0.3"
 
+    // ===== ZXing =====
+    implementation 'com.google.zxing:core:3.5.3'
+    implementation 'com.google.zxing:javase:3.5.3'
+
     // ===== Lombok =====
     compileOnly 'org.projectlombok:lombok'                                       // Lombok (컴파일 전용)
     annotationProcessor 'org.projectlombok:lombok'                               // Lombok 어노테이션 처리
