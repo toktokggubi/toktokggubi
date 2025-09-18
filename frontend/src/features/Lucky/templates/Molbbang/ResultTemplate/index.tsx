@@ -1,10 +1,14 @@
+// src/features/Lucky/templates/Molbbang/ResultTemplate/index.tsx
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, Image } from "react-native"; // ✅ Image 추가
 import { AppHeader } from "@/shared/ui/AppHeader";
 import { s } from "./variants";
 import type { ResultTemplateProps } from "./types";
 import { font } from "@/shared/typography/font";
 import { colors } from "@/shared/constants/colors";
+
+// ✅ 캐릭터 이미지 import
+const cryCharacter = require("@/assets/images/character/character-cry.png");
 
 export default function ResultTemplate({
   code,
@@ -14,59 +18,56 @@ export default function ResultTemplate({
   myRank,
   jackpotNickname,
   onBackToLobby,
+  onExit,
+  isLoser,
+  onPay,
 }: ResultTemplateProps) {
-  const first = ranking[0];
-  const last = ranking[ranking.length - 1];
-
   return (
     <View style={s.container}>
-      <AppHeader title="몰빵 · 결과" />
-      <Text style={[s.h1, font.bold]}>최종 결과</Text>
+      <AppHeader title="몰빵" />
+
+      {/* 상단 텍스트 */}
       <Text style={s.sub}>
-        방 #{code} • 총 {ranking.length}명
+        <Text style={s.characterName}>{jackpotNickname ?? "-"}</Text>(이)가{" "}
+        <Text style={{ fontWeight: "700" }}>{amount.toLocaleString()}원</Text>{" "}
+        쏜다!
       </Text>
 
-      <View style={s.card}>
-        <Text style={s.rowTitle}>🏆 1등</Text>
-        <Text style={s.rowText}>
-          {first?.nickname ?? "-"} ({first?.total ?? 0})
-        </Text>
-
-        <View style={s.divider} />
-
-        <Text style={s.rowTitle}>🎯 몰빵 당첨(꼴등)</Text>
-        <Text
-          style={[s.rowText, { color: colors.BLUE_NORMAL, fontWeight: "700" }]}
-        >
-          {jackpotNickname ?? last?.nickname ?? "-"} — {amount.toLocaleString()}
-          원
-        </Text>
-
-        {myRank !== null && (
-          <>
-            <View style={s.divider} />
-            <Text style={s.rowTitle}>나의 등수</Text>
-            <Text style={s.rowText}>{myRank}등</Text>
-          </>
-        )}
+      {/* 캐릭터 + 닉네임 */}
+      <View style={s.characterWrap}>
+        <Image
+          source={cryCharacter}
+          style={s.characterImg}
+          resizeMode="contain"
+        />
       </View>
 
+      {/* 최종 랭킹 박스 */}
       <View style={s.list}>
+        <Text style={s.listTitle}>최종랭킹</Text>
         {ranking.map((r, i) => (
           <View key={r.userId} style={s.rankRow}>
             <Text style={s.badge}>{i + 1}</Text>
             <Text style={[s.nick, r.nickname === myNickname && s.me]}>
               {r.nickname}
-              {r.nickname === myNickname ? " (나)" : ""}
+              {r.nickname === myNickname ? "(나)" : ""}
             </Text>
             <Text style={s.score}>{r.total}</Text>
           </View>
         ))}
       </View>
 
-      <Pressable style={[s.btn, s.primary]} onPress={onBackToLobby}>
-        <Text style={[s.btnTxt, s.primaryTxt]}>대기방으로</Text>
-      </Pressable>
+      {/* CTA 버튼 */}
+      {isLoser && onPay && (
+        <Pressable style={[s.btn, s.pay]} onPress={onPay}>
+          <Text style={[s.btnTxt, s.payTxt]}>결제하기</Text>
+        </Pressable>
+      )}
+      {onExit && (
+        <Pressable style={[s.btn, s.secondary]} onPress={onExit}>
+          <Text style={[s.btnTxt, s.secondaryTxt]}>나가기</Text>
+        </Pressable>
+      )}
     </View>
   );
 }
