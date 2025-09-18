@@ -90,11 +90,25 @@ export const HomeScreen: React.FC = () => {
     loadHomeData();
   }, []);
 
+  // budgetStatusQuery 상태가 변경될 때마다 데이터 로드
+  useEffect(() => {
+    if (!budgetStatusQuery.isLoading) {
+      loadHomeData();
+    }
+  }, [budgetStatusQuery.isLoading, budgetStatusQuery.error, budgetStatusQuery.data]);
+
   // API 호출 함수
   const loadHomeData = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // 예산 설정 여부 확인
+      if (budgetStatusQuery.error || !budgetStatusQuery.data || budgetStatusQuery.data.totalAmount === 0) {
+        console.log('예산이 설정되지 않음 - 예산 설정 버튼 표시');
+        setLoading(false);
+        return;
+      }
       
       // 예산 관련 API 호출
       const [budgetTotalResponse, budgetCategoryResponse, monthlySummaryResponse, monthlySummaryByCategoryResponse, monthlyCategoryListResponse] = await Promise.all([
@@ -199,55 +213,14 @@ export const HomeScreen: React.FC = () => {
     router.push("/budget");
   };
 
-  // 인증 로딩 중일 때
-  if (authLoading) {
+  // 인증 로딩 중이거나 인증되지 않은 경우
+  if (authLoading || !isAuthenticated) {
     return (
       <View style={[styles.container, styles.centerContent]}>
         <ActivityIndicator size="large" color={colors.BLUE_NORMAL} />
-        <Text style={styles.loadingText}>인증 확인 중...</Text>
-      </View>
-    );
-  }
-
-  // 인증되지 않은 경우 (useAuthGuard에서 자동으로 로그인 페이지로 리다이렉트됨)
-  if (!isAuthenticated) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.BLUE_NORMAL} />
-        <Text style={styles.loadingText}>로그인 페이지로 이동 중...</Text>
-      </View>
-    );
-  }
-
-  // 로딩 중일 때
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color={colors.BLUE_NORMAL} />
-        <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
-      </View>
-    );
-  }
-
-  // 에러가 있을 때
-  if (error) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.errorText}>오류가 발생했습니다</Text>
-        <Text style={styles.errorSubText}>{error}</Text>
-        <Text style={styles.retryText} onPress={loadHomeData}>
-          다시 시도
+        <Text style={styles.loadingText}>
+          {authLoading ? '인증 확인 중...' : '로그인 페이지로 이동 중...'}
         </Text>
-      </View>
-    );
-  }
-
-
-  // 데이터가 없을 때
-  if (!data) {
-    return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
       </View>
     );
   }
@@ -260,17 +233,20 @@ export const HomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <HomeTemplate
-        totalBudget={data.totalBudget}
-        availableAmount={data.availableAmount}
-        characterMessage={data.characterMessage}
-        categoryBudgets={data.categoryBudgets}
-        transactions={data.transactions}
-        month={data.month}
-        listTitle={data.listTitle}
+        totalBudget={data?.totalBudget || { currentAmount: 0, totalAmount: 0 }}
+        availableAmount={data?.availableAmount || 0}
+        characterMessage={data?.characterMessage || "아직은 넉넉하다꺼비"}
+        categoryBudgets={data?.categoryBudgets || []}
+        transactions={data?.transactions || {}}
+        month={data?.month || "12월"}
+        listTitle={data?.listTitle || "카테고리별 사용현황"}
         onTotalBudgetPress={handleTotalBudgetPress}
         onCategoryPress={handleCategoryPress}
         onBudgetSetup={handleBudgetSetup}
         hasBudget={hasBudget}
+        loading={loading}
+        error={error}
+        onRetry={loadHomeData}
       />
     </View>
   );
@@ -289,23 +265,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: colors.GRAY_DARK,
-  },
-  errorText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.GRAY_DARKER,
-    marginBottom: 8,
-  },
-  errorSubText: {
-    fontSize: 14,
-    color: colors.GRAY_NORMAL,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  retryText: {
-    fontSize: 16,
-    color: colors.BLUE_NORMAL,
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
   },
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HomeTemplateProps } from "./types";
 import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
@@ -22,15 +22,34 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   month = "12월",
   listTitle = "카테고리별 사용현황",
   hasBudget = true,
+  loading = false,
+  error = null,
+  onRetry,
 }) => {
-  // 예산이 설정되지 않았을 때
-  if (!hasBudget) {
+  // 에러가 있을 때 (예산 설정과 관련 없는 실제 에러만)
+  if (error && error !== '예산을 먼저 설정해주세요.') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>오류가 발생했습니다</Text>
+          <Text style={styles.errorSubText}>{error}</Text>
+          
+          <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
+            <Text style={styles.retryButtonText}>다시 시도</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 로딩 중이거나 예산이 설정되지 않았을 때 (같은 UI 사용)
+  if (loading || !hasBudget) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.noBudgetContainer}>
-          <Text style={styles.noBudgetTitle}>예산을 설정해주세요</Text>
+          <Text style={styles.noBudgetTitle}>이번 달 예산을 설정하여</Text>
           <Text style={styles.noBudgetSubtitle}>
-            예산을 설정하면{'\n'}더 체계적으로 소비를 관리할 수 있어요
+            꺼비와 함께 소비를 관리해보세요.
           </Text>
           <TouchableOpacity 
             style={styles.budgetSetupButton}
@@ -38,6 +57,12 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
           >
             <Text style={styles.budgetSetupButtonText}>예산 설정하러 가기</Text>
           </TouchableOpacity>
+          
+          <Image 
+            source={require("@/assets/images/character/big-character-04.png")}
+            style={styles.characterImage}
+            resizeMode="contain"
+          />
         </View>
       </SafeAreaView>
     );
@@ -94,9 +119,10 @@ const styles = StyleSheet.create({
   },
   noBudgetContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 40,
+    paddingTop: 250,
   },
   noBudgetTitle: {
     fontSize: 24,
@@ -127,8 +153,43 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   budgetSetupButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  characterImage: {
+    width: 200,
+    height: 200,
+    marginTop: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingTop: 180,
+  },
+  errorText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.GRAY_DARKER,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  errorSubText: {
+    fontSize: 14,
+    color: colors.GRAY_NORMAL,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    color: colors.BLUE_NORMAL,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
 });

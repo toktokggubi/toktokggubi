@@ -1,19 +1,40 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SafeAreaView, Alert } from "react-native";
 import LoginTemplate from "~features/Auth/templates/LoginTemplate";
 import { useEmailLogin, useKakaoLogin } from "../model/useAuthQueries";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
+import { hasValidToken } from "@/shared/utils/currency";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [isCheckingToken, setIsCheckingToken] = useState(true);
 
   const emailLoginMutation = useEmailLogin();
   const kakaoLoginMutation = useKakaoLogin();
   const budgetStatusQuery = useBudgetStatusQuery();
+
+  // 토큰 확인 및 자동 리다이렉트
+  useEffect(() => {
+    const checkTokenAndRedirect = async () => {
+      try {
+        const hasToken = await hasValidToken();
+        if (hasToken) {
+          // 토큰이 있으면 홈으로 리다이렉트
+          router.replace("/(tabs)/home");
+        }
+      } catch (error) {
+        console.error("토큰 확인 중 오류:", error);
+      } finally {
+        setIsCheckingToken(false);
+      }
+    };
+
+    checkTokenAndRedirect();
+  }, [router]);
 
   // 이메일 로그인 처리
   const handleEmailLogin = async () => {
@@ -74,6 +95,15 @@ export default function LoginScreen() {
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
+
+  // 토큰 확인 중일 때는 로딩 표시
+  if (isCheckingToken) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#fff", justifyContent: "center", alignItems: "center" }}>
+        {/* 로딩 인디케이터나 스피너를 여기에 추가할 수 있습니다 */}
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>

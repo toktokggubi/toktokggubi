@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { BackHandler } from "react-native";
 import BudgetIntroTemplate from "@/features/Budget/templates/IntroBudgetTemplate";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 
@@ -14,6 +15,22 @@ export default function StartBugetScreen() {
   useEffect(() => {
     setIsNavigating(false);
   }, []);
+
+  // 시스템 뒤로가기 버튼 처리
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        // 홈으로 이동
+        router.push("/(tabs)/home");
+        return true; // 기본 뒤로가기 동작 방지
+      };
+
+      // 뒤로가기 이벤트 리스너 등록
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [router])
+  );
 
   const goNext = () => {
     if (isNavigating) return; // 중복 네비 방지

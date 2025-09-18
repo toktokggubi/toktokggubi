@@ -23,7 +23,7 @@ export default function TotalBudgetInputScreen() {
     }
   }, [contextTotalAmount, loadDraftData]);
 
-  const goPrev = () => router.back();
+  const goPrev = () => router.push("/(tabs)/home");
   
   const goNext = async () => {
     try {
