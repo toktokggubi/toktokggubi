@@ -60,11 +60,21 @@ export async function commitBudget(): Promise<BudgetCommitResponse> {
 
   console.log('=== commitBudget API 응답 ===');
   console.log('응답 데이터:', data);
-  console.log('DB 저장 완료 - 사용자 ID:', data.userId);
-  console.log('DB 저장 완료 - 예산 년월:', data.budgetYm);
-  console.log('DB 저장 완료 - 총 금액:', data.totalAmount);
-  console.log('DB 저장 완료 - 확정 여부:', data.isFinalized);
-  console.log('DB 저장 완료 - 카테고리 수:', data.categories.length);
+  console.log('응답 데이터 타입:', typeof data);
+  console.log('응답 데이터 키들:', Object.keys(data || {}));
+  
+  // 안전한 데이터 접근
+  if (data) {
+    console.log('DB 저장 완료 - 상태:', data.status);
+    console.log('DB 저장 완료 - 예산 ID:', data.budgetId);
+    console.log('DB 저장 완료 - 사용자 ID:', data.userId);
+    console.log('DB 저장 완료 - 예산 년월:', data.budgetYm);
+    console.log('DB 저장 완료 - 총 금액:', data.totalAmount);
+    console.log('DB 저장 완료 - 고정지출 수:', data.fixedExpenseCount);
+    console.log('DB 저장 완료 - 카테고리 수:', data.categoryCount);
+  } else {
+    console.log('=== 응답 데이터가 null 또는 undefined ===');
+  }
 
   return data;
 }

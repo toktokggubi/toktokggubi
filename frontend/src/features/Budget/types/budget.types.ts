@@ -29,11 +29,13 @@ export interface BudgetCategory {
 }
 
 export interface BudgetCommitResponse {
+  status: string;           // "COMMITTED"
+  budgetId: number;
   userId: number;
   budgetYm: string;
   totalAmount: number;
-  isFinalized: boolean;
-  categories: BudgetCategory[];
+  fixedExpenseCount: number;
+  categoryCount: number;
 }
 
 // Request DTOs

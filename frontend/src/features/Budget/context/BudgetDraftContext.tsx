@@ -194,11 +194,13 @@ export function BudgetDraftProvider({ children }: { children: React.ReactNode })
     
     console.log('=== Context commit 완료 ===');
     console.log('확정 결과:', result);
+    console.log('상태:', result.status);
+    console.log('예산 ID:', result.budgetId);
     console.log('사용자 ID:', result.userId);
     console.log('예산 년월:', result.budgetYm);
     console.log('총 금액:', result.totalAmount);
-    console.log('확정 여부:', result.isFinalized);
-    console.log('카테고리 수:', result.categories.length);
+    console.log('고정지출 수:', result.fixedExpenseCount);
+    console.log('카테고리 수:', result.categoryCount);
     
     return result;
   }, [commitMutation, version, draftId, totalAmount, fixedExpenses, categoryAllocations]);
