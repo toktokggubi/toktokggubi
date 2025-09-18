@@ -61,19 +61,24 @@ public class WalletService {
     }
 
     public BestCardsResponse rankBestCards(Long userId, String merchantName, Long amountOpt) {
-        Merchant merchant = merchantRepository.findFirstByMerchantName(merchantName)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "가맹점을 찾을 수 없습니다: " + merchantName));
+        // 1) 가맹점은 "있으면" 쓰고, 없으면 null
+        Merchant merchant = merchantRepository.findFirstByMerchantName(merchantName).orElse(null);
+        Long franchiseId = (merchant != null && merchant.getFranchise() != null)
+                ? merchant.getFranchise().getFranchiseId()
+                : null;
 
-        Long franchiseId = merchant.getFranchise().getFranchiseId();
-
-        var offers = userCardRepository.findByUser_UserIdAndIsActiveTrue(userId).stream()
+        // 2) 사용자 보유 카드 → 혜택 계산 (가맹점 없으면 모두 0%)
+        var offersStream = userCardRepository.findByUser_UserIdAndIsActiveTrue(userId).stream()
                 .map(uc -> {
-                    var rate = cardProductBenefitRepository
-                            .findByCardProduct_CardUniqueNoAndFranchise_FranchiseId(uc.getCardProduct().getCardUniqueNo(), franchiseId)
-                            .map(CardProductBenefit::getDiscountRate)
-                            .orElse(BigDecimal.ZERO);
-
-                    Long estimatedFinal = amountOpt == null ? null : applyDiscount(amountOpt, rate);
+                    BigDecimal rate = BigDecimal.ZERO;
+                    if (franchiseId != null) {
+                        rate = cardProductBenefitRepository
+                                .findByCardProduct_CardUniqueNoAndFranchise_FranchiseId(
+                                        uc.getCardProduct().getCardUniqueNo(), franchiseId)
+                                .map(CardProductBenefit::getDiscountRate)
+                                .orElse(BigDecimal.ZERO);
+                    }
+                    Long estimatedFinal = (amountOpt == null) ? null : applyDiscount(amountOpt, rate);
 
                     return new BestCardsResponse.CardOffer(
                             uc.getUserCardId(),
@@ -83,13 +88,25 @@ public class WalletService {
                             rate,
                             estimatedFinal
                     );
-                })
-                .sorted(Comparator.comparing((BestCardsResponse.CardOffer o) -> o.discountRate() == null ? BigDecimal.ZERO : o.discountRate())
-                        .reversed())
-                .toList();
+                });
 
-        return new BestCardsResponse(merchant.getMerchantName(), merchant.getMerchantId(), amountOpt, offers);
+        // 3) 가맹점이 있을 때만 혜택율 내림차순 정렬
+        var offers = (franchiseId != null)
+                ? offersStream
+                .sorted(Comparator.comparing(
+                        (BestCardsResponse.CardOffer o) ->
+                                o.discountRate() == null ? BigDecimal.ZERO : o.discountRate()
+                ).reversed())
+                .toList()
+                : offersStream.toList(); // 가맹점 없으면 기본(조회 순서) 그대로
+
+        // 4) 응답용 가맹점 정보(없으면 id=null, 이름은 요청값 그대로)
+        String respMerchantName = (merchant != null) ? merchant.getMerchantName() : merchantName;
+        Long respMerchantId = (merchant != null) ? merchant.getMerchantId() : null;
+
+        return new BestCardsResponse(respMerchantName, respMerchantId, amountOpt, offers);
     }
+
 
     // ========== 결제 ==========
 
