@@ -8,7 +8,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordVisible, setPasswordVisible] = useState(true);
+  const [passwordVisible, setPasswordVisible] = useState(false);
 
   const emailLoginMutation = useEmailLogin();
   const kakaoLoginMutation = useKakaoLogin();

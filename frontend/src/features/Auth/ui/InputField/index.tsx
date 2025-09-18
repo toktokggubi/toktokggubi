@@ -25,8 +25,13 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
     },
     ref
   ) => {
-    const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
+    const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
     const v = inputFieldVariants[variant];
+
+    const handleTogglePassword = () => {
+      setIsPasswordVisible(!isPasswordVisible);
+      onTogglePassword?.();
+    };
 
     return (
       <View style={styles.container}>
@@ -42,21 +47,20 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
             ref={ref}
             style={[styles.input, v.input, error && styles.errorInput]}
             placeholderTextColor={placeholderTextColor ?? v.placeholder.color}
-            secureTextEntry={passwordToggle ? hidden : secureTextEntry}
+            secureTextEntry={secureTextEntry && !isPasswordVisible}
+            autoCapitalize="none"
+            autoCorrect={false}
             {...rest}
           />
           {rightLabel && (
             <Text style={styles.rightLabel}>{rightLabel}</Text>
           )}
-          {passwordToggle && (
+          {secureTextEntry && (
             <TouchableOpacity
-              onPress={() => {
-                setHidden((p) => !p);
-                onTogglePassword?.();
-              }}
+              onPress={handleTogglePassword}
               style={styles.eyeBtn}
             >
-              <Text style={{ opacity: 0.5 }}>{hidden ? "👁️‍🗨️" : "👁️"}</Text>
+              <Text style={{ opacity: 0.5 }}>{isPasswordVisible ? "👁️" : "👁️‍🗨️"}</Text>
             </TouchableOpacity>
           )}
         </View>

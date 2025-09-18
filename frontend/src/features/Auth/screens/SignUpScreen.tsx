@@ -13,8 +13,8 @@ export default function SignUpScreen() {
   });
 
   const [errors, setErrors] = useState<SignupFormErrors>({});
-  const [passwordVisible, setPasswordVisible] = useState(true);
-  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(true);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 
   const signupMutation = useSignup();
 

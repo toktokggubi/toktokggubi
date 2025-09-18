@@ -82,7 +82,6 @@ export default function SignUpTemplate({
                   value={password}
                   onChangeText={onChangePassword}
                   secureTextEntry
-                  passwordToggle={passwordToggle ?? true}
                   onTogglePassword={onTogglePassword}
                   error={passwordError}
                 />
@@ -93,7 +92,6 @@ export default function SignUpTemplate({
                   value={confirmPassword}
                   onChangeText={onChangeConfirmPassword}
                   secureTextEntry
-                  passwordToggle={confirmPasswordToggle ?? true}
                   onTogglePassword={onToggleConfirmPassword}
                   bottomLabel="비밀번호는 영문 대소문자, 숫자, 특수문자(.!@#$%)를 혼합하여 8~20자로 입력해주세요."
                   error={confirmPasswordError}

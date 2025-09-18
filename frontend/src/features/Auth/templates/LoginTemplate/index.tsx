@@ -75,7 +75,6 @@ export default function LoginTemplate({
                   value={password}
                   onChangeText={onChangePassword}
                   secureTextEntry
-                  passwordToggle={passwordToggle ?? true}
                   onTogglePassword={onTogglePassword}
                   bottomLabel={errorMessage}
                 />

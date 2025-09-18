@@ -1,4 +1,8 @@
-import axios, { AxiosError, InternalAxiosRequestConfig, AxiosHeaders } from "axios";
+import axios, {
+  AxiosError,
+  InternalAxiosRequestConfig,
+  AxiosHeaders,
+} from "axios";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import { queryClient } from "@/shared/lib/queryClient";
@@ -7,7 +11,7 @@ import { queryClient } from "@/shared/lib/queryClient";
 // 1) 공용 axios 인스턴스
 // ─────────────────────────────────────────────────────────────
 export const http = axios.create({
-  baseURL: Platform.OS === "android" ? "http://127.0.0.1:8080" : "http://localhost:8080",
+  baseURL: "http://j13b207.p.ssafy.io/api",
   timeout: 10_000,
   withCredentials: false,
 });
@@ -28,7 +32,7 @@ http.interceptors.request.use(async (config) => {
   if (AUTH_FREE.some((p) => config.url?.startsWith(p))) {
     return config;
   }
-  
+
   const token = await SecureStore.getItemAsync("access_token");
   if (token) {
     config.headers = new AxiosHeaders({
@@ -51,12 +55,9 @@ async function doRefresh(): Promise<string> {
   const refresh = await SecureStore.getItemAsync("refresh_token");
   if (!refresh) throw new Error("NO_REFRESH_TOKEN");
 
-  const res = await axios.post(
-    `${process.env.EXPO_PUBLIC_API_URL}/auth/token/refresh`,
-    {
-      refreshToken: refresh,
-    }
-  );
+  const res = await axios.post(`http://j13b207.p.ssafy.io/auth/token/refresh`, {
+    refreshToken: refresh,
+  });
 
   const newAccess = res.data?.token?.accessToken as string | undefined;
   const newRefresh = res.data?.token?.refreshToken as string | undefined;
