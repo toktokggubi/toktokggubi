@@ -122,5 +122,11 @@ public class BudgetController {
         String ym = ymResolver.nowYm();
         return budgetReadService.getFixedList(userId, ym);
     }
+    @GetMapping("/category")
+    public List<CategoryAllocDto> getCategoryAllocationsNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getCategoryAllocations(userId, ym);
+    }
 
 }
