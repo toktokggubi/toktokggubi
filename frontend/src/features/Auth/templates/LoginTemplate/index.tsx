@@ -22,6 +22,12 @@ export default function LoginTemplate({
   onSubmit,
   errorMessage,
   onNavigateSignUp,
+  passwordToggle,
+  onTogglePassword,
+  showSocialLogin,
+  onPressKakao,
+  submitting,
+  disabled,
   headerImageSource,
 }: LoginTemplateProps) {
   return (
@@ -56,9 +62,9 @@ export default function LoginTemplate({
             </View>
             <View style={style.container}>
               <View style={style.loginSection}>
-                {/* 아이디 입력 */}
+                {/* 이메일 입력 */}
                 <InputField
-                  placeholder="아이디"
+                  placeholder="이메일"
                   value={id}
                   onChangeText={onChangeId}
                 />
@@ -69,12 +75,16 @@ export default function LoginTemplate({
                   value={password}
                   onChangeText={onChangePassword}
                   secureTextEntry
-                  passwordToggle
+                  onTogglePassword={onTogglePassword}
                   bottomLabel={errorMessage}
                 />
 
                 {/* 로그인 버튼 */}
-                <Button value="로그인" onPress={onSubmit} />
+                <Button 
+                  value={submitting ? "로그인 중..." : "로그인"} 
+                  onPress={onSubmit}
+                  disabled={disabled}
+                />
 
                 {/* 하단 작은 링크 */}
                 <View style={style.signUpLink}>
@@ -86,23 +96,28 @@ export default function LoginTemplate({
               </View>
 
               {/* 간편 로그인 */}
-              <View style={style.divider}>
-                <View style={style.line}></View>
-                <Text style={style.dividerText}>간편 로그인</Text>
-                <View style={style.line}></View>
-              </View>
-              <Button
-                value="카카오로 시작하기"
-                variant="kakaoButton"
-                onPress={() => {}}
-                icon={
-                  <Image
-                    source={require("@/assets/icon/kakao.png")}
-                    style={{ width: 20, height: 20, marginTop: 4 }}
-                    resizeMode="contain"
+              {showSocialLogin && (
+                <>
+                  <View style={style.divider}>
+                    <View style={style.line}></View>
+                    <Text style={style.dividerText}>간편 로그인</Text>
+                    <View style={style.line}></View>
+                  </View>
+                  <Button
+                    value="카카오로 시작하기"
+                    variant="kakaoButton"
+                    onPress={onPressKakao}
+                    disabled={disabled}
+                    icon={
+                      <Image
+                        source={require("@/assets/icon/kakao.png")}
+                        style={{ width: 20, height: 20, marginTop: 4 }}
+                        resizeMode="contain"
+                      />
+                    }
                   />
-                }
-              />
+                </>
+              )}
             </View>
           </View>
         </ScrollView>

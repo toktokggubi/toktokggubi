@@ -14,6 +14,7 @@ import { SafeAreaView as SafeAreaViewContext } from "react-native-safe-area-cont
 import AppBottomSheet from "~features/Auth/ui/BottomSheetList";
 import PersonalInfoTemplate from "../templates/PersonalInfoTemplate";
 import { useRouter } from "expo-router";
+import { useSignupComplete } from "../model/useAuthQueries";
 
 const AGE_GROUP_OPTIONS = [
   "10대",
@@ -49,6 +50,8 @@ export default function PersonalInfoScreen() {
   const [jobTitle, setJobTitle] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
 
+  const signupCompleteMutation = useSignupComplete();
+
   // BottomSheet refs
   const ageSheetRef = useRef<BottomSheet>(null);
   const jobSheetRef = useRef<BottomSheet>(null);
@@ -78,7 +81,7 @@ export default function PersonalInfoScreen() {
   }, []);
 
   // 제출
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const data = {
       nickname: (nickname ?? "").trim(),
       gender,
@@ -94,7 +97,17 @@ export default function PersonalInfoScreen() {
     if (!data.monthlyIncome || isNaN(data.monthlyIncome))
       return Alert.alert("알림", "월 소득을 숫자로 입력해 주세요.");
 
-    Alert.alert("OK", JSON.stringify(data, null, 2));
+    try {
+      await signupCompleteMutation.mutateAsync(data);
+      // 성공 시 환영 화면으로 이동
+      router.push("/auth/welcome");
+    } catch (error: any) {
+      console.error("회원가입 완료 실패:", error);
+      Alert.alert(
+        "회원가입 완료 실패",
+        error?.response?.data?.message || "회원가입 완료 중 오류가 발생했습니다."
+      );
+    }
   };
 
   const renderOption = (
@@ -171,7 +184,7 @@ export default function PersonalInfoScreen() {
         onPressAgeGroup={openAgeSheet}
         onPressJobTitle={openJobSheet}
         onChangeMonthlyIncome={setMonthlyIncome}
-        onSubmit={onNavigateWelcome}
+        onSubmit={handleSubmit}
         rightLabel="만원"
         headerImageSource={require("@/assets/images/character/big-character-03.png")}
       />
