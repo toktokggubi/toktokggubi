@@ -10,26 +10,22 @@ const MypageScreen = () => {
   const logoutMutation = useLogout();
 
   const handleLogout = () => {
-    Alert.alert(
-      "로그아웃",
-      "정말 로그아웃하시겠습니까?",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "로그아웃",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await logoutMutation.mutateAsync();
-              Alert.alert("성공", "로그아웃되었습니다.");
-              router.replace("/auth/login");
-            } catch (error) {
-              Alert.alert("오류", "로그아웃 중 오류가 발생했습니다.");
-            }
-          },
+    Alert.alert("로그아웃", "정말 로그아웃하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "로그아웃",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await logoutMutation.mutateAsync();
+            Alert.alert("성공", "로그아웃되었습니다.");
+            router.replace("/auth/login");
+          } catch (error) {
+            Alert.alert("오류", "로그아웃 중 오류가 발생했습니다.");
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   return (
@@ -40,6 +36,9 @@ const MypageScreen = () => {
       onPressGifticon={() => router.push("/gifticons" as Href)}
       onPressLogout={handleLogout}
       isLoggingOut={logoutMutation.isPending}
+      // 임시 핸들러들 - 나중에 제거 예정
+      onPressLogin={() => router.push("/auth/login" as Href)}
+      onPressBudget={() => router.push("/budget" as Href)}
     />
   );
 };
