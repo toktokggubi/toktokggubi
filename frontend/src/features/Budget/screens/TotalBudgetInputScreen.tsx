@@ -1,16 +1,38 @@
-import { useState } from "react";
-import TotalBudgetTemplate from "~features/Budget/templates/TotalBudgetTemplate";
+import { useState, useEffect } from "react";
 import { router } from "expo-router";
+import TotalBudgetTemplate from "~features/Budget/templates/TotalBudgetTemplate";
+import { useBudgetDraft } from "~features/Budget/context/BudgetDraftContext";
 
 export default function TotalBudgetInputScreen() {
-  const [amount, setAmount] = useState(500_000);
+  const [amount, setAmount] = useState(500_000); // 기본값을 0으로 설정
+  const { 
+    saveTotal, 
+    isSavingTotal, 
+    totalError, 
+    totalAmount, 
+    version, 
+    draftId,
+    loadDraftData 
+  } = useBudgetDraft();
+
+  // 이전에 저장된 총예산 데이터가 있으면 불러오기
+  useEffect(() => {
+    loadDraftData();
+    if (totalAmount) {
+      setAmount(totalAmount);
+    }
+  }, [totalAmount, loadDraftData]);
 
   const goPrev = () => router.back();
-  const goNext = () => {
-    router.push({
-      pathname: "/budget/fixed-expense",
-      params: { totalAmount: amount.toString() }
-    });
+  
+  const goNext = async () => {
+    try {
+      await saveTotal(amount);
+      router.push("/budget/fixed-expense");
+    } catch (error) {
+      console.error('총예산 저장 실패:', error);
+      // 에러 처리 (토스트 메시지 등)
+    }
   };
 
   return (
@@ -19,7 +41,7 @@ export default function TotalBudgetInputScreen() {
       onChangeAmount={setAmount}
       onPressPrev={goPrev}
       onPressNext={goNext}
-      nextDisabled={amount <= 0}
+      nextDisabled={amount <= 0 || isSavingTotal}
     />
   );
 }

@@ -10,6 +10,7 @@ export const CATEGORY_ICON_BY_NAME: Record<string, any> = {
   자동차: require("@/assets/images/illustration/category_car.png"),
   "의료/건강": require("@/assets/images/illustration/category_medical.png"),
   문화: require("@/assets/images/illustration/category_entertainment.png"),
+  기타: require("@/assets/images/illustration/category_shopping.png"), // 폴백 아이콘 사용
 } as const;
 
 // 폴백(없을 때)

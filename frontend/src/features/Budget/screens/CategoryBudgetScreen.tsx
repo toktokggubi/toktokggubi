@@ -1,82 +1,70 @@
-import { useCallback, useMemo, useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { router } from "expo-router";
 import CategoryBudgetTemplate from "~features/Budget/templates/CategoryBudgetTemplate";
+import { useBudgetDraft } from "../context/BudgetDraftContext";
 import type { CategoryBudgetItem } from "~features/Budget/templates/CategoryBudgetTemplate/types";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
-
-// 🔄 REDIS 전환 시 수정할 부분들:
-// 1) useLocalSearchParams 제거하고 draft store/query 훅으로 교체
-//    - useBudgetDraftQuery, useBudgetDraftData, useBudgetDraftActions
-//    - useSaveCategoriesMutation, useCommitBudgetMutation 등
-// 2) selectedCategories/allocations은 store 기준으로 관리
-// 3) goNext에서는 파라미터 이동 대신 Redis 저장 후 커밋
 
 // 유틸: 천원 단위로 내림
 const floorToThousand = (n: number) => Math.max(0, Math.floor(n / 1000) * 1000);
 
-type FixedExpenseParam = {
-  title: string;
-  amount: number;
-  payDay?: number;
-  includeInBudget?: boolean;
+// 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
+const getCategoryId = (name: CategoryName): number => {
+  const categoryMap: Record<CategoryName, number> = {
+    '식비': 1,
+    '카페/간식': 2,
+    '술/유흥': 3,
+    '생활': 4,
+    '쇼핑': 5,
+    '뷰티/미용': 6,
+    '교통': 7,
+    '자동차': 8,
+    '의료/건강': 9,
+    '문화': 10,
+    '기타': 11,
+  };
+  return categoryMap[name] || 11;
 };
 
 export default function CategoryBudgetScreen() {
-  // 현재는 이전 단계에서 파라미터로 전달받음
-  const { totalAmount, fixedExpenses, selectedCategories } =
-    useLocalSearchParams<{
-      totalAmount?: string;
-      fixedExpenses?: string;
-      selectedCategories?: string; // JSON-encoded CategoryName[]
-    }>();
+  const { 
+    availableBudget, 
+    selectedCategories, 
+    categoryAllocations,
+    updateCategorySelection,
+    saveCategories, 
+    version, 
+    isSavingCategories, 
+    categoriesError,
+    loadDraftData 
+  } = useBudgetDraft();
 
-  // 총예산
-  const totalBudget = totalAmount ? parseInt(totalAmount, 10) : 0;
-
-  // 고정지출 (예산 포함 항목만 차감)
-  const parsedFixed: FixedExpenseParam[] = useMemo(() => {
-    if (!fixedExpenses) return [];
-    try {
-      return JSON.parse(
-        decodeURIComponent(fixedExpenses)
-      ) as FixedExpenseParam[];
-    } catch {
-      return [];
-    }
-  }, [fixedExpenses]);
-
-  const fixedIncludedSum = useMemo(
-    () =>
-      parsedFixed.reduce((acc, cur) => {
-        if (cur?.includeInBudget === false) return acc;
-        return acc + (cur?.amount || 0);
-      }, 0),
-    [parsedFixed]
-  );
-
-  // 다음 달 사용 가능 예산
-  const availableNextMonth = Math.max(0, totalBudget - fixedIncludedSum);
-
-  // 선택된 카테고리 목록
-  const selected: CategoryName[] = useMemo(() => {
-    if (!selectedCategories) return [];
-    try {
-      return JSON.parse(
-        decodeURIComponent(selectedCategories)
-      ) as CategoryName[];
-    } catch {
-      return [];
-    }
+  // 선택된 카테고리 이름들 (데이터베이스와 일치)
+  const selectedCategoryNames: CategoryName[] = useMemo(() => {
+    const idToName: Record<number, CategoryName> = {
+      1: '식비',
+      2: '카페/간식',
+      3: '술/유흥',
+      4: '생활',
+      5: '쇼핑',
+      6: '뷰티/미용',
+      7: '교통',
+      8: '자동차',
+      9: '의료/건강',
+      10: '문화',
+      11: '기타',
+    };
+    return selectedCategories.map(id => idToName[id]).filter(Boolean) as CategoryName[];
   }, [selectedCategories]);
 
   // 초기 제안: 균등 분배(천원 단위 내림). 분배 후 남는 나머지는 앞에서부터 천원씩 보정.
   const initialItems: CategoryBudgetItem[] = useMemo(() => {
-    if (selected.length === 0) return [];
-    const base = floorToThousand(availableNextMonth / selected.length);
-    const items = selected.map((name) => ({ name, amount: base }));
+    if (selectedCategoryNames.length === 0) return [];
+    const base = floorToThousand(availableBudget / selectedCategoryNames.length);
+    const items = selectedCategoryNames.map((name) => ({ name, amount: base }));
     // 천원 단위 내림으로 생긴 잔여를 앞에서부터 1,000원씩 더해주기
-    const allocated = base * selected.length;
-    let remain = availableNextMonth - allocated;
+    const allocated = base * selectedCategoryNames.length;
+    let remain = availableBudget - allocated;
     let idx = 0;
     while (remain >= 1000 && idx < items.length) {
       items[idx].amount += 1000;
@@ -84,43 +72,109 @@ export default function CategoryBudgetScreen() {
       idx++;
     }
     return items;
-  }, [selected, availableNextMonth]);
+  }, [selectedCategoryNames, availableBudget]);
 
-  // 제어 상태: 카테고리별 금액
-  const [items, setItems] = useState<CategoryBudgetItem[]>(initialItems);
+  // Context에서 직접 카테고리 예산 데이터를 계산
+  const items: CategoryBudgetItem[] = useMemo(() => {
+    if (categoryAllocations.length > 0) {
+      // Context에서 카테고리 예산 데이터를 CategoryBudgetItem 형태로 변환
+      const idToName: Record<number, CategoryName> = {
+        1: '식비',
+        2: '카페/간식',
+        3: '술/유흥',
+        4: '생활',
+        5: '쇼핑',
+        6: '뷰티/미용',
+        7: '교통',
+        8: '자동차',
+        9: '의료/건강',
+        10: '문화',
+        11: '기타',
+      };
+      
+      const convertedItems: CategoryBudgetItem[] = categoryAllocations.map(allocation => ({
+        name: idToName[allocation.categoryId] || '기타',
+        amount: allocation.finalAmount,
+      }));
+      
+      return convertedItems;
+    } else if (selectedCategoryNames.length > 0) {
+      // 이전 데이터가 없으면 기본값(균등 분배) 사용
+      return initialItems;
+    }
+    
+    return [];
+  }, [categoryAllocations, selectedCategoryNames, initialItems]);
 
-  // amount 변경
+  // 디버깅 로그 (useMemo 밖에서)
+  useEffect(() => {
+    console.log('=== CategoryBudgetScreen Context 데이터 ===');
+    console.log('selectedCategories:', selectedCategories);
+    console.log('categoryAllocations:', categoryAllocations);
+    console.log('availableBudget:', availableBudget);
+    console.log('version:', version);
+    console.log('items:', items);
+    
+    if (categoryAllocations.length > 0) {
+      console.log('=== 이전 카테고리 예산 데이터 사용 ===');
+      console.log('불러온 카테고리 예산:', items);
+    } else if (selectedCategoryNames.length > 0) {
+      console.log('=== 초기 카테고리 예산 기본값 사용 ===');
+      console.log('사용 가능 예산:', availableBudget);
+      console.log('선택된 카테고리:', selectedCategoryNames);
+      console.log('기본값 예산:', items);
+    } else {
+      console.log('=== 빈 배열 반환 ===');
+    }
+  }, [selectedCategories, categoryAllocations, availableBudget, version, items, selectedCategoryNames]);
+
+  // amount 변경 (Context 직접 업데이트)
   const onChangeItem = useCallback((name: CategoryName, next: number) => {
-    setItems((prev) =>
-      prev.map((it) => (it.name === name ? { ...it, amount: next } : it))
+    console.log('=== 카테고리 예산 변경 ===');
+    console.log('카테고리:', name, '새 금액:', next);
+    
+    const categoryId = getCategoryId(name);
+    const newAllocations = categoryAllocations.map(allocation => 
+      allocation.categoryId === categoryId 
+        ? { ...allocation, finalAmount: next }
+        : allocation
     );
-  }, []);
+    
+    console.log('새로운 할당:', newAllocations);
+    
+    // Context 업데이트 (실제 저장은 다음 단계에서)
+    updateCategorySelection(selectedCategories, newAllocations);
+  }, [categoryAllocations, selectedCategories, updateCategorySelection]);
 
   // 네비게이션
   const goPrev = useCallback(() => router.back(), []);
 
-  const goNext = useCallback(() => {
-    // 🔄 REDIS 전환 시:
-    // const allocations = items.map(it => ({ categoryId: ..., finalAmount: it.amount }));
-    // updateCategorySelection(...); autoSaveCategories(...);
-    // commitMutation.mutate(...)
-
-    // 예산 요약 화면으로 이동
-    const categoryBudgetsParam = encodeURIComponent(JSON.stringify(items));
-    router.push({
-      pathname: "/budget/summary",
-      params: {
-        totalAmount,
-        fixedExpenses,
-        selectedCategories,
-        categoryBudgets: categoryBudgetsParam,
-      },
-    });
-  }, [items, totalAmount, fixedExpenses, selectedCategories]);
+  const goNext = useCallback(async () => {
+    console.log('=== 카테고리 예산 저장 시작 ===');
+    console.log('Context selectedCategories:', selectedCategories);
+    console.log('Context categoryAllocations:', categoryAllocations);
+    console.log('현재 버전:', version);
+    
+    try {
+      const result = await saveCategories(selectedCategories, categoryAllocations);
+      console.log('=== 카테고리 예산 저장 성공 ===');
+      console.log('저장 결과:', result);
+      if (result) {
+        console.log('새로운 버전:', result.version);
+        console.log('새로운 draftId:', result.draftId);
+      }
+      
+      router.push("/budget/summary");
+    } catch (error) {
+      console.error('=== 카테고리 예산 저장 실패 ===');
+      console.error('에러:', error);
+      // 에러 처리 (토스트 메시지 등)
+    }
+  }, [selectedCategories, categoryAllocations, saveCategories, version]);
 
   return (
     <CategoryBudgetTemplate
-      availableNextMonth={availableNextMonth}
+      availableNextMonth={availableBudget}
       items={items}
       onChangeItem={onChangeItem}
       onPressPrev={goPrev}

@@ -1,46 +1,47 @@
-import { useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { router } from "expo-router";
 import FixedExpenseTemplate from "~features/Budget/templates/FixedExpenseTemplate";
+import { useBudgetDraft } from "~features/Budget/context/BudgetDraftContext";
 import type { FixedExpenseItem } from "~features/Budget/ui/molecules/FixedExpenseRow/types";
 import type { AddFixedExpenseFormValues } from "~features/Budget/ui/forms/AddFixedExpenseForm/types";
 
-// 🔄 REDIS 전환 시 수정할 부분들:
-// 1. import 추가: useBudgetDraftQuery, useSaveFixedExpensesMutation, useBudgetDraftFormData, useBudgetDraftActions, useBudgetDraftCalculations, useBudgetDraftData
-// 2. useLocalSearchParams 제거하고 draft store에서 데이터 가져오기
-// 3. 로컬 상태(items) 대신 draft store 사용
-// 4. goNext에서 파라미터 전달 대신 Redis 저장 후 네비게이션
-
 export default function FixedExpenseScreen() {
-  // 🔄 REDIS 전환 시: 이 부분을 draft store에서 가져오도록 변경
-  // const { totalAmount } = useBudgetDraftFormData();
-  // const { updateFixedExpenses } = useBudgetDraftActions();
-  // const { getAvailableBudget } = useBudgetDraftCalculations();
-  // const { version } = useBudgetDraftData();
-  // const saveFixedMutation = useSaveFixedExpensesMutation();
-  
-  // 현재: 파라미터로 받은 총 예산
-  const { totalAmount } = useLocalSearchParams<{ totalAmount: string }>();
-  const totalBudget = totalAmount ? parseInt(totalAmount) : 1000000;
+  const { 
+    totalAmount, 
+    saveFixed, 
+    availableBudget, // Context에서 계산된 사용 가능 예산 사용
+    version, 
+    isSavingFixed, 
+    fixedError,
+    fixedExpenses,
+    updateFixedExpenses,
+    loadDraftData 
+  } = useBudgetDraft();
 
-  // 🔄 REDIS 전환 시: 로컬 상태 대신 draft store 사용
-  // const [localItems, setLocalItems] = useState<FixedExpenseItem[]>([]);
-  // const [isInitialized, setIsInitialized] = useState(false);
-  // const { data: draftData } = useBudgetDraftQuery();
-  
-  // 현재: 로컬 상태로 고정 지출 관리
-  const [items, setItems] = useState<FixedExpenseItem[]>([]);
+  // Context에서 직접 고정지출 데이터를 계산 (로컬 상태 제거)
+  const items: FixedExpenseItem[] = useMemo(() => {
+    return fixedExpenses.map((expense, index) => ({
+      id: String(index),
+      name: expense.title,
+      amount: expense.amount,
+      includeInBudget: expense.includeInBudget,
+      billingDay: expense.payDay,
+    }));
+  }, [fixedExpenses]);
+
+  // 데이터 로딩
+  useEffect(() => {
+    console.log('=== FixedExpenseScreen 데이터 로딩 ===');
+    console.log('fixedExpenses:', fixedExpenses);
+    console.log('fixedExpenses.length:', fixedExpenses.length);
+    console.log('items:', items);
+    
+    loadDraftData();
+  }, [loadDraftData]);
 
   // 폼(모달) 상태
   const [formVisible, setFormVisible] = useState(false);
   const [editing, setEditing] = useState<FixedExpenseItem | undefined>(undefined);
-
-  // 포함된 고정지출 합계
-  const sumIncluded = items
-    .filter((i) => i.includeInBudget)
-    .reduce((acc, cur) => acc + cur.amount, 0);
-
-  // 다음 달 사용 가능 예산 (이전 단계에서 받은 총 예산 - 포함된 고정지출)
-  const availableNextMonth = totalBudget - sumIncluded;
 
   // 이벤트 핸들러
   const openCreate = () => {
@@ -55,54 +56,68 @@ export default function FixedExpenseScreen() {
   
   const closeForm = () => setFormVisible(false);
 
-  const submitForm = (v: AddFixedExpenseFormValues) => {
+  const submitForm = useCallback((v: AddFixedExpenseFormValues) => {
+    console.log('=== 고정지출 폼 제출 ===');
+    console.log('편집 중인 항목:', editing);
+    console.log('입력값:', v);
+    
+    let newExpenses;
+    
     if (editing) {
-      setItems((prev) =>
-        prev.map((i) => (i.id === editing.id ? { ...editing, ...v } : i))
+      // 편집 모드
+      const editingIndex = parseInt(editing.id);
+      newExpenses = fixedExpenses.map((expense, index) => 
+        index === editingIndex 
+          ? {
+              title: v.name,
+              amount: v.amount,
+              payDay: v.billingDay || 1,
+              includeInBudget: v.includeInBudget,
+            }
+          : expense
       );
     } else {
-      setItems((prev) => [...prev, { id: String(Date.now()), ...v }]);
+      // 추가 모드
+      newExpenses = [
+        ...fixedExpenses,
+        {
+          title: v.name,
+          amount: v.amount,
+          payDay: v.billingDay || 1,
+          includeInBudget: v.includeInBudget,
+        }
+      ];
     }
+    
+    console.log('새로운 고정지출:', newExpenses);
+    updateFixedExpenses(newExpenses);
     setFormVisible(false);
-  };
+  }, [editing, fixedExpenses, updateFixedExpenses]);
 
   // 네비게이션
   const goPrev = () => router.back();
-  const goNext = () => {
-    // 🔄 REDIS 전환 시: 파라미터 전달 대신 Redis 저장 후 네비게이션
-    // const expenses = items.map((item: FixedExpenseItem) => ({
-    //   title: item.name,
-    //   amount: item.amount,
-    //   payDay: item.billingDay || 1,
-    //   includeInBudget: item.includeInBudget,
-    // }));
-    // 
-    // if (version && version > 0) {
-    //   saveFixedMutation.mutate({
-    //     expectedVersion: version,
-    //     fixedExpenses: expenses,
-    //   }, {
-    //     onSuccess: () => {
-    //       router.push("/budget/select-category");
-    //     },
-    //     onError: (error) => {
-    //       console.error('저장 실패:', error);
-    //     },
-    //   });
-    // } else {
-    //   router.push("/budget/select-category");
-    // }
+  
+  const goNext = useCallback(async () => {
+    console.log('=== 고정지출 저장 시작 ===');
+    console.log('Context fixedExpenses:', fixedExpenses);
+    console.log('현재 버전:', version);
     
-    // 현재: 파라미터로 고정 지출 데이터 전달
-    const fixedExpensesParam = encodeURIComponent(JSON.stringify(items));
-    router.push({
-      pathname: "/budget/select-category",
-      params: { 
-        totalAmount: totalAmount,
-        fixedExpenses: fixedExpensesParam
+    try {
+      const result = await saveFixed(fixedExpenses);
+      console.log('=== 고정지출 저장 성공 ===');
+      console.log('저장 결과:', result);
+      if (result) {
+        console.log('새로운 버전:', result.version);
+        console.log('새로운 draftId:', result.draftId);
       }
-    });
-  };
+      
+      router.push("/budget/select-category");
+    } catch (error) {
+      console.error('=== 고정지출 저장 실패 ===');
+      console.error('에러:', error);
+      // 에러 처리 (토스트 메시지 등)
+    }
+  }, [fixedExpenses, saveFixed, version]);
 
   return (
     <FixedExpenseTemplate
@@ -119,14 +134,14 @@ export default function FixedExpenseScreen() {
       formDefaultValues={editing}
       onSubmitForm={submitForm}
       onCancelForm={closeForm}
-      // 안내 텍스트
-      availableNextMonth={availableNextMonth}
+      // 안내 텍스트 (이번 달 사용 가능 예산)
+      availableNextMonth={availableBudget}
       // 푸터
       stepIndex={1}
       stepTotal={5}
       onPressPrev={goPrev}
       onPressNext={goNext}
-      nextDisabled={availableNextMonth < 0}
+      nextDisabled={availableBudget < 0 || isSavingFixed}
     />
   );
 }
