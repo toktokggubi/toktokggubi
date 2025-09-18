@@ -13,11 +13,17 @@ import SvgTabBar from "@/shared/ui/SvgTabBar";
 import HomeScreen from "./home/index";
 import LuckyScreen from "./lucky/index";
 import MyPageScreen from "./mypage/index";
+import PaymentScreen from "../pay/payment";
+
+// 더미 컴포넌트들 (라우터가 없는 탭들용)
+const ReportScreen = () => null;
 
 const Tab = createBottomTabNavigator();
 
 const tabs = [
   { name: "home/index", icon: "home", label: "홈" },
+  { name: "report", icon: "ai-report", label: "리포트" },
+  { name: "payment", icon: "payment-barcode", label: "결제" },
   { name: "lucky/index", icon: "staro", label: "혜택" },
   { name: "mypage", icon: "person-circle", label: "마이페이지" },
 ];
@@ -48,6 +54,8 @@ export default function TabLayout() {
       }}
     >
       <Tab.Screen name="home/index" component={HomeScreen} />
+      <Tab.Screen name="report" component={ReportScreen} />
+      <Tab.Screen name="payment" component={PaymentScreen} />
       <Tab.Screen name="lucky/index" component={LuckyScreen} />
       <Tab.Screen name="mypage" component={MyPageScreen} />
     </Tab.Navigator>

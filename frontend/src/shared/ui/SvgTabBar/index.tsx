@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet, Dimensions, Image } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, AntDesign, Ionicons } from "@expo/vector-icons";
 import Svg, {
@@ -8,7 +8,6 @@ import Svg, {
   Filter,
   FeFlood,
   FeColorMatrix,
-  FeMorphology,
   FeOffset,
   FeGaussianBlur,
   FeComposite,
@@ -18,7 +17,7 @@ import { colors } from "@/shared/constants/colors";
 import { SvgTabBarProps } from "./types";
 
 const { width } = Dimensions.get("window");
-const TAB_WIDTH = width / 3;
+const TAB_WIDTH = width / 5;
 
 // SVG 탭바 배경 컴포넌트
 const TabBarBackground = () => {
@@ -66,7 +65,7 @@ const TabBarBackground = () => {
         </Filter>
       </Defs>
       <Path
-        d="M303.649 63.929C289.882 63.929 276.687 57.796 268.278 46.8861C260.367 36.6168 247.954 30 233.997 30C220.039 30 207.627 36.6168 199.715 46.8861C191.306 57.796 178.111 63.929 164.344 63.929H28C12.536 63.929 0 76.465 0 91.929V137H440V91.929C440 76.465 427.464 63.929 412 63.929H303.656H303.649Z"
+        d="M302 63.929C288.233 63.929 275.038 57.796 266.629 46.8861C258.718 36.6168 246.305 30 232.348 30C218.39 30 205.978 36.6168 198.066 46.8861C189.657 57.796 176.462 63.929 162.695 63.929H28C12.536 63.929 0 76.465 0 91.929V137H440V91.929C440 76.465 427.464 63.929 412 63.929H302Z"
         fill={colors.BACKGROUND_PRIMARY}
         filter="url(#filter0_d_538_972)"
       />
@@ -81,35 +80,35 @@ export default function SvgTabBar({
   tabs,
 }: SvgTabBarProps) {
   const insets = useSafeAreaInsets();
-  
-  // 현재 활성 탭이 홈인지 확인
-  const isHomeTab = state.routes[state.index]?.name === "home/index";
 
-  const getIconComponent = (iconName: string, color: string, size: number) => {
+  const getIconComponent = (iconName: string, color: string, size: number, isFocused: boolean) => {
     switch (iconName) {
       case "home":
-        return <Feather name="home" size={size} color={color} />;
+        return <Ionicons name="home" size={size} color={color} />;
+      case "ai-report":
+        return <Ionicons name="analytics" size={size} color={color} />;
+      case "payment-barcode":
+        return (
+          <View style={styles.paymentIconContainer}>
+            <View style={[styles.paymentIconInner, { backgroundColor: colors.BLUE_NORMAL }]}>
+              <View style={styles.paymentIconBackground}>
+                <Ionicons name="qr-code" size={36} color={color} />
+              </View>
+            </View>
+          </View>
+        );
       case "staro":
         return <AntDesign name="staro" size={size} color={color} />;
       case "person-circle":
         return <Ionicons name="person-circle" size={size} color={color} />;
       default:
-        return <Feather name="home" size={size} color={color} />;
+        return <Ionicons name="home" size={size} color={color} />;
     }
   };
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.tabBarContainer}>
-        {/* 홈 탭일 때만 water.png 배경 표시 */}
-        {isHomeTab && (
-          <Image
-            source={require("@/assets/images/illustration/water.png")}
-            style={styles.waterBackground}
-            resizeMode="cover"
-          />
-        )}
-        
         {/* SVG 탭바 배경 */}
         <TabBarBackground />
 
@@ -132,11 +131,33 @@ export default function SvgTabBar({
               }
             };
 
-            // 중앙 탭(두 번째)은 SVG의 돌출된 부분에 배치
-            const isCenterTab = index === 1;
+            // 중앙 탭(세 번째, 결제바코드)은 SVG의 돌출된 부분에 배치
+            const isCenterTab = index === 2;
             const iconStyle = isCenterTab
               ? styles.centerIconContainer
               : styles.sideIconContainer;
+
+            // 아이콘 이름을 직접 매핑
+            let iconName = "home";
+            switch (index) {
+              case 0:
+                iconName = "home"; // 홈 (기존 라우터 사용)
+                break;
+              case 1:
+                iconName = "ai-report"; // 리포트 (AI로 생성된 리포트, 라우터 없음)
+                break;
+              case 2:
+                iconName = "payment-barcode"; // 결제 바코드 (라우터 없음)
+                break;
+              case 3:
+                iconName = "staro"; // 별 (기존 라우터 사용)
+                break;
+              case 4:
+                iconName = "person-circle"; // 프로필 (기존 라우터 사용)
+                break;
+              default:
+                iconName = "home";
+            }
 
             return (
               <TouchableOpacity
@@ -147,9 +168,10 @@ export default function SvgTabBar({
               >
                 <View style={[styles.iconContainer, iconStyle]}>
                   {getIconComponent(
-                    tab.icon,
+                    iconName,
                     isFocused ? colors.BLUE_NORMAL : colors.GRAY_NORMAL,
-                    28
+                    24,
+                    isFocused
                   )}
                 </View>
               </TouchableOpacity>
@@ -196,7 +218,7 @@ const styles = StyleSheet.create({
     paddingTop: 10, // SVG의 돌출된 부분에 아이콘 배치
   },
   tabItem: {
-    width: 80,
+    width: TAB_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     height: "100%",
@@ -207,7 +229,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   centerIconContainer: {
-    marginTop: -60, // SVG의 돌출된 부분에 맞춰 조정
+    marginTop: -40, // SVG의 돌출된 부분에 맞춰 조정
   },
   sideIconContainer: {
     marginTop: 10, // 양쪽 아이콘은 SVG의 하단 부분에 배치
@@ -215,13 +237,23 @@ const styles = StyleSheet.create({
   centerTabItem: {
     zIndex: 2, // 중앙 탭이 위에 오도록
   },
-  waterBackground: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 50, // SVG 도형이 시작되기 전까지만 표시 (SVG의 top: -20을 고려하여 80px로 설정)
-    width: "100%",
-    zIndex: 0, // SVG 배경보다 뒤에 위치
+  paymentIconContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paymentIconInner: {
+    width: 70,
+    height: 70,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paymentIconBackground: {
+    width: 40,
+    height: 40,
+    backgroundColor: "white",
+    borderRadius: 4,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
