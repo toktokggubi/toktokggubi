@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/budget")
@@ -95,12 +97,36 @@ public class BudgetController {
         String ym = ymResolver.nowYm();
         return commitService.commit(userId, ym, null);
     }
-    @GetMapping("/total-amount")
+    @GetMapping("/total")
     public TotalAmountResponseDto getTotalAmountNow() {
         Long userId = SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         return budgetReadService.getTotalAmount(userId, ym);
     }
 
+    @GetMapping("/fixed")
+    public FixedIncludedTotalResponseDto getFixedIncludedTotalNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getFixedIncludedTotal(userId, ym);
+    }
+    @GetMapping("/first")
+    public FirstAmountResponseDto getFirstAmountNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getFirstAmount(userId, ym);
+    }
+    @GetMapping("/fixed/list")
+    public List<FixedExpenseDto> getFixedListNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getFixedList(userId, ym);
+    }
+    @GetMapping("/category")
+    public List<CategoryAllocDto> getCategoryAllocationsNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getCategoryAllocations(userId, ym);
+    }
 
 }

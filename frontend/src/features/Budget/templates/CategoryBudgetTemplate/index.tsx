@@ -18,6 +18,7 @@ export default function CategoryBudgetTemplate({
   title = "카테고리별 예산 설정",
   subtitle = "꺼비가 회원님의 정보를 바탕으로 제안했어요.",
   disabled,
+  nextDisabled,
   stepIndex,
   stepTotal,
 }: CategoryBudgetTemplateProps) {
@@ -97,8 +98,7 @@ export default function CategoryBudgetTemplate({
         stepTotal={stepTotal}
         onPressPrev={onPressPrev}
         onPressNext={onPressNext}
-        // 남은 금액이 음수면 Next 비활성화(팀 정책에 맞게 조정)
-        nextDisabled={isOver}
+        nextDisabled={nextDisabled}
         baseBottom={LAYOUT.footerBaseBottom}
       />
     </SafeAreaView>

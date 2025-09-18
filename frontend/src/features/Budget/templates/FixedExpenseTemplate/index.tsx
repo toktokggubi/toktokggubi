@@ -49,7 +49,7 @@ export default function FixedExpenseTemplate({
       {/* 3) 하단 안내문 (bottomContent) */}
       <View style={s.bottomContent}>
         <Text style={s.notice}>
-          다음 달 사용 가능 예산은{" "}
+          이번 달 사용 가능 예산은{" "}
           <Text style={s.accent}>{availableNextMonth.toLocaleString()}원</Text>{" "}
           입니다.
         </Text>
