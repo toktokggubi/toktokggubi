@@ -23,8 +23,6 @@ export interface SignUpTemplateProps {
   // 비번 토글
   passwordToggle?: boolean;
   confirmPasswordToggle?: boolean;
-  onTogglePassword?: () => void;
-  onToggleConfirmPassword?: () => void;
 
   // 헤더 이미지
   headerImageSource?: ImageSourcePropType;

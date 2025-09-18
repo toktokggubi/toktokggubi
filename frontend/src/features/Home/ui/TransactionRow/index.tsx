@@ -46,7 +46,6 @@ const styles = StyleSheet.create({
     borderColor: colors.BLUE_LIGHT,
     flexDirection: "row",
     alignItems: "center",
-    width: "100%",
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -58,21 +57,16 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginRight: 12,
   },
   merchantName: {
     fontSize: 15,
     fontWeight: "600",
     color: colors.GRAY_DARKER,
     marginBottom: 2,
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
   },
   categoryInfo: {
     fontSize: 11,
     color: colors.GRAY_NORMAL,
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
   },
   dateInfo: {
     fontSize: 10,
@@ -83,7 +77,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: colors.GRAY_DARKER,
-    textAlign: "right",
-    minWidth: 80,
   },
 });

@@ -1,8 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet, Image } from "react-native";
-import { Image as ExpoImage } from "expo-image";
 import { colors } from "@/shared/constants/colors";
-
 
 interface CharacterBackgroundProps {
   message: string;
@@ -40,10 +38,10 @@ export const CharacterBackground: React.FC<CharacterBackgroundProps> = ({
       />
       
       {/* 캐릭터 - water 시작 높이에 위치 */}
-      <ExpoImage 
-        source={require("@/assets/images/character/character-jump.gif")} 
+      <Image 
+        source={require("@/assets/images/character/big-character-02.png")} 
         style={styles.characterImage}
-        contentFit="contain"
+        resizeMode="contain"
       />
       
       {/* 캐릭터 메시지 */}
@@ -90,13 +88,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 150, // 크기 증가
     height: 150,
-    top: "23%",
-    left: "15%",
+    top: "25%",
+    left: "20%",
     zIndex: 3, // character가 가장 앞에
   },
   messageContainer: {
     position: "absolute",
-    top: "23%",
+    top: "25%",
     left: "5%",
     backgroundColor: colors.BACKGROUND_PRIMARY,
     paddingHorizontal: 12,
@@ -114,9 +112,19 @@ const styles = StyleSheet.create({
   },
   childrenContainer: {
     position: "absolute",
-    top: "20%",
-    right: "17%",
-    zIndex: 4,
-    backgroundColor: "transparent",
+    top: "10%",
+    right: "10%",
+    zIndex: 4, // bowl 위에 위치
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 20,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });

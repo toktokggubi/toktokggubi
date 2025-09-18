@@ -1,10 +1,9 @@
 import React from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text } from "react-native";
 import { AppHeader } from "@/shared/ui/AppHeader";
 import { s } from "./variants";
 import { font } from "@/shared/typography/font";
 import type { LobbyTemplateProps } from "./types";
-import CopyIcon from "@/assets/icon/copy.svg"; // ✅ SVG 불러오기
 
 export default function LobbyTemplate(props: LobbyTemplateProps) {
   const {
@@ -20,108 +19,74 @@ export default function LobbyTemplate(props: LobbyTemplateProps) {
     canStart,
     onToggleReady,
     onStart,
-    onCopyCode,
-    showStartButton = true,
   } = props;
 
   return (
     <View style={s.container}>
       <AppHeader title="몰빵" />
+      <Text style={[s.h1, font.bold]}>방 코드 #{code}</Text>
+      <Text style={s.sub}>
+        금액: {amount.toLocaleString()}원 • 라운드 {round}/{totalRounds} • 인원{" "}
+        {presentCount}명
+      </Text>
 
-      {/* 총 금액 박스 */}
-      <View style={s.topArea}>
-        <Text style={s.topGuide}>이번 게임의 몰빵 금액은</Text>
-        <Text style={s.amountNum}>
-          {amount.toLocaleString()}
-          <Text style={s.amountWon}> 원</Text>
-        </Text>
-
-        {/* 방 코드 + 복사 버튼 */}
-        <View style={s.codeRow}>
-          <Text style={s.codeText}>
-            방 코드 <Text style={s.codeBold}>#{code}</Text>
-          </Text>
-          <Pressable
-            onPress={onCopyCode}
-            disabled={!onCopyCode}
-            style={({ pressed }) => [
-              s.copyBtn,
-              !onCopyCode && s.copyBtnDisabled,
-              pressed && s.copyBtnPressed,
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel="방 코드 복사"
-          >
-            <CopyIcon width={20} height={20} />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* 라운드 헤더 */}
-      <View style={s.sectionHeader}>
-        <Text style={[s.sectionTitle, font.bold]}>
-          라운드 {round}/{totalRounds}
-        </Text>
-        <Text style={s.sectionMeta}>현재 인원수 {presentCount}명</Text>
-      </View>
-
-      {/* 참여자 카드 */}
-      <View style={s.memberCard}>
-        {members.map((m, idx) => {
-          const isLast = idx === members.length - 1;
+      <View
+        style={s.memberRow}
+        accessibilityLabel={`현재 ${presentCount}명 접속`}
+      >
+        {members.map((m) => {
+          const isMe = m.nickname === meNickname;
+          const name = `${m.nickname}${isMe ? " (나)" : ""}${
+            m.ready ? " ✅" : ""
+          }`;
           return (
             <View
               key={m.userId}
-              style={[
-                s.memberItem,
-                isLast && { borderBottomWidth: 0 }, // 마지막은 밑줄 제거
-              ]}
+              style={[s.pill, m.online ? s.pillOnline : s.pillOffline]}
             >
-              <View style={s.memberLeft}>
-                <View style={[s.dot, m.online ? s.dotOn : s.dotOff]} />
-                <Text style={s.memberName}>
-                  {m.nickname}
-                  {m.nickname === meNickname ? "(나)" : ""}
-                </Text>
-              </View>
-              <View style={[s.badge, m.ready ? s.badgeReady : s.badgeWaiting]}>
-                <Text
-                  style={[
-                    s.badgeTxt,
-                    m.ready ? s.badgeReadyTxt : s.badgeWaitingTxt,
-                  ]}
-                >
-                  {m.ready ? "준비완료" : "준비중"}
-                </Text>
-              </View>
+              <View style={[s.dot, m.online ? s.dotOn : s.dotOff]} />
+              <Text style={s.pillTxt}>{name}</Text>
             </View>
           );
         })}
       </View>
 
-      {/* 하단 CTA: 위아래 배치 */}
-      <View style={s.ctaArea}>
-        <Pressable
-          onPress={onToggleReady}
-          style={[s.btn, s.btnGhost, !myReady && s.btnDisabledIfDesign]} // 시안처럼 회색 비활성 느낌
-          accessibilityRole="button"
-          accessibilityLabel={myReady ? "준비 해제" : "준비"}
-        >
-          <Text style={[s.btnGhostTxt]}>{myReady ? "준비 해제" : "준비"}</Text>
-        </Pressable>
-
-        {showStartButton ? (
-          <Pressable
-            onPress={canStart ? onStart : undefined}
-            disabled={!canStart}
-            style={[s.btn, s.btnPrimary, !canStart && s.btnDisabled]}
-            accessibilityRole="button"
-            accessibilityLabel="게임 시작"
-          >
-            <Text style={s.btnPrimaryTxt}>게임 시작</Text>
-          </Pressable>
-        ) : null}
+      <View style={s.spacerSm} />
+      <View style={s.rowCenter}>
+        <Text style={s.sub}>
+          내 상태:{" "}
+          <Text style={[s.sub, myReady ? s.readyOnTxt : s.readyOffTxt]}>
+            {myReady ? "준비 완료 ✅" : "대기 중 ⏳"}
+          </Text>
+        </Text>
       </View>
+
+      <View style={s.spacerMd} />
+      <View style={s.row}>
+        <View style={[s.btn, myReady ? s.readyOn : s.readyOff]}>
+          <Text
+            onPress={onToggleReady}
+            style={[s.btnTxt, myReady ? s.readyOnTxt : s.readyOffTxt]}
+          >
+            {myReady ? "준비 해제" : "준비"}
+          </Text>
+        </View>
+        <View style={[s.btn, s.primary, !canStart && s.btnDisabled]}>
+          <Text
+            onPress={canStart ? onStart : undefined}
+            style={[s.btnTxt, s.primaryTxt]}
+          >
+            시작
+          </Text>
+        </View>
+      </View>
+
+      {!allReady && (
+        <>
+          <View style={s.spacerSm} />
+          <Text style={s.sub}>모두 준비해야 시작할 수 있어요.</Text>
+        </>
+      )}
     </View>
   );
 }

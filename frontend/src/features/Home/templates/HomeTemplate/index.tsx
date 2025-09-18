@@ -18,8 +18,6 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   transactions = {},
   onTotalBudgetPress,
   onCategoryPress,
-  month = "12월",
-  listTitle = "카테고리별 사용현황",
 }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -32,7 +30,7 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
         <CircularProgress
           currentAmount={totalBudget.currentAmount}
           totalAmount={totalBudget.totalAmount}
-          month={month}
+          month="12월"
           size={Math.min(150, (screenWidth - 60) * 0.6)}
         />
       </CharacterBackground>
@@ -44,7 +42,7 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
             categoryBudgets={categoryBudgets}
             transactions={transactions}
             onCategoryPress={onCategoryPress}
-            title={listTitle}
+            title="카테고리별 사용현황"
           />
         </ScrollView>
       </View>

@@ -84,7 +84,7 @@ const s = StyleSheet.create({
   /* 🔹 칸별 너비 비율 (디자인 감으로 튜닝) */
   colName: { flex: 1.1 }, // 항목명 조금 더 넓게
   colAmount: { flex: 0.9 }, // 금액
-  colInclude: { width: 80 }, // 체크박스 칸은 고정폭
+  colInclude: { width: 78 }, // 체크박스 칸은 고정폭
 
   /* 🔹 텍스트 스타일 */
   headerCellText: {
