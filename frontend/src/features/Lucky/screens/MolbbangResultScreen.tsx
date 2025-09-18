@@ -73,12 +73,23 @@ export default function MolbbangResultScreen() {
     const hit = ranking.find((r) => r.userId === jackpotUserId);
     return hit?.nickname;
   }, [ranking, jackpotUserId]);
-
+  // ✅ 내가 꼴등인지 판단 (jackpot 닉네임과 동일 = 꼴등 규칙)
+  const isLoser =
+    jackpotNick === nickname || (myRank !== null && myRank === ranking.length);
   const onBackToLobby = () => {
     router.replace({
       pathname: "/molbbang/room/[code]",
       params: { code, nick: nickname, amount },
     });
+  };
+  const onPay = () => {
+    router.push({
+      pathname: "/pay/payment",
+      params: { code, nick: nickname, amount },
+    });
+  };
+  const onExit = () => {
+    router.replace("/molbbang"); // ✅ 원하는 경로로 이동 (예: 홈 화면)
   };
 
   return (
@@ -90,6 +101,9 @@ export default function MolbbangResultScreen() {
       myRank={myRank}
       jackpotNickname={jackpotNick}
       onBackToLobby={onBackToLobby}
+      onExit={onExit}
+      isLoser={isLoser} // ✅ 전달
+      onPay={onPay}
     />
   );
 }

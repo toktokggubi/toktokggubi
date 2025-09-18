@@ -4,12 +4,15 @@ import com.ssafy.toktokggubi.domain.budget.dto.*;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetCommitService;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetDraftService;
 
+import com.ssafy.toktokggubi.domain.budget.service.BudgetReadService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @RestController
@@ -21,6 +24,7 @@ public class BudgetController {
     private final BudgetDraftService draftService;
     private final BudgetCommitService commitService;
     private final YmResolver ymResolver;
+    private final BudgetReadService budgetReadService;
 
     // BD-1, BD-3, BD-6 (draft 저장)
     // BD-1, BD-3, BD-6 (draft 저장)
@@ -90,7 +94,39 @@ public class BudgetController {
     public BudgetCommitResponseDto commit(
             ) {
         Long userId =SecurityUtils.currentUserIdOrNull();
-        String ym = ymResolver.nowYm();                       // ✅ 항상 현재 달
+        String ym = ymResolver.nowYm();
         return commitService.commit(userId, ym, null);
     }
+    @GetMapping("/total")
+    public TotalAmountResponseDto getTotalAmountNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getTotalAmount(userId, ym);
+    }
+
+    @GetMapping("/fixed")
+    public FixedIncludedTotalResponseDto getFixedIncludedTotalNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getFixedIncludedTotal(userId, ym);
+    }
+    @GetMapping("/first")
+    public FirstAmountResponseDto getFirstAmountNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getFirstAmount(userId, ym);
+    }
+    @GetMapping("/fixed/list")
+    public List<FixedExpenseDto> getFixedListNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getFixedList(userId, ym);
+    }
+    @GetMapping("/category")
+    public List<CategoryAllocDto> getCategoryAllocationsNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getCategoryAllocations(userId, ym);
+    }
+
 }

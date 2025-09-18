@@ -1,10 +1,9 @@
-// src/features/User/templates/Card/types.ts
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
+import type { UserCardVM } from "@/features/User/model/card/types";
 
 export interface CardCarouselTemplateProps {
-  cards: UserCard[];
+  cards: UserCardVM[];
   activeIndex: number;
-  onActiveChange: (index: number) => void;
+  onActiveChange: (idx: number) => void;
 }
 
-export type { UserCard };
+export type UserCard = UserCardVM;

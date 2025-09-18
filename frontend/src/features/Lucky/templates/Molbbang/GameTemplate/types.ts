@@ -9,10 +9,13 @@ export interface GameTemplateProps {
   idleImage: ImageSourcePropType;
   shakeImage: ImageSourcePropType;
   onFinishRound: () => void;
-  liveRanking: {
-    userId: string;
-    nickname: string;
-    total: number;
-    isMe: boolean;
-  }[];
+
+  // 🔹 라운드 종료 모달
+  rankModalVisible: boolean;
+  rankModalData: { userId: string; nickname: string; total: number }[];
+  isFinalRound: boolean;
+  onNextRound: () => void;
+  onViewFinal: () => void;
+
+  remainingSeconds: number;
 }
