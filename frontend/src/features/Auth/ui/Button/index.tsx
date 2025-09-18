@@ -12,8 +12,7 @@ const Button = ({
 }: ButtonProps) => {
   return (
     <Pressable
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
+      onPress={onPress}
       style={[style.base, style[variant], disabled && style.disabled]}
     >
       <View style={style.content}>
