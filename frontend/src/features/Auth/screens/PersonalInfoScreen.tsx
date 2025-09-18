@@ -14,7 +14,6 @@ import { SafeAreaView as SafeAreaViewContext } from "react-native-safe-area-cont
 import AppBottomSheet from "~features/Auth/ui/BottomSheetList";
 import PersonalInfoTemplate from "../templates/PersonalInfoTemplate";
 import { useRouter } from "expo-router";
-import { useSignupComplete } from "../model/useAuthQueries";
 
 const AGE_GROUP_OPTIONS = [
   "10대",
@@ -50,8 +49,6 @@ export default function PersonalInfoScreen() {
   const [jobTitle, setJobTitle] = useState("");
   const [monthlyIncome, setMonthlyIncome] = useState("");
 
-  const signupCompleteMutation = useSignupComplete();
-
   // BottomSheet refs
   const ageSheetRef = useRef<BottomSheet>(null);
   const jobSheetRef = useRef<BottomSheet>(null);
@@ -70,10 +67,13 @@ export default function PersonalInfoScreen() {
 
   // 키보드가 숨겨질 때 바텀시트도 닫기
   useEffect(() => {
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      closeAgeSheet();
-      closeJobSheet();
-    });
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardDidHide",
+      () => {
+        closeAgeSheet();
+        closeJobSheet();
+      }
+    );
 
     return () => {
       keyboardDidHideListener?.remove();
@@ -81,7 +81,7 @@ export default function PersonalInfoScreen() {
   }, []);
 
   // 제출
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const data = {
       nickname: (nickname ?? "").trim(),
       gender,
@@ -99,14 +99,15 @@ export default function PersonalInfoScreen() {
 
     try {
       await signupCompleteMutation.mutateAsync(data);
-      
+
       // 회원가입 완료 후 무조건 예산 소개 화면으로 이동
       router.replace("/budget");
     } catch (error: any) {
       console.error("회원가입 완료 실패:", error);
       Alert.alert(
         "회원가입 완료 실패",
-        error?.response?.data?.message || "회원가입 완료 중 오류가 발생했습니다."
+        error?.response?.data?.message ||
+          "회원가입 완료 중 오류가 발생했습니다."
       );
     }
   };
@@ -185,16 +186,20 @@ export default function PersonalInfoScreen() {
         onPressAgeGroup={openAgeSheet}
         onPressJobTitle={openJobSheet}
         onChangeMonthlyIncome={setMonthlyIncome}
-        onSubmit={handleSubmit}
+        onSubmit={onNavigateWelcome}
         rightLabel="만원"
         headerImageSource={require("@/assets/images/character/big-character-03.png")}
       />
       {/* 연령대 시트 */}
       <AppBottomSheet ref={ageSheetRef} snapPoints={["65%"]} initialIndex={-1}>
-        <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
-          <ScrollView 
+        <SafeAreaViewContext style={{ flex: 1 }} edges={["bottom"]}>
+          <ScrollView
             style={{ flex: 1 }}
-            contentContainerStyle={{ paddingVertical: 8, paddingBottom: 50, flexGrow: 1 }}
+            contentContainerStyle={{
+              paddingVertical: 8,
+              paddingBottom: 50,
+              flexGrow: 1,
+            }}
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
           >
@@ -206,7 +211,7 @@ export default function PersonalInfoScreen() {
       </AppBottomSheet>
       {/* 직업 시트 */}
       <AppBottomSheet ref={jobSheetRef} snapPoints={["90%"]} initialIndex={-1}>
-        <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
+        <SafeAreaViewContext style={{ flex: 1 }} edges={["bottom"]}>
           <View style={{ flex: 1, paddingVertical: 8, paddingBottom: 100 }}>
             {JOB_TITLE_OPTIONS.map((item) => (
               <JobItem key={item} item={item} />

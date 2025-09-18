@@ -39,6 +39,7 @@ function GifticonsTemplateImpl({
   return (
     <View style={s.wrap}>
       {/* 검색 */}
+      {/* 검색 */}
       <SearchBar
         value={query}
         onChangeText={onQueryChange}
@@ -92,9 +93,31 @@ function GifticonsTemplateImpl({
           </Pressable>
         </View>
       )}
+
+      {/* 선택모드 하단 바 */}
+      {selecting && (
+        <View
+          style={[
+            s.bottomBar,
+            { paddingBottom: Math.max(10, 10 + insets.bottom) },
+          ]}
+        >
+          <Text style={s.count}>{selectedCount}개 선택됨</Text>
+          <Pressable
+            onPress={onDeleteSelected}
+            style={s.deleteBtn}
+            accessibilityRole="button"
+            accessibilityLabel="선택 항목 삭제"
+          >
+            <Text style={s.deleteBtnTxt}>선택 삭제</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
+
+export default memo(GifticonsTemplateImpl);
 
 export default memo(GifticonsTemplateImpl);
 

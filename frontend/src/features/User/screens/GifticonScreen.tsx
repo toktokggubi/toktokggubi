@@ -24,6 +24,8 @@ const ACCENT = colors.BLUE_NORMAL;
 const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
 const gid = (g: Gifticon): string =>
   String(g.gifticonId ?? `${g.merchantName}|${g.label}|${g.expiresAt ?? "na"}`);
+const gid = (g: Gifticon): string =>
+  String(g.gifticonId ?? `${g.merchantName}|${g.label}|${g.expiresAt ?? "na"}`);
 
 export default function GifticonsScreen() {
   const navigation = useNavigation();
@@ -107,12 +109,15 @@ export default function GifticonsScreen() {
   // 필터링
   const filtered = useMemo(() => {
     if (!query) return items;
+    if (!query) return items;
     const q = normalize(query);
+    return items.filter((g) =>
     return items.filter((g) =>
       [g.label, g.merchantName, g.categoryName].some((x) =>
         normalize(x).includes(q)
       )
     );
+  }, [items, query]);
   }, [items, query]);
 
   // 정렬
@@ -125,6 +130,7 @@ export default function GifticonsScreen() {
         return tb - ta; // 최신순
       });
     } else {
+      arr.sort((a, b) => (a.remainingDays ?? 9e9) - (b.remainingDays ?? 9e9));
       arr.sort((a, b) => (a.remainingDays ?? 9e9) - (b.remainingDays ?? 9e9));
     }
     return arr;
@@ -215,6 +221,7 @@ export default function GifticonsScreen() {
         onDeleteSelected={deleteSelected}
         getId={gid}
       />
+
 
       <GifticonImageViewer
         visible={viewerOpen}

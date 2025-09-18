@@ -1,5 +1,6 @@
 import React from "react";
 import { View, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, AntDesign, Ionicons } from "@expo/vector-icons";
 import Svg, {
@@ -51,11 +52,7 @@ const TabBarBackground = () => {
             type="matrix"
             values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.15 0"
           />
-          <FeBlend
-            mode="normal"
-            in2="BackgroundImageFix"
-            result="shadow"
-          />
+          <FeBlend mode="normal" in2="BackgroundImageFix" result="shadow" />
           <FeBlend
             mode="normal"
             in="SourceGraphic"
@@ -81,7 +78,12 @@ export default function SvgTabBar({
 }: SvgTabBarProps) {
   const insets = useSafeAreaInsets();
 
-  const getIconComponent = (iconName: string, color: string, size: number, isFocused: boolean) => {
+  const getIconComponent = (
+    iconName: string,
+    color: string,
+    size: number,
+    isFocused: boolean
+  ) => {
     switch (iconName) {
       case "home":
         return <Ionicons name="home" size={size} color={color} />;
@@ -90,7 +92,12 @@ export default function SvgTabBar({
       case "payment-barcode":
         return (
           <View style={styles.paymentIconContainer}>
-            <View style={[styles.paymentIconInner, { backgroundColor: colors.BLUE_NORMAL }]}>
+            <View
+              style={[
+                styles.paymentIconInner,
+                { backgroundColor: colors.BLUE_NORMAL },
+              ]}
+            >
               <View style={styles.paymentIconBackground}>
                 <Ionicons name="qr-code" size={36} color={color} />
               </View>

@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HomeTemplateProps } from "./types";
 import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
@@ -30,9 +37,9 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
         <View style={styles.noBudgetContainer}>
           <Text style={styles.noBudgetTitle}>예산을 설정해주세요</Text>
           <Text style={styles.noBudgetSubtitle}>
-            예산을 설정하면{'\n'}더 체계적으로 소비를 관리할 수 있어요
+            예산을 설정하면{"\n"}더 체계적으로 소비를 관리할 수 있어요
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.budgetSetupButton}
             onPress={onBudgetSetup}
           >
@@ -46,27 +53,32 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* 전체 화면을 차지하는 CharacterBackground */}
-      <CharacterBackground 
+      <CharacterBackground
         message={characterMessage}
-        progressPercentage={(totalBudget.currentAmount / totalBudget.totalAmount) * 100}
+        progressPercentage={
+          (totalBudget.currentAmount / totalBudget.totalAmount) * 100
+        }
         size={screenWidth}
       >
         <CircularProgress
           currentAmount={totalBudget.currentAmount}
           totalAmount={totalBudget.totalAmount}
-          month={month}
+          month="12월"
           size={Math.min(150, (screenWidth - 60) * 0.6)}
         />
       </CharacterBackground>
 
       {/* 카테고리별 사용현황 - CharacterBackground 위에 오버레이 */}
       <View style={styles.overlayContainer}>
-        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
           <ProgressList
             categoryBudgets={categoryBudgets}
             transactions={transactions}
             onCategoryPress={onCategoryPress}
-            title={listTitle}
+            title="카테고리별 사용현황"
           />
         </ScrollView>
       </View>
@@ -94,21 +106,21 @@ const styles = StyleSheet.create({
   },
   noBudgetContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   noBudgetTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: colors.GRAY_DARKER,
     marginBottom: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   noBudgetSubtitle: {
     fontSize: 16,
     color: colors.GRAY_NORMAL,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 24,
     marginBottom: 32,
   },
@@ -118,7 +130,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -127,8 +139,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   budgetSetupButtonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

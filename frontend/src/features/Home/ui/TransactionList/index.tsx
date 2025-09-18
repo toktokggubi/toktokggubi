@@ -40,11 +40,9 @@ export const TransactionList: React.FC<TransactionListProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "transparent",
-    width: "100%",
   },
   listContent: {
     paddingVertical: 4,
-    paddingHorizontal: 8,
   },
   separator: {
     height: 2,

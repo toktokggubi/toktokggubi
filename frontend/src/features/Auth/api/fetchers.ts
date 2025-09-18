@@ -1,15 +1,6 @@
 import { http } from "@/shared/api/http";
 import { AUTH_ENDPOINTS } from "./endpoints";
 
-// UM-1 회원가입
-export async function signup(dto: { email: string; password: string }) {
-  const { data } = await http.post(AUTH_ENDPOINTS.signup, dto);
-  return data as {
-    signupToken: string;
-    message: string;
-  };
-}
-
 // UM-4 이메일 로그인
 export async function login(dto: { email: string; password: string }) {
   const { data } = await http.post(AUTH_ENDPOINTS.login, dto);
@@ -49,12 +40,8 @@ export async function signupComplete(payload: {
   ageGroup: string;
   jobTitle: string;
   monthlyIncome: number;
-}, signupToken: string) {
-  const { data } = await http.post(AUTH_ENDPOINTS.signupComplete, payload, {
-    headers: {
-      Authorization: `Bearer ${signupToken}`,
-    },
-  });
+}) {
+  const { data } = await http.post(AUTH_ENDPOINTS.signupComplete, payload);
   return data;
 }
 

@@ -14,5 +14,4 @@ export interface MyPageTemplateProps {
   onPressSettings?: () => void;
   cardImage: ImageSourcePropType;
   gifticonImage: ImageSourcePropType;
-  isLoggingOut?: boolean;
 }

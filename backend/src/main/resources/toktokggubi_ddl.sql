@@ -311,7 +311,7 @@ CREATE TABLE `notification_log` (
 CREATE TABLE `gifticon` (
                             `gifticon_id` BIGINT       NOT NULL AUTO_INCREMENT,
                             `user_id`     BIGINT       NOT NULL,
-                            `merchant_id` BIGINT       NULL,
+                            `franchise_id` BIGINT      NULL,
                             `label`       VARCHAR(150) NOT NULL,
                             `image_url`   VARCHAR(500) NULL,
                             `expires_at`  DATE         NULL,
@@ -319,11 +319,12 @@ CREATE TABLE `gifticon` (
                             `status`      VARCHAR(16)  NULL DEFAULT 'ACTIVE' COMMENT 'ENUM(`ACTIVE`, `USED`, `EXPIRED`)',
                             CONSTRAINT `PK_GIFTICON` PRIMARY KEY (`gifticon_id`),
                             KEY `idx_gi_user_status_exp` (`user_id`, `status`, `expires_at`),
+                            KEY `idx_gi_franchise` (`franchise_id`),
                             CONSTRAINT `FK_gi_user`
-                                FOREIGN KEY (`user_id`)    REFERENCES `user`(`user_id`)
+                                FOREIGN KEY (`user_id`)      REFERENCES `user`(`user_id`)
                                     ON UPDATE CASCADE ON DELETE CASCADE,
-                            CONSTRAINT `FK_gi_merchant`
-                                FOREIGN KEY (`merchant_id`) REFERENCES `merchant`(`merchant_id`)
+                            CONSTRAINT `FK_gi_franchise`
+                                FOREIGN KEY (`franchise_id`) REFERENCES `franchise`(`franchise_id`)
                                     ON UPDATE CASCADE ON DELETE SET NULL
 ) ENGINE=InnoDB;
 
