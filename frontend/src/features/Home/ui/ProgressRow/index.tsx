@@ -86,8 +86,9 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "white",
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 12,
+    width: "100%",
   },
   totalContainer: {
     marginHorizontal: 16,
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   categoryContainer: {
-    marginHorizontal: 8,
+    marginHorizontal: 4,
     borderRadius: 8,
     marginVertical: 2,
   },

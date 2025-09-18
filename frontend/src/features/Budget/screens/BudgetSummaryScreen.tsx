@@ -1,79 +1,81 @@
-import { useCallback, useMemo, useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { router } from "expo-router";
 import BudgetSummaryTemplate from "~features/Budget/templates/BudgetSummaryTemplate";
 import BudgetConfirmModal from "~features/Budget/ui/molecules/BudgetConfirmModal";
+import { useBudgetDraft } from "~features/Budget/context/BudgetDraftContext";
 import type {
   CategoryBudgetItem,
   FixedExpenseItem,
 } from "~features/Budget/templates/BudgetSummaryTemplate/types";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
 
-// 🔄 REDIS 전환 시 수정할 부분들:
-// 1) useLocalSearchParams 제거하고 draft store/query 훅으로 교체
-//    - useBudgetDraftQuery, useBudgetDraftData, useBudgetDraftActions
-// 2) 데이터는 store 기준으로 관리
-// 3) goNext에서는 파라미터 이동 대신 Redis 저장 후 커밋
-
-type FixedExpenseParam = {
-  id: string;
-  name: string;
-  amount: number;
-  billingDay?: number;
-  includeInBudget: boolean;
+// 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
+const getCategoryId = (name: CategoryName): number => {
+  const categoryMap: Record<CategoryName, number> = {
+    '식비': 1,
+    '카페/간식': 2,
+    '술/유흥': 3,
+    '생활': 4,
+    '쇼핑': 5,
+    '뷰티/미용': 6,
+    '교통': 7,
+    '자동차': 8,
+    '의료/건강': 9,
+    '문화': 10,
+  };
+  return categoryMap[name] || 1;
 };
 
 export default function BudgetSummaryScreen() {
   // 모달 상태
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // 현재는 이전 단계에서 파라미터로 전달받음
-  const { totalAmount, fixedExpenses, selectedCategories, categoryBudgets } =
-    useLocalSearchParams<{
-      totalAmount?: string;
-      fixedExpenses?: string;
-      selectedCategories?: string; // JSON-encoded CategoryName[]
-      categoryBudgets?: string; // JSON-encoded CategoryBudgetItem[]
-    }>();
+  const { 
+    totalAmount, 
+    fixedExpenses, 
+    categoryAllocations,
+    commit, 
+    isCommitting, 
+    commitError,
+    loadDraftData 
+  } = useBudgetDraft();
 
-  // 총예산
-  const totalBudget = totalAmount ? parseInt(totalAmount, 10) : 0;
-
-  // 고정지출 파싱
-  const parsedFixed: FixedExpenseParam[] = useMemo(() => {
-    if (!fixedExpenses) return [];
-    try {
-      return JSON.parse(
-        decodeURIComponent(fixedExpenses)
-      ) as FixedExpenseParam[];
-    } catch {
-      return [];
-    }
-  }, [fixedExpenses]);
+  // 데이터 로딩 및 Context 상태 확인
+  useEffect(() => {
+    loadDraftData();
+    
+    console.log('=== BudgetSummaryScreen Context 데이터 ===');
+    console.log('totalAmount:', totalAmount);
+    console.log('fixedExpenses:', fixedExpenses);
+    console.log('categoryAllocations:', categoryAllocations);
+    console.log('isCommitting:', isCommitting);
+    console.log('commitError:', commitError);
+  }, [totalAmount, fixedExpenses, categoryAllocations, isCommitting, commitError, loadDraftData]);
 
   // 고정지출 (예산 포함/미포함) 분리
   const fixedIncludedExpenses: FixedExpenseItem[] = useMemo(() => {
-    return parsedFixed
+    return fixedExpenses
       .filter((item) => item.includeInBudget !== false)
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
+      .map((item, index) => ({
+        id: String(index),
+        name: item.title,
         amount: item.amount,
         includeInBudget: true,
-        billingDay: item.billingDay,
+        billingDay: item.payDay,
       }));
-  }, [parsedFixed]);
+  }, [fixedExpenses]);
 
   const fixedExcludedExpenses: FixedExpenseItem[] = useMemo(() => {
-    return parsedFixed
+    return fixedExpenses
       .filter((item) => item.includeInBudget === false)
-      .map((item) => ({
-        id: item.id,
-        name: item.name,
+      .map((item, index) => ({
+        id: String(index),
+        name: item.title,
         amount: item.amount,
         includeInBudget: false,
-        billingDay: item.billingDay,
+        billingDay: item.payDay,
       }));
-  }, [parsedFixed]);
+  }, [fixedExpenses]);
 
   // 고정지출 예산 합계
   const fixedIncludedBudget = useMemo(
@@ -86,17 +88,26 @@ export default function BudgetSummaryScreen() {
     [fixedExcludedExpenses]
   );
 
-  // 카테고리별 예산 파싱
+  // 카테고리별 예산 데이터 변환 (데이터베이스와 일치)
   const categoryBudgetsData: CategoryBudgetItem[] = useMemo(() => {
-    if (!categoryBudgets) return [];
-    try {
-      return JSON.parse(
-        decodeURIComponent(categoryBudgets)
-      ) as CategoryBudgetItem[];
-    } catch {
-      return [];
-    }
-  }, [categoryBudgets]);
+    const idToName: Record<number, CategoryName> = {
+      1: '식비',
+      2: '카페/간식',
+      3: '술/유흥',
+      4: '생활',
+      5: '쇼핑',
+      6: '뷰티/미용',
+      7: '교통',
+      8: '자동차',
+      9: '의료/건강',
+      10: '문화',
+    };
+
+    return categoryAllocations.map(allocation => ({
+      name: idToName[allocation.categoryId] || '식비',
+      amount: allocation.finalAmount,
+    }));
+  }, [categoryAllocations]);
 
   // 변동 지출 예산 합계
   const variableBudget = useMemo(
@@ -104,8 +115,12 @@ export default function BudgetSummaryScreen() {
     [categoryBudgetsData]
   );
 
-  // 현재 월 (실제로는 현재 날짜 기준으로 계산하거나 파라미터로 받아야 함)
-  const currentMonth = "8월"; // TODO: 실제 월 계산 로직 추가
+  // 현재 월 (동적으로 계산)
+  const currentMonth = useMemo(() => {
+    const now = new Date();
+    const month = now.getMonth() + 1; // 0-based이므로 +1
+    return `${month}월`;
+  }, []);
 
   // 네비게이션
   const goPrev = useCallback(() => router.back(), []);
@@ -115,15 +130,26 @@ export default function BudgetSummaryScreen() {
     setShowConfirmModal(true);
   }, []);
 
-  const handleConfirmBudget = useCallback(() => {
-    // 🔄 REDIS 전환 시:
-    // commitMutation.mutate(...)
-    // 완료 후 홈으로 이동
-
-    // 현재: 홈으로 이동
-    setShowConfirmModal(false);
-    router.push("/(tabs)/home");
-  }, []);
+  const handleConfirmBudget = useCallback(async () => {
+    console.log('=== 예산 확정 시작 ===');
+    console.log('총예산:', totalAmount);
+    console.log('고정지출:', fixedExpenses);
+    console.log('카테고리 예산:', categoryAllocations);
+    
+    try {
+      const result = await commit();
+      console.log('=== 예산 확정 성공 ===');
+      console.log('확정 결과:', result);
+      
+      setShowConfirmModal(false);
+      router.push("/(tabs)/home");
+    } catch (error) {
+      console.error('=== 예산 확정 실패 ===');
+      console.error('에러:', error);
+      // 에러 처리 (토스트 메시지 등)
+      setShowConfirmModal(false); // 모달은 닫고 에러 메시지 표시
+    }
+  }, [commit, totalAmount, fixedExpenses, categoryAllocations]);
 
   const handleCancelConfirm = useCallback(() => {
     setShowConfirmModal(false);
@@ -133,7 +159,7 @@ export default function BudgetSummaryScreen() {
     <>
       <BudgetSummaryTemplate
         month={currentMonth}
-        totalBudget={totalBudget}
+        totalBudget={totalAmount || 0}
         variableBudget={variableBudget}
         fixedIncludedBudget={fixedIncludedBudget}
         fixedExcludedBudget={fixedExcludedBudget}
@@ -150,7 +176,7 @@ export default function BudgetSummaryScreen() {
       <BudgetConfirmModal
         visible={showConfirmModal}
         month={currentMonth}
-        totalBudget={totalBudget}
+        totalBudget={totalAmount || 0}
         onConfirm={handleConfirmBudget}
         onCancel={handleCancelConfirm}
       />

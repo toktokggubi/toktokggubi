@@ -52,7 +52,8 @@
         }
       ],
       "expo-font",
-      "expo-location"
+      "expo-location",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true

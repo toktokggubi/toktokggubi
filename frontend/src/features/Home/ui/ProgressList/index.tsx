@@ -18,6 +18,13 @@ export const ProgressList: React.FC<ProgressListProps> = ({
     setExpandedCategory(expandedCategory === category ? null : category);
   };
 
+  const handleCategoryPress = (category: Category) => {
+    // 카테고리 클릭 시 토글 처리
+    setExpandedCategory(expandedCategory === category ? null : category);
+    // 기존 onCategoryPress도 호출 (필요한 경우)
+    onCategoryPress?.(category);
+  };
+
   return (
     <View style={styles.container}>
       {/* 제목 */}
@@ -38,7 +45,7 @@ export const ProgressList: React.FC<ProgressListProps> = ({
                 category={item.category}
                 currentAmount={item.currentAmount}
                 totalAmount={item.totalAmount}
-                onPress={() => onCategoryPress?.(item.category)}
+                onPress={() => handleCategoryPress(item.category)}
                 isExpanded={isExpanded}
                 onUsageDetailsPress={() => handleUsageDetailsPress(item.category)}
               />
@@ -91,6 +98,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 8,
+    paddingLeft: 0,
   },
   separator: {
     height: 4,
@@ -98,5 +106,7 @@ const styles = StyleSheet.create({
   transactionContainer: {
     marginTop: 4,
     marginBottom: 4,
+    paddingLeft: 16,
+    width: "100%",
   },
 });

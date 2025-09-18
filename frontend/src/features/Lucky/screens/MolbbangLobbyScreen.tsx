@@ -1,3 +1,4 @@
+// src/features/Lucky/screens/MolbbangLobbyScreen.tsx
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -7,6 +8,16 @@ import type {
   MolbbangMember,
 } from "@/features/Lucky/api/molbbangService";
 import LobbyTemplate from "@/features/Lucky/templates/Molbbang/LobbyTemplate";
+
+// ✅ hostId 존재 여부를 안전하게 판별하는 타입 가드
+function hasHostId(r: unknown): r is { hostId: string } {
+  return (
+    typeof r === "object" &&
+    r !== null &&
+    "hostId" in r &&
+    typeof (r as { hostId?: unknown }).hostId === "string"
+  );
+}
 
 function isRoom(v: unknown): v is MolbbangRoom {
   if (typeof v !== "object" || v === null) return false;
@@ -29,6 +40,7 @@ export default function MolbbangLobbyScreen() {
     code?: string | string[];
     nick?: string | string[];
     amount?: string | string[];
+    host?: string | string[]; // ✅ 추가: 내가 방장인지(클라에서 세팅)
   }>();
 
   const code =
@@ -50,6 +62,14 @@ export default function MolbbangLobbyScreen() {
       ? params.amount[0]
       : 0
   );
+
+  // ✅ 클라에서 넘겨준 host 플래그(“1”, “true”만 true)
+  const hostFlagFromParams =
+    typeof params.host === "string"
+      ? params.host === "1" || params.host === "true"
+      : Array.isArray(params.host)
+      ? params.host[0] === "1" || params.host[0] === "true"
+      : false;
 
   const [room, setRoom] = useState<MolbbangRoom | null>(null);
 
@@ -85,9 +105,22 @@ export default function MolbbangLobbyScreen() {
   const presentCount = members.some((m) => typeof m.online === "boolean")
     ? members.filter((m) => m.online).length
     : members.length;
-
   const allReady = members.length > 0 && members.every((m) => m.ready);
   const canStart = members.length >= 2 && allReady;
+
+  // ✅ 방장 판별: 1) hostId가 있으면 그걸로, 2) 없으면 첫 번째 멤버를 방장으로 간주(폴백)
+  const isHost = useMemo(() => {
+    // 내가 누구인지 모르면 params로 받은 host 플래그를 그대로 사용
+    if (!room || !me) return hostFlagFromParams;
+
+    // 서버가 hostId를 내려줬다면 string 비교로 안전 비교
+    if (hasHostId(room)) {
+      return String(me.userId) === String(room.hostId);
+    }
+
+    // 서버가 hostId를 안 준 경우: 최초 진입 시 받은 host 플래그 사용
+    return hostFlagFromParams;
+  }, [room, me, hostFlagFromParams]);
 
   const onToggleReady = useCallback(async () => {
     if (!code) return;
@@ -141,6 +174,7 @@ export default function MolbbangLobbyScreen() {
       allReady={allReady}
       canStart={canStart}
       onToggleReady={onToggleReady}
+      showStartButton={isHost && room?.status === "lobby"}
       onStart={onStart}
     />
   );
