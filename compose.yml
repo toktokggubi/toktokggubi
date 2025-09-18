@@ -105,7 +105,8 @@ services:
       # Other common environment variables for backend
     volumes:
       - ./secrets/toktokggubi-sa.json:/app/config/toktokggubi-sa.json:ro
-
+      - /opt/toktokggubi/uploads:/app/uploads
+      
   # Frontend Service (React)
   # frontend:
   #   build:
