@@ -5,4 +5,8 @@ export const HOME_ENDPOINTS = {
   monthlySummaryByCategory: "/transaction/summary/category",
   // TX-1 이번달 카테고리별 소비 목록 조회
   monthlyCategoryList: "/transaction/category",
+  // 예산관리 - 총예산 조회
+  budgetTotal: "/budget/total",
+  // 예산관리 - 카테고리별 예산 조회
+  budgetCategory: "/budget/category",
 } as const;

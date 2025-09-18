@@ -57,3 +57,20 @@ export async function fetchMonthlyCategoryList() {
     }>;
   };
 }
+
+// 예산관리 - 총예산 조회
+export async function fetchBudgetTotal() {
+  const { data } = await http.get(HOME_ENDPOINTS.budgetTotal);
+  return data as {
+    totalAmount: number;
+  };
+}
+
+// 예산관리 - 카테고리별 예산 조회
+export async function fetchBudgetCategory() {
+  const { data } = await http.get(HOME_ENDPOINTS.budgetCategory);
+  return data as Array<{
+    categoryId: number;
+    finalAmount: number;
+  }>;
+}
