@@ -22,6 +22,37 @@ def find_isolation_forest_model(uid: str):
         return joblib.load(model_path)
     return None
 
+def save_autoencoder_model(model, uid: str):
+    """Helper function to save autoencoder model"""
+    model_dir = os.path.join("./model", uid)
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, "_autoencoder_model.h5")
+    model.save(model_path)
+    logging.info(f"Autoencoder model saved to {model_path}")
+
+def save_isolation_forest_model(model, uid: str):
+    """Helper function to save isolation forest model"""
+    model_dir = os.path.join("./model", uid)
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, "_isolation_forest_model.joblib")
+    joblib.dump(model, model_path)
+    logging.info(f"Isolation Forest model saved to {model_path}")
+
+def find_preprocessor(uid: str, name: str):
+    """Helper function to find and load a preprocessor."""
+    model_path = os.path.join("./model", uid, f"_{name}.joblib")
+    if os.path.exists(model_path):
+        return joblib.load(model_path)
+    return None
+
+def save_preprocessor(preprocessor, uid: str, name: str):
+    """Helper function to save a preprocessor."""
+    model_dir = os.path.join("./model", uid)
+    os.makedirs(model_dir, exist_ok=True)
+    model_path = os.path.join(model_dir, f"_{name}.joblib")
+    joblib.dump(preprocessor, model_path)
+    logging.info(f"Preprocessor '{name}' saved to {model_path}")
+
 class DetectionModel:
     """
     This is a class that encapsulates the combined model of AutoEncoder and Isolation Forest for anomaly detection.

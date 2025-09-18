@@ -185,3 +185,102 @@ def run(data_path):
         "anomalies_df": results,
         "stats": stats,
     }
+
+def train_ae(df: pd.DataFrame):
+    """
+    Trains an Autoencoder model on the provided dataframe.
+    """
+    logger.info("Starting Autoencoder training.")
+    
+    # Preprocessing from run()
+    df['날짜'] = pd.to_datetime(df['날짜']).dt.strftime('%Y-%m-%d')
+    df['시간'] = pd.to_datetime(df['시간']).dt.strftime('%H:%M')
+    df['결제일시'] = pd.to_datetime(df['날짜'] + ' ' + df['시간'])
+    df.drop_duplicates(subset=['날짜', '시간', '금액', '결제수단'], inplace=True, keep='first')
+    df = df[df['타입'] == '지출'].copy()
+    
+    df['요일'] = df['결제일시'].dt.dayofweek
+    df['시'] = df['결제일시'].dt.hour
+    df['주말여부'] = df['요일'].apply(lambda x: 1 if x >= 5 else 0)
+    
+    df = df.drop(columns=["소분류", "결제수단"], errors='ignore')
+    df = pd.get_dummies(df, columns=['대분류'])
+    
+    scaler = MinMaxScaler()
+    df['금액_정규화'] = scaler.fit_transform(df[['금액']])
+    
+    features = ['요일', '시', '주말여부', '금액_정규화']
+    features.extend([col for col in df.columns if col.startswith('대분류_')])
+    
+    train_cols = features
+    X = df[train_cols]
+    
+    # Model definition and training from run()
+    input_dim = X.shape[1]
+    encoding_dim = 16
+    input_layer = Input(shape=(input_dim,))
+    encoder = Dense(64, activation="relu")(input_layer)
+    encoder = Dense(32, activation="relu")(encoder)
+    encoder = Dense(encoding_dim, activation="relu")(encoder)
+    decoder = Dense(32, activation='relu')(encoder)
+    decoder = Dense(64, activation='relu')(decoder)
+    decoder = Dense(input_dim, activation='sigmoid')(decoder)
+    autoencoder = Model(inputs=input_layer, outputs=decoder)
+    autoencoder.compile(optimizer='adam', loss='mse')
+    
+    autoencoder.fit(X, X, epochs=100, batch_size=16, shuffle=True, validation_split=0.2, verbose=0)
+    
+    logger.info("Autoencoder training complete.")
+    return autoencoder, scaler, train_cols
+
+def predict_ae(df: pd.DataFrame, autoencoder: Model, scaler: MinMaxScaler, train_cols: list):
+    """
+    Predicts anomalies using a pre-trained Autoencoder model.
+    """
+    logger.info("Starting Autoencoder prediction.")
+    if df.empty:
+        return pd.DataFrame()
+
+    # Preprocessing
+    original_df = df.copy()
+    original_df['날짜'] = pd.to_datetime(original_df['날짜']).dt.strftime('%Y-%m-%d')
+    original_df['시간'] = pd.to_datetime(original_df['시간']).dt.strftime('%H:%M')
+    
+    df['날짜'] = pd.to_datetime(df['날짜']).dt.strftime('%Y-%m-%d')
+    df['시간'] = pd.to_datetime(df['시간']).dt.strftime('%H:%M')
+    df['결제일시'] = pd.to_datetime(df['날짜'] + ' ' + df['시간'])
+    df = df[df['타입'] == '지출'].copy()
+
+    if df.empty:
+        return pd.DataFrame()
+
+    df['요일'] = df['결제일시'].dt.dayofweek
+    df['시'] = df['결제일시'].dt.hour
+    df['주말여부'] = df['요일'].apply(lambda x: 1 if x >= 5 else 0)
+    
+    df = df.drop(columns=["소분류", "결제수단"], errors='ignore')
+    df = pd.get_dummies(df, columns=['대분류'])
+    
+    df['금액_정규화'] = scaler.transform(df[['금액']])
+    
+    # Align columns with training data to ensure model compatibility
+    X = df.reindex(columns=train_cols, fill_value=0)
+    
+    # Prediction
+    predictions = autoencoder.predict(X)
+    mse = np.mean(np.power(X.values - predictions, 2), axis=1)
+    threshold = np.percentile(mse, 95) # Top 5% are anomalies
+    
+    df['재구성_손실'] = mse
+    df['이상거래'] = (df['재구성_손실'] > threshold).astype(int)
+    
+    anomalies_idx = df[df['이상거래'] == 1].index
+    anomalies = original_df.loc[anomalies_idx].copy()
+
+    if anomalies.empty:
+        return pd.DataFrame()
+
+    anomalies['anomaly_score'] = df.loc[anomalies_idx, '재구성_손실']
+    anomalies['anomaly'] = -1 # Match Isolation Forest output format
+    
+    return anomalies

@@ -1,14 +1,18 @@
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, jsonify, render_template_string, request
 import pandas as pd
 import os
 import numpy as np
 import model_functions.ae_functions as ae
 import model_functions.it_functions as it
 import logging
+import model
 import json
 from huggingface_hub import InferenceClient
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
-# Conditionally import transformers and torch for local HF models
+
+
 try:
     import torch
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -88,6 +92,58 @@ elif LLM_PROVIDER == "openai":
 else:
     logger.warning("No valid LLM_PROVIDER configured. LLM features will be disabled.")
 
+
+# --- Database Configuration ---
+# To connect to the database, ensure the following environment variables are set in compose.yml:
+# DB_HOST, POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+try:
+    import psycopg2
+    from psycopg2 import sql
+    PSYCOPG2_AVAILABLE = True
+    DB_HOST = os.environ.get("DB_HOST", "postgres")
+    DB_NAME = os.environ.get("POSTGRES_DB")
+    DB_USER = os.environ.get("POSTGRES_USER")
+    DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
+    logger.warning("psycopg2-binary is not installed. Database operations will be disabled.")
+
+def get_db_connection():
+    """Establishes a connection to the PostgreSQL database."""
+    if not PSYCOPG2_AVAILABLE or not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+        logger.error("Database connection details are not fully configured or psycopg2 is not installed.")
+        return None
+    try:
+        conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+        return conn
+    except psycopg2.OperationalError as e:
+        logger.error(f"Could not connect to PostgreSQL database: {e}")
+        return None
+
+def register_user_if_not_exists(user_id, username):
+    """Checks if a user exists by user_id and registers/updates them."""
+    conn = get_db_connection()
+    if not conn:
+        logger.warning("Cannot register user because database connection is not available.")
+        return
+
+    try:
+        with conn.cursor() as cur:
+            # Insert the user if they don't exist. If they do, update their username.
+            # This handles both new user registration and username changes for existing users.
+            insert_query = sql.SQL("""
+                INSERT INTO users (user_id, username) VALUES (%s, %s)
+                ON CONFLICT (user_id) DO UPDATE SET username = EXCLUDED.username;
+            """)
+            cur.execute(insert_query, (user_id, username))
+            conn.commit()
+            logger.info(f"User '{username}' (ID: {user_id}) registration/update processed.")
+    except Exception as e:
+        logger.error(f"Error during user registration for user_id '{user_id}': {e}", exc_info=True)
+        conn.rollback()
+    finally:
+        if conn:
+            conn.close()
 
 # Configuration for non-expense categories
 # These categories will be excluded from expense calculations
@@ -555,6 +611,221 @@ def combined_anomaly_detection():
 
     except Exception as e:
         error_msg = f"Error during combined anomaly detection: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return jsonify({"error": error_msg}), 500
+
+def get_user_transactions(user_id: str, start_date: datetime, end_date: datetime):
+    """
+    Placeholder function to fetch user transaction data.
+    In a real application, this would query a database.
+    For this example, it loads a user-specific CSV or a default one and filters by date.
+    """
+    logger.info(f"Fetching data for user '{user_id}' from {start_date.date()} to {end_date.date()}")
+    
+    data_path = os.path.join('data', f'payment_{user_id}.csv')
+    if not os.path.exists(data_path):
+        # Fallback to a default file for demonstration
+        data_path = os.path.join('data', 'payment_lee.csv')
+        logger.warning(f"No data file for user '{user_id}'. Using default data from {data_path}")
+
+    try:
+        df = pd.read_csv(data_path)
+        df['날짜'] = pd.to_datetime(df['날짜'])
+        # Filter data within the specified date range
+        mask = (df['날짜'] >= start_date) & (df['날짜'] <= end_date)
+        return df.loc[mask].copy()
+    except FileNotFoundError:
+        logger.error(f"Data file not found at {data_path}")
+        return pd.DataFrame()
+
+@app.route("/ai/analyze", methods=['POST'])
+def analyze_user_data():
+    """
+    Main endpoint for dynamic anomaly detection.
+    - If models for the user don't exist, it trains them on 1 year of data and analyzes the current month.
+    - If models exist, it analyzes the previous month's data and retrains the models.
+    """
+    try:
+        req_data = request.get_json()
+        if not req_data or 'user_id' not in req_data or 'username' not in req_data:
+            return jsonify({"error": "Request body must be JSON and contain 'user_id' and 'username'"}), 400
+
+        user_id = req_data['user_id']
+        username = req_data['username']
+
+        # Register user in the database if they don't exist
+        register_user_if_not_exists(user_id, username)
+
+        ae_model_path = os.path.join("./model", user_id, "_autoencoder_model.h5")
+        models_exist = os.path.exists(ae_model_path)
+
+        analysis_df = pd.DataFrame()
+        response_json = {}
+
+        if not models_exist:
+            # --- SCENARIO 1: New User -> Train models and analyze current month ---
+            logger.info(f"Models for user '{user_id}' not found. Starting initial training.")
+            
+            end_date = datetime.now()
+            start_date = end_date - relativedelta(years=1)
+            train_df = get_user_transactions(user_id, start_date, end_date)
+
+            if train_df.empty or len(train_df) < 50:
+                return jsonify({"message": "Not enough historical data to create an analysis model. At least 1 year of data with 50+ transactions is recommended."}), 400
+
+            logger.info(f"Training models on {len(train_df)} transactions...")
+            ae_model, ae_scaler, ae_cols = ae.train_ae(train_df.copy())
+            if_model, if_encoder = it.train_if(train_df.copy())
+
+            model.save_autoencoder_model(ae_model, user_id)
+            model.save_isolation_forest_model(if_model, user_id)
+            model.save_preprocessor(ae_scaler, user_id, "ae_scaler")
+            model.save_preprocessor(ae_cols, user_id, "ae_train_cols")
+            model.save_preprocessor(if_encoder, user_id, "if_encoder")
+
+            logger.info("Analyzing current month's data with newly trained models.")
+            start_of_month = end_date.replace(day=1, hour=0, minute=0, second=0)
+            analysis_df = get_user_transactions(user_id, start_of_month, end_date)
+            
+            if analysis_df.empty:
+                return jsonify({"message": "No transactions found for the current month to analyze."})
+
+            ae_anomalies = ae.predict_ae(analysis_df.copy(), ae_model, ae_scaler, ae_cols)
+            if_anomalies = it.predict_if(analysis_df.copy(), if_model, if_encoder)
+
+        else:
+            # --- SCENARIO 2: Existing User -> Analyze previous month and retrain ---
+            logger.info(f"Models for user '{user_id}' found. Analyzing previous month's data.")
+
+            ae_model = model.find_autoencoder_model(user_id)
+            if_model = model.find_isolation_forest_model(user_id)
+            ae_scaler = model.find_preprocessor(user_id, "ae_scaler")
+            ae_cols = model.find_preprocessor(user_id, "ae_train_cols")
+            if_encoder = model.find_preprocessor(user_id, "if_encoder")
+
+            if not all([ae_model, if_model, ae_scaler, ae_cols, if_encoder]):
+                return jsonify({"error": f"Model files for user '{user_id}' are incomplete or corrupt. A full retrain is required. You may need to delete the './model/{user_id}' directory."}), 500
+
+            today = datetime.now()
+            end_of_last_month = today.replace(day=1) - timedelta(days=1)
+            start_of_last_month = end_of_last_month.replace(day=1)
+            analysis_df = get_user_transactions(user_id, start_of_last_month, end_of_last_month)
+
+            if analysis_df.empty:
+                return jsonify({"message": "No transactions found for the previous month to analyze."})
+
+            logger.info(f"Predicting anomalies on {len(analysis_df)} transactions from last month.")
+            ae_anomalies = ae.predict_ae(analysis_df.copy(), ae_model, ae_scaler, ae_cols)
+            if_anomalies = it.predict_if(analysis_df.copy(), if_model, if_encoder)
+
+            # Retrain models with the previous month's data and save them
+            logger.info(f"Retraining models for user '{user_id}' with last month's data.")
+            new_ae_model, new_ae_scaler, new_ae_cols = ae.train_ae(analysis_df.copy())
+            new_if_model, new_if_encoder = it.train_if(analysis_df.copy())
+            
+            model.save_autoencoder_model(new_ae_model, user_id)
+            model.save_isolation_forest_model(new_if_model, user_id)
+            model.save_preprocessor(new_ae_scaler, user_id, "ae_scaler")
+            model.save_preprocessor(new_ae_cols, user_id, "ae_train_cols")
+            model.save_preprocessor(new_if_encoder, user_id, "if_encoder")
+            logger.info(f"Models for user '{user_id}' have been updated.")
+
+        # --- Combine, Filter, and Generate LLM Response (common for both scenarios) ---
+        
+        if not ae_anomalies.empty:
+            ae_anomalies['detection_method'] = 'autoencoder'
+        if not if_anomalies.empty:
+            if_anomalies['detection_method'] = 'isolation_forest'
+
+        combined_df = pd.concat([ae_anomalies, if_anomalies], ignore_index=True)
+
+        if not combined_df.empty:
+            # De-duplicate anomalies found by both models
+            combined_df['abs_amount'] = combined_df['금액'].abs()
+            combined_df = combined_df.drop_duplicates(subset=['날짜', '시간', '내용', 'abs_amount'], keep='first').drop(columns=['abs_amount'])
+
+            # Filter out non-expense categories
+            filtered_df = combined_df[~combined_df['대분류'].isin(NON_EXPENSE_CATEGORIES)]
+        else:
+            filtered_df = pd.DataFrame()
+
+        total_transactions = len(analysis_df[analysis_df['타입'] == '지출'])
+        anomaly_count = len(filtered_df)
+
+        if filtered_df.empty:
+            logger.info("No expense anomalies detected after filtering.")
+            summary = "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
+            return jsonify({
+                "overall_summary": summary,
+                "anomalies": [],
+                "adjustment": {
+                    "recommendation": "현재 이상 소비가 없어 예산 조정이 필요하지 않습니다.",
+                    "budget_change_impact": "현재 소비 패턴이 안정적이므로 예산 조정은 필요하지 않습니다.",
+                    "predicted_savings": 0
+                }
+            })
+
+        # --- Generate JSON Response using LLM ---
+        anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
+        anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
+
+        summary_prompt = (
+            f"'{username}'님의 소비 데이터를 분석한 결과입니다. 이 정보를 바탕으로 사용자에게 현재 소비 상태에 대한 전반적인 요약(overall_summary)을 한국어로 생성해주세요.\n\n"
+            f"- 총 거래 건수: {total_transactions}건\n"
+            f"- 발견된 이상 소비 건수: {anomaly_count}건\n"
+            f"- 이상 소비가 가장 많은 상위 카테고리: {list(anomaly_categories.keys())[:3]}\n\n"
+            "요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 어떤 분야에 주의해야 하는지 언급해주세요."
+        )
+        overall_summary = generate_llm_response(summary_prompt) or "이상 소비 내역이 발견되었습니다. 지출 내역을 검토하여 예산을 관리하는 것을 추천합니다."
+
+        anomalies_list_df = filtered_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
+        anomalies_list_df.rename(columns={'시간': '시각'}, inplace=True)
+        anomalies_list_df['금액'] = anomalies_list_df['금액'].astype(int)
+        anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시각'])
+        anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
+
+        recommend_category = anomaly_amount_by_cat.index[0]
+        savings = int(anomaly_amount_by_cat.iloc[0])
+        
+        adjustment_prompt = (
+            f"'{username}'님의 이상 소비 분석 결과, '{recommend_category}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
+            f"- 조정 추천 카테고리: '{recommend_category}'\n"
+            f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n\n"
+            "JSON 형식은 다음과 같아야 합니다:\n"
+            "{\n"
+            "  \"recommendation\": \"'{category}' 분야의 지출을 줄이는 것을 추천하는 문장\",\n"
+            "  \"budget_change_impact\": \"지출을 줄였을 때의 긍정적 효과에 대한 설명\",\n"
+            "  \"predicted_savings\": {amount_integer}\n"
+            "}\n\n"
+            "predicted_savings 값은 주어진 이상 소비 총액({savings})을 그대로 사용해주세요. 모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
+        )
+        llm_adjustment_str = generate_llm_response(adjustment_prompt, is_json=True)
+        adjustment = None
+        if llm_adjustment_str:
+            try:
+                adjustment = json.loads(llm_adjustment_str)
+                adjustment['predicted_savings'] = int(adjustment.get('predicted_savings', savings))
+            except (json.JSONDecodeError, TypeError):
+                adjustment = None
+        
+        if not adjustment:
+            adjustment = {
+                "recommendation": f"'{recommend_category}' 분야의 지출을 줄이는 것을 고려해보세요.",
+                "budget_change_impact": f"'{recommend_category}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
+                "predicted_savings": savings
+            }
+
+        response_data = {
+            "overall_summary": overall_summary,
+            "anomalies": anomalies_list_df.to_dict('records'),
+            "adjustment": adjustment
+        }
+
+        logger.info(f"Analysis for user '{user_id}' complete. Found {anomaly_count} anomalies.")
+        return jsonify(response_data)
+
+    except Exception as e:
+        error_msg = f"Error during analysis for user '{user_id}': {str(e)}"
         logger.error(error_msg, exc_info=True)
         return jsonify({"error": error_msg}), 500
 

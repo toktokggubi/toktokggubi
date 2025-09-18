@@ -9,6 +9,9 @@ services:
       - POSTGRES_USER=${DB_USERNAME}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       # Persist database data to avoid losing it when containers restart
       - ./database/data:/var/lib/postgresql/data
@@ -20,9 +23,11 @@ services:
   ai:
     build: ./ai # Build from the Dockerfile in the ./ai directory
     restart: always
-    # Environment variables for AI service, if any
-    # environment:
-    #   - AI_MODEL_PATH=/app/model.pt
+    environment:
+      - DB_HOST=database
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
 
   # Backend Service (Spring Boot with Gradle)
   backend:
@@ -33,6 +38,9 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${DB_NAME}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
       # Other common environment variables for backend
 
   # Frontend Service (React)
