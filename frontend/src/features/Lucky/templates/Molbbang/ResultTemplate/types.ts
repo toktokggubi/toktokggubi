@@ -6,4 +6,7 @@ export interface ResultTemplateProps {
   myRank: number | null;
   jackpotNickname?: string;
   onBackToLobby: () => void;
+  onExit?: () => void;
+  isLoser?: boolean; // 내가 꼴등이면 true
+  onPay?: () => void;
 }

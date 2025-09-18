@@ -1,9 +1,9 @@
+// src/features/Lucky/screens/MolbbangGameScreen.tsx
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   molbbangApi,
   type MolbbangRoom,
-  type MolbbangMember,
 } from "@/features/Lucky/api/molbbangService";
 import { useShake } from "@/features/Lucky/model/molbbang/useShake";
 import GameTemplate from "@/features/Lucky/templates/Molbbang/GameTemplate";
@@ -21,13 +21,25 @@ function isRoom(v: unknown): v is MolbbangRoom {
   );
 }
 
+// 타이머 핸들러 안전 타입
+type TimeoutHandle = ReturnType<typeof setTimeout>;
+type IntervalHandle = ReturnType<typeof setInterval>;
+
 export default function MolbbangGameScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
     code?: string | string[];
     nick?: string | string[];
     amount?: string | string[];
+    host?: string | string[];
   }>();
+
+  const hostFlagFromParams =
+    typeof params.host === "string"
+      ? params.host === "1" || params.host === "true"
+      : Array.isArray(params.host)
+      ? params.host[0] === "1" || params.host[0] === "true"
+      : false;
 
   const code =
     typeof params.code === "string"
@@ -58,6 +70,14 @@ export default function MolbbangGameScreen() {
   >([]);
   const [isFinalRound, setIsFinalRound] = useState(false);
 
+  // ── 남은 시간 표시용
+  const ROUND_MS = 5000; // 라운드 길이(밀리초). 필요하면 조정.
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(
+    Math.ceil(ROUND_MS / 1000)
+  );
+  const endTimerRef = useRef<TimeoutHandle | null>(null);
+  const tickRef = useRef<IntervalHandle | null>(null);
+
   // 흔들기 센서(게임 중엔 항상 on)
   const { magnitude, shakeValue, reset } = useShake({
     sampleHz: 60,
@@ -66,7 +86,7 @@ export default function MolbbangGameScreen() {
     enabled: true,
   });
 
-  // 최신 점수 ref
+  // 최신 점수 ref (라운드 종료 시 읽기)
   const latestScoreRef = useRef<number>(0);
   useEffect(() => {
     latestScoreRef.current = Math.round(shakeValue);
@@ -79,7 +99,6 @@ export default function MolbbangGameScreen() {
       try {
         const r = await molbbangApi.fetchRoom(code);
         if (!isRoom(r)) return;
-
         setRoom(r);
 
         if (rankModalVisible) return; // 모달 동안 자동 라우팅 금지
@@ -87,12 +106,22 @@ export default function MolbbangGameScreen() {
         if (r.status === "finished") {
           router.replace({
             pathname: "/molbbang/room/[code]/result",
-            params: { code, nick: nickname, amount },
+            params: {
+              code,
+              nick: nickname,
+              amount,
+              host: hostFlagFromParams ? "1" : "0",
+            },
           });
         } else if (r.status === "lobby") {
           router.replace({
             pathname: "/molbbang/room/[code]",
-            params: { code, nick: nickname, amount },
+            params: {
+              code,
+              nick: nickname,
+              amount,
+              host: hostFlagFromParams ? "1" : "0",
+            },
           });
         }
       } catch {
@@ -100,34 +129,51 @@ export default function MolbbangGameScreen() {
       }
     }, 900);
     return () => clearInterval(tm);
-  }, [code, nickname, amount, router, rankModalVisible]);
+  }, [code, nickname, amount, router, rankModalVisible, hostFlagFromParams]);
 
-  // 라운드 타이머: 5초 뒤 자동 종료
+  // 라운드 타이머: ROUND_MS 뒤 자동 종료 + 남은 초(우하단 배지)
   useEffect(() => {
     if (!code) return;
     if (rankModalVisible) return; // 🔒 모달 떠있으면 타이머 정지
 
+    // 점수/센서 초기화
     reset();
     latestScoreRef.current = 0;
 
-    const t = setTimeout(() => {
-      void onFinishRound();
-    }, 5000);
+    // 남은 시간 초기화
+    setRemainingSeconds(Math.ceil(ROUND_MS / 1000));
 
-    return () => clearTimeout(t);
+    // 초단위 tick
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = setInterval(() => {
+      setRemainingSeconds((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    // 라운드 종료 타이머
+    if (endTimerRef.current) clearTimeout(endTimerRef.current);
+    endTimerRef.current = setTimeout(() => {
+      void onFinishRound();
+    }, ROUND_MS);
+
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current);
+      if (endTimerRef.current) clearTimeout(endTimerRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, room?.round, rankModalVisible]);
 
   // 라운드 종료: 점수 반영 → 결과 받아와 모달 띄우기
   const isFinishingRef = useRef<boolean>(false);
-
   const onFinishRound = useCallback(async () => {
-    // 🔒 모달 떠있거나 이미 처리 중이면 바로 종료
-    if (rankModalVisible) return;
+    if (rankModalVisible) return; // 모달 상태면 무시
     if (isFinishingRef.current) return;
     isFinishingRef.current = true;
 
     try {
+      // 타이머 정리(중복 종료 방지)
+      if (tickRef.current) clearInterval(tickRef.current);
+      if (endTimerRef.current) clearTimeout(endTimerRef.current);
+
       const myScore = latestScoreRef.current;
       const me = room?.members.find((m) => m.nickname === nickname);
       const totals = me ? { [me.userId]: myScore } : undefined;
@@ -143,24 +189,32 @@ export default function MolbbangGameScreen() {
       isFinishingRef.current = false;
     }
   }, [code, nickname, room?.members, rankModalVisible]);
-  // ⬇️ onFinishRound 밑에 추가
+
   const onNextRound = useCallback(() => {
-    // 모달 닫고 로비(다음 라운드 준비)로
     setRankModalVisible(false);
     router.replace({
       pathname: "/molbbang/room/[code]",
-      params: { code, nick: nickname, amount },
+      params: {
+        code,
+        nick: nickname,
+        amount,
+        host: hostFlagFromParams ? "1" : "0",
+      },
     });
-  }, [router, code, nickname, amount]);
+  }, [router, code, nickname, amount, hostFlagFromParams]);
 
   const onViewFinal = useCallback(() => {
-    // 모달 닫고 최종 결과 화면으로
     setRankModalVisible(false);
     router.replace({
       pathname: "/molbbang/room/[code]/result",
-      params: { code, nick: nickname, amount },
+      params: {
+        code,
+        nick: nickname,
+        amount,
+        host: hostFlagFromParams ? "1" : "0",
+      },
     });
-  }, [router, code, nickname, amount]);
+  }, [router, code, nickname, amount, hostFlagFromParams]);
 
   return (
     <GameTemplate
@@ -179,6 +233,8 @@ export default function MolbbangGameScreen() {
       isFinalRound={isFinalRound}
       onNextRound={onNextRound}
       onViewFinal={onViewFinal}
+      // 우하단 타이머
+      remainingSeconds={remainingSeconds}
     />
   );
 }

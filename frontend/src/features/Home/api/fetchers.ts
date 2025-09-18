@@ -1,0 +1,59 @@
+import { http } from "@/shared/api/http";
+import { HOME_ENDPOINTS } from "./endpoints";
+
+// TX-1 이번 달 소비 금액 조회 (전체)
+export async function fetchMonthlySummary(params?: {
+  from?: string; // yyyyMMdd or yyyy-MM-dd
+  to?: string;   // yyyyMMdd or yyyy-MM-dd
+}) {
+  const { data } = await http.get(HOME_ENDPOINTS.monthlySummary, {
+    params,
+  });
+  return data as {
+    month: string;
+    totalAmount: number;
+    totalCount: number;
+  };
+}
+
+// TX-1 이번 달 소비 금액 조회 (카테고리별)
+export async function fetchMonthlySummaryByCategory() {
+  const { data } = await http.get(HOME_ENDPOINTS.monthlySummaryByCategory);
+  return data as {
+    categories: Array<{
+      categoryId: number;
+      categoryName: string;
+      amount: number;
+      count: number;
+    }>;
+  };
+}
+
+// TX-1 이번달 카테고리별 소비 목록 조회
+export async function fetchMonthlyCategoryList() {
+  const { data } = await http.get(HOME_ENDPOINTS.monthlyCategoryList);
+  return data as {
+    userId: number;
+    period: string;
+    range: {
+      startDate: string;
+      endDate: string;
+    };
+    categories: Array<{
+      categoryId: number;
+      categoryName: string;
+      totalAmount: number;
+      count: number;
+      transactions: Array<{
+        transactionUniqueNo: string;
+        dateTime: string;
+        amount: number;
+        cardStatus: string;
+        merchantId: number;
+        merchantName: string;
+        userCardId: number;
+        cardName: string;
+      }>;
+    }>;
+  };
+}

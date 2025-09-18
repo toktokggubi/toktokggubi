@@ -1,10 +1,9 @@
-// src/features/Lucky/templates/Molbbang/HomeTemplate/index.tsx
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { View, Text, Pressable, Image } from "react-native";
-import { Video, ResizeMode } from "expo-av";
+import { VideoView, useVideoPlayer } from "expo-video"; // ✅ player hook도 가져옴
 import { s } from "./variants";
 import type { MolbbangHomeTemplateProps } from "./types";
-import { AppHeader } from "@/shared/ui/AppHeader"; // ✅ 추가
+import { AppHeader } from "@/shared/ui/AppHeader";
 
 export default function MolbbangHomeTemplate({
   onPressCreate,
@@ -12,28 +11,26 @@ export default function MolbbangHomeTemplate({
   bgImg,
   danceVideo,
 }: MolbbangHomeTemplateProps) {
+  // ✅ player 생성
+  const player = useVideoPlayer(danceVideo, (player) => {
+    player.loop = true;
+    player.muted = true;
+    player.play();
+  });
+
   return (
     <View style={s.root}>
       {/* 🔹 비디오 + 배경 이미지 */}
-      <Video
-        source={danceVideo}
+      <VideoView
         style={s.video}
-        resizeMode={ResizeMode.COVER}
-        isLooping
-        shouldPlay
-        isMuted
+        player={player} // ✅ source 대신 player 전달
+        contentFit="cover" // ResizeMode 대체
+        nativeControls={false} // 필요시 true
       />
       <Image source={bgImg} style={s.background} resizeMode="cover" />
 
-      {/* 🔹 CardScreen 스타일 헤더 */}
-      <AppHeader
-        title="몰빵"
-        // showBack={true} // 기본값 true
-        // onSelectImport={() => {}} // 필요 시 붙임
-        // onSelectDelete={() => {}} // 필요 시 붙임
-      />
+      <AppHeader title="몰빵" />
 
-      {/* 🔹 본문 컨테이너 */}
       <View style={s.container}>
         <View style={s.titleBox}>
           <Text style={s.titleTxt}>- - - 몰 빵 - - -</Text>
