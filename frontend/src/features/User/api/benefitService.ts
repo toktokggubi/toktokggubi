@@ -136,6 +136,12 @@ async function fetchMock(userCardId: number): Promise<CardBenefitsResponse> {
           discountRate: 12.0,
           representativeCategory: { categoryId: 5, categoryName: "편의점" },
         },
+        {
+          franchiseId: 30,
+          franchiseName: "CU",
+          discountRate: 8.0,
+          representativeCategory: { categoryId: 5, categoryName: "편의점" },
+        },
       ],
     },
   };

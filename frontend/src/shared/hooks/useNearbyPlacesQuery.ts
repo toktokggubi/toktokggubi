@@ -41,7 +41,7 @@ const searchNearbyPlaces = async (
 
           results.push(...docs);
         } catch (error) {
-          console.error(`❌ 카테고리 "${cat}" API 호출 실패:`, error);
+          // 에러 무시하고 계속 진행
         }
 
         if (options.delayMsBetweenCalls && options.delayMsBetweenCalls > 0) {
@@ -63,7 +63,7 @@ const searchNearbyPlaces = async (
 
           results.push(...docs);
         } catch (error) {
-          console.error(`❌ 키워드 API 호출 실패:`, error);
+          // 에러 무시하고 계속 진행
         }
 
         if (options.delayMsBetweenCalls && options.delayMsBetweenCalls > 0) {
@@ -109,6 +109,7 @@ export function useNearbyPlacesQuery(
     const getCurrentLocation = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
+        
         if (status !== "granted") {
           setLocationError("위치 권한이 거부되었습니다.");
           return;
