@@ -25,7 +25,8 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "versionCode": 1,
-      "package": "com.technologia.toktokggubi"
+      "package": "com.technologia.toktokggubi",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
