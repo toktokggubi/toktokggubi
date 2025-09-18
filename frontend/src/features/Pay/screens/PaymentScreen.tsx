@@ -145,7 +145,7 @@ export default function PaymentScreen() {
       size: 15, // 카카오 API 최대 허용값
       sort: "distance" as const, // 거리순 정렬
       dedupe: true, // 중복 제거
-      delayMsBetweenCalls: 100, // API 호출 간격
+      delayMsBetweenCalls: 100, 
     }),
     []
   );
