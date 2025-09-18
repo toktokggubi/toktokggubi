@@ -14,7 +14,13 @@ services:
       - ./database/postgres:/var/lib/postgresql/data
       # Initialize database with a script if init.sql exists
       # - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   mysql:
     image: mysql:8.0
@@ -24,9 +30,10 @@ services:
       - .env
     volumes:
       - ./database/mysql-data:/var/lib/mysql
-      - ./backend/src/main/resources/toktokggubi_ddl_0912.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./backend/src/main/resources/toktokggubi_ddl.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
       timeout: 20s
       retries: 10
     restart: always
@@ -41,12 +48,21 @@ services:
     environment:
       - RABBITMQ_DEFAULT_PASS=${RABBITMQ_DEFAULT_PASS}
       - RABBITMQ_DEFAULT_USER=${RABBITMQ_DEFAULT_USER}
-
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   redis:
     image: redis:latest
     ports:
       - "6379:6379"
-    
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   # AI Service (Flask)
   ai:
     build:
@@ -65,6 +81,12 @@ services:
       - "8080:8080" # Expose backend server port
     env_file:
       - .env
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8080/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,6 +115,8 @@ services:
     build:
       context: ./nginx # Build from the Dockerfile in the ./nginx directory
     restart: always
+    ports:
+      - "80:80" 
     depends_on:
       # - frontend
       - backend
