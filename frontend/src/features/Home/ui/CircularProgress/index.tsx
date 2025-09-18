@@ -14,7 +14,7 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   currentAmount,
   totalAmount,
   month = "12월",
-  size = 80,
+  size = 120,
 }) => {
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
   const radius = (size - 20) / 2;
@@ -24,21 +24,22 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   return (
     <View style={styles.container}>
       <Svg width={size} height={size} style={styles.svg}>
+        {/* 배경 원 */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           stroke={colors.BLUE_LIGHT}
-          strokeWidth={10}
+          strokeWidth={8}
           fill="transparent"
-          opacity={0.3}
         />
+        {/* 진행 원 */}
         <Circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           stroke={colors.BLUE_NORMAL}
-          strokeWidth={10}
+          strokeWidth={8}
           fill="transparent"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
@@ -46,8 +47,10 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </Svg>
+      
+      {/* 중앙 텍스트 */}
       <View style={styles.textContainer}>
-        <Text style={styles.monthText}>{month}</Text>
+        <Text style={styles.monthText}>{month} 예산</Text>
         <Text style={styles.percentageText}>{Math.round(progressPercentage)}%</Text>
         <Text style={styles.usedAmountText}>
           {currentAmount.toLocaleString("ko-KR")}원
@@ -65,7 +68,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
-    backgroundColor: "transparent",
   },
   svg: {
     position: "absolute",
@@ -73,36 +75,28 @@ const styles = StyleSheet.create({
   textContainer: {
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
-    backgroundColor: "transparent",
   },
   monthText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "600",
     color: colors.GRAY_NORMAL,
-    backgroundColor: "transparent",
-    textShadowColor: "transparent",
+    marginBottom: 3,
   },
   percentageText: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: "700",
     color: colors.BLUE_NORMAL,
-    marginVertical: 1,
-    backgroundColor: "transparent",
-    textShadowColor: "transparent",
+    marginBottom: 5,
   },
   usedAmountText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: "600",
     color: colors.GRAY_DARKER,
-    backgroundColor: "transparent",
-    textShadowColor: "transparent",
   },
   totalAmountText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: "500",
     color: colors.GRAY_NORMAL,
-    backgroundColor: "transparent",
-    textShadowColor: "transparent",
+    marginTop: 2,
   },
 });

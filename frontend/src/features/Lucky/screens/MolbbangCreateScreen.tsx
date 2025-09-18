@@ -25,12 +25,7 @@ export default function MolbbangCreateScreen() {
       // 방 코드로 라우팅
       router.replace({
         pathname: "/molbbang/room/[code]",
-        params: {
-          code: res.code,
-          amount: String(money),
-          nick: nickname,
-          host: "1",
-        },
+        params: { code: res.code, amount: String(money), nick: nickname },
       });
     } catch (err: any) {
       console.error("createRoom error:", err);

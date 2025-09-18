@@ -17,21 +17,14 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
       rightLabel,
       variant = "default",
       passwordToggle,
-      onTogglePassword,
       secureTextEntry,
       placeholderTextColor,
-      error,
       ...rest
     },
     ref
   ) => {
-    const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+    const [hidden, setHidden] = useState<boolean>(!!secureTextEntry);
     const v = inputFieldVariants[variant];
-
-    const handleTogglePassword = () => {
-      setIsPasswordVisible(!isPasswordVisible);
-      onTogglePassword?.();
-    };
 
     return (
       <View style={styles.container}>
@@ -42,34 +35,28 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
             {topLabel}
           </Text>
         ) : null}
-        <View style={[styles.inputWrapper, v.wrapper, error && styles.errorWrapper]}>
+        <View style={[styles.inputWrapper, v.wrapper]}>
           <TextInput
             ref={ref}
-            style={[styles.input, v.input, error && styles.errorInput]}
+            style={[styles.input, v.input]}
             placeholderTextColor={placeholderTextColor ?? v.placeholder.color}
-            secureTextEntry={secureTextEntry && !isPasswordVisible}
-            autoCapitalize="none"
-            autoCorrect={false}
+            secureTextEntry={passwordToggle ? hidden : secureTextEntry}
             {...rest}
           />
           {rightLabel && (
             <Text style={styles.rightLabel}>{rightLabel}</Text>
           )}
-          {secureTextEntry && (
+          {passwordToggle && (
             <TouchableOpacity
-              onPress={handleTogglePassword}
+              onPress={() => setHidden((p) => !p)}
               style={styles.eyeBtn}
             >
-              <Text style={{ opacity: 0.5 }}>{isPasswordVisible ? "👁️" : "👁️‍🗨️"}</Text>
+              <Text style={{ opacity: 0.5 }}>{hidden ? "👁️‍🗨️" : "👁️"}</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {error ? (
-          <Text style={styles.errorText}>
-            {error}
-          </Text>
-        ) : bottomLabel ? (
+        {bottomLabel ? (
           <Text
             style={[
               styles.bottomLabel,
@@ -95,27 +82,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     minHeight: 44,
-    borderColor: "#E2E8F0",
-  },
-  errorWrapper: {
-    borderColor: "#EF4444",
   },
   input: { flex: 1, fontSize: 16, paddingVertical: 10 },
-  errorInput: {
-    color: "#EF4444",
-  },
   eyeBtn: { padding: 6, marginLeft: 4 },
   bottomLabel: {
     marginTop: 4,
     paddingHorizontal: 16,
     fontSize: 12,
     color: "#D2D3D7",
-  },
-  errorText: {
-    marginTop: 4,
-    paddingHorizontal: 16,
-    fontSize: 12,
-    color: "#EF4444",
   },
   topLabel: {
     marginBottom: 4,

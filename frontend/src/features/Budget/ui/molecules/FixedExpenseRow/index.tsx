@@ -65,7 +65,7 @@ const s = StyleSheet.create({
   // ✅ 헤더와 동일한 컬럼 규격
   colName: { flex: 1.1 },
   colAmount: { flex: 0.9 },
-  colInclude: { width: 80 },
+  colInclude: { width: 78 },
 
   // ✅ 텍스트 중앙 정렬
   cellText: {
@@ -77,8 +77,8 @@ const s = StyleSheet.create({
 
   // 체크박스
   checkbox: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.BLUE_NORMAL,
@@ -86,11 +86,5 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxOn: { backgroundColor: colors.BLUE_NORMAL },
-  check: { 
-    color: "#fff", 
-    fontSize: 16,
-    fontWeight: "bold",
-    lineHeight: 16,
-    textAlign: "center",
-  },
+  check: { color: "#fff", ...font.bold },
 });

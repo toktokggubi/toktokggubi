@@ -15,20 +15,6 @@ export interface Transaction {
   date?: string;
 }
 
-// API 응답 타입 정의
-export interface HomeData {
-  totalBudget: {
-    currentAmount: number;
-    totalAmount: number;
-  };
-  availableAmount: number;
-  characterMessage: string;
-  month: string;
-  listTitle: string;
-  categoryBudgets: CategoryBudget[];
-  transactions: Partial<Record<Category, Transaction[]>>;
-}
-
 export interface HomeTemplateProps {
   // 전체 예산
   totalBudget: {
@@ -51,8 +37,4 @@ export interface HomeTemplateProps {
   // 이벤트 핸들러
   onTotalBudgetPress?: () => void;
   onCategoryPress?: (category: Category) => void;
-  
-  // UI 설정
-  month?: string;
-  listTitle?: string;
 }
