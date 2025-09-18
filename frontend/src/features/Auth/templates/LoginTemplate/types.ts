@@ -10,6 +10,10 @@ export interface LoginTemplateProps {
   errorMessage?: string;
   onNavigateSignUp?: () => void;
 
+  // 비밀번호 토글
+  passwordToggle?: boolean;
+  onTogglePassword?: () => void;
+
   headerImageSource?: ImageSourcePropType;
   renderHeader?: ReactNode;
   showSocialLogin?: boolean;

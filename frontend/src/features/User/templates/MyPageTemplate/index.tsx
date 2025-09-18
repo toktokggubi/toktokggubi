@@ -8,8 +8,10 @@ import { colors } from "@/shared/constants/colors";
 export default function MyPageTemplate({
   onPressCard,
   onPressGifticon,
+  onPressLogout,
   cardImage,
   gifticonImage,
+  isLoggingOut = false,
   onPressLogin,
   onPressBudget,
 }: MyPageTemplateProps) {
@@ -23,17 +25,20 @@ export default function MyPageTemplate({
           onPress={onPressGifticon}
         />
       </View>
-      
+      {/* 로그아웃 버튼 */}
+      {onPressLogout && (
+        <View style={s.logoutContainer}>
+          <Button
+            value="🚪 로그아웃"
+            onPress={onPressLogout}
+            disabled={isLoggingOut}
+          />
+        </View>
+      )}
       {/* 임시 버튼들 - 나중에 제거 예정 */}
       <View style={s.buttonContainer}>
-        <Button
-          value="로그인 화면으로!!"
-          onPress={onPressLogin}
-        />
-        <Button 
-          value="예산 설정 시작" 
-          onPress={onPressBudget} 
-        />
+        <Button value="로그인 화면으로!!" onPress={onPressLogin} />
+        <Button value="예산 설정 시작" onPress={onPressBudget} />
       </View>
     </View>
   );
@@ -45,5 +50,11 @@ const s = StyleSheet.create({
   buttonContainer: {
     marginTop: 32,
     gap: 12,
+  },
+  logoutContainer: {
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
   },
 });
