@@ -44,7 +44,7 @@ if LLM_PROVIDER == "huggingface-local":
                 local_hf_tokenizer.pad_token = local_hf_tokenizer.eos_token
             local_hf_model = AutoModelForCausalLM.from_pretrained(
                 LLM_MODEL_NAME,
-                torch_dtype=torch.bfloat16,  # Use bfloat16 for better performance on modern GPUs
+                dtype=torch.bfloat16,  # Use bfloat16 for better performance on modern GPUs
                 device_map="auto",  # `accelerate` will handle device placement
                 trust_remote_code=True # Allow custom code for models that require it
             )
@@ -182,7 +182,7 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
-def generate_llm_response(prompt, max_tokens=200, is_json=False):
+def generate_llm_response(prompt, max_tokens=1024, is_json=False):
     """
     Generates a response from the configured LLM.
     """
@@ -265,7 +265,7 @@ def hello_world():
 def autoencoder():
     try:
         # Load and preprocess data
-        data_path = os.path.join('data', 'payment_lee.csv')
+        data_path = os.path.join('data', 'payment_kwonjaheun.csv')
         if not os.path.exists(data_path):
             return jsonify({"error": f"Data file not found at {data_path}"}), 404
         
@@ -295,7 +295,7 @@ def isolation_forest():
         logger.info("Starting Isolation Forest anomaly detection")
         
         # Load and preprocess data
-        data_path = os.path.join('data', 'payment_duck.csv')
+        data_path = os.path.join('data', 'payment_yang.csv')
         if not os.path.exists(data_path):
             error_msg = f"Data file not found at {data_path}"
             logger.error(error_msg)
@@ -459,6 +459,7 @@ def combined_anomaly_detection():
 
         anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
         anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
+        logger.info(data_path)
         
         # 1. Generate `overall_summary` using LLM
         summary_prompt = (
@@ -471,7 +472,7 @@ def combined_anomaly_detection():
             summary_prompt += f"  - {category}: {count}건\n"
         summary_prompt += "\n요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 어떤 분야에 주의해야 하는지 언급해주세요."
 
-        overall_summary = generate_llm_response(summary_prompt, max_tokens=150)
+        overall_summary = generate_llm_response(summary_prompt)
         
         # Fallback for summary
         if not overall_summary:
@@ -511,7 +512,7 @@ def combined_anomaly_detection():
             "predicted_savings 값은 주어진 이상 소비 총액({savings})을 그대로 사용해주세요. 모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
         )
 
-        llm_adjustment_str = generate_llm_response(adjustment_prompt, max_tokens=300, is_json=True)
+        llm_adjustment_str = generate_llm_response(adjustment_prompt, is_json=True)
         adjustment = None
 
         if llm_adjustment_str:

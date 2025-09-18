@@ -117,8 +117,11 @@ def run(data_path):
         if 'category_mapping' in locals() and not category_mapping.empty:
             # Merge with original categories using date, time, content, and amount as keys
             results = df.loc[anomalies.index, ['날짜', '시간', '내용', '금액']].copy()
+            # To prevent row multiplication on merge, which causes a length mismatch later,
+            # we ensure the right-hand side of the merge has unique keys.
+            unique_category_mapping = category_mapping.drop_duplicates(subset=['날짜', '시간', '내용', '금액'], keep='first')
             results = results.merge(
-                category_mapping,
+                unique_category_mapping,
                 on=['날짜', '시간', '내용', '금액'],
                 how='left',
                 suffixes=('', '_original')
