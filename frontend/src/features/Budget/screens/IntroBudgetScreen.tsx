@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
-import BudgetIntroTemplate from "~features/Budget/templates/BudgetIntroTemplate";
+import BudgetIntroTemplate from "@/features/Budget/templates/IntroBudgetTemplate";
 
 export default function StartBugetScreen() {
   const router = useRouter();
@@ -15,7 +15,7 @@ export default function StartBugetScreen() {
     if (isNavigating) return; // 중복 네비 방지
     setIsNavigating(true);
     router.push("/budget/total");
-    
+
     // 네비게이션 후 일정 시간 후 상태 초기화 (안전장치)
     setTimeout(() => {
       setIsNavigating(false);
@@ -26,7 +26,7 @@ export default function StartBugetScreen() {
     <BudgetIntroTemplate
       onNext={goNext}
       nextDisabled={isNavigating}
-      mascotSource={require("@/assets/images/character/character-01.png")}
+      mascotSource={require("@/assets/images/character/big-character-01.png")}
     />
   );
 }

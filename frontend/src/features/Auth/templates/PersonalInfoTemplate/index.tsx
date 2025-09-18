@@ -1,9 +1,20 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import type { PersonalInfoTemplateProps } from "./types";
-import InputField from "~features/Auth/ui/InputField";
-import Button from "~features/Auth/ui/Button";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import {
+  Image,
+  Keyboard,
+  KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import Button from "~features/Auth/ui/Button";
+import InputField from "~features/Auth/ui/InputField";
+import type { PersonalInfoTemplateProps } from "./types";
 
 export default function PersonalInfoTemplate({
   nickname,
@@ -19,19 +30,41 @@ export default function PersonalInfoTemplate({
   onSubmit,
   nicknameHelperText,
   incomeHelperText,
+  rightLabel = "만원",
+  headerImageSource,
 }: PersonalInfoTemplateProps) {
   return (
-    <View style={style.wrap}>
-      <View style={style.introWrap}>
-        <Text style={style.introNormal}>안전한 </Text>
-        <Text style={style.introBold}>똑똑꺼비</Text>
-        <Text style={style.introNormal}>와 함께</Text>
-      </View>
-      <View style={style.introWrap}>
-        <Text style={style.introBold}>개인정보</Text>
-        <Text style={style.introNormal}>를 입력해주세요!</Text>
-      </View>
-      <View style={{ marginTop: 24 }}>
+    <KeyboardAvoidingView 
+      style={style.wrap}
+      behavior="padding"
+      keyboardVerticalOffset={0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={style.container}>
+            <View>
+              {headerImageSource && (
+                <Image
+                  source={headerImageSource}
+                  resizeMode="contain"
+                  style={{ width: 150, height: 100, marginLeft: -20 }}
+                />
+              )}
+            </View>
+            <View style={style.introWrap}>
+              <Text style={style.introNormal}>안전한 </Text>
+              <Text style={style.introBold}>똑똑꺼비</Text>
+              <Text style={style.introNormal}>와 함께</Text>
+            </View>
+            <View style={[style.introWrap]}>
+              <Text style={style.introBold}>개인정보</Text>
+              <Text style={style.introNormal}>를 입력해주세요!</Text>
+            </View>
+            <View style={{ marginTop: 24 }}>
         {/* 닉네임 */}
         <InputField
           placeholder="닉네임"
@@ -82,11 +115,15 @@ export default function PersonalInfoTemplate({
           bottomLabel={incomeHelperText}
           returnKeyType="done"
           topLabel="월 소득"
+          rightLabel={rightLabel}
         />
 
-        <Button value="저장" onPress={onSubmit} />
-      </View>
-    </View>
+              <Button value="저장" onPress={onSubmit} />
+            </View>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -140,10 +177,12 @@ const style = StyleSheet.create({
   introWrap: {
     flexDirection: "row",
     justifyContent: "flex-start",
+    alignItems: "baseline",
   },
   introBold: {
     fontSize: 24,
-    fontWeight: "700",
+    ...font.bold,
+    lineHeight: 45,
     color: "#0E3159",
   },
   introNormal: {
@@ -153,19 +192,22 @@ const style = StyleSheet.create({
   },
   wrap: {
     flex: 1,
-    justifyContent: "center",
-    padding: 16,
     backgroundColor: "#F8FBFF",
+    paddingTop: 104,
   },
-  title: { fontSize: 20, fontWeight: "bold", marginBottom: 16 },
+  container: {
+    padding: 16,
+    paddingBottom: 20,
+  },
+  title: { fontSize: 20, ...font.bold, marginBottom: 16 },
   label: { fontSize: 14, color: "#334155", marginBottom: 6 },
   row: { flexDirection: "row", gap: 8 },
   chip: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    
     borderRadius: 999,
   },
-  chipText: { color: "#0F172A", fontWeight: "600" },
+  chipText: { color: "#0F172A", ...font.medium },
   pressField: {
     flexDirection: "row",
     alignItems: "center",

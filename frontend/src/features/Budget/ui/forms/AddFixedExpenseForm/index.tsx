@@ -1,8 +1,21 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet } from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { onlyNum } from "@/shared/utils/currency";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  NativeSyntheticEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputKeyPressEventData,
+  TextInputSelectionChangeEventData,
+  View,
+} from "react-native";
 import type { AddFixedExpenseFormProps } from "./types";
-import { formTitle, fieldLabels } from "./variants";
+import { fieldLabels, formTitle } from "./variants";
+
+type Sel = { start: number; end: number };
 
 export default function AddFixedExpenseForm({
   mode = "create",
@@ -19,6 +32,31 @@ export default function AddFixedExpenseForm({
     defaultValues?.billingDay ? String(defaultValues.billingDay) : ""
   );
 
+  // ✅ 커서 selection을 “완전 제어” (사용자 이동 허용하되 단위 영역은 clamp)
+  const [amountSel, setAmountSel] = useState<Sel | undefined>(undefined);
+  const [daySel, setDaySel] = useState<Sel | undefined>(undefined);
+
+  // 표시 문자열
+  const displayAmount = useMemo(
+    () => (amount > 0 ? `${amount.toLocaleString("ko-KR")} 원` : ""),
+    [amount]
+  );
+  const displayBillingDay = useMemo(
+    () => (billingDay ? `${billingDay} 일` : ""),
+    [billingDay]
+  );
+
+  const beforeUnitIdxAmt = Math.max(0, displayAmount.length - 2); // " 원" 앞
+  const beforeUnitIdxDay = Math.max(0, displayBillingDay.length - 2); // " 일" 앞
+
+  // clamp 유틸 (단위 영역 진입 방지)
+  const clampBeforeUnit = (pos: number, limit: number) => Math.min(pos, limit);
+
+  const clampSelection = (sel: Sel, limit: number): Sel => ({
+    start: clampBeforeUnit(sel.start, limit),
+    end: clampBeforeUnit(sel.end, limit),
+  });
+
   // defaultValues 변경 대응
   useEffect(() => {
     if (!defaultValues) return;
@@ -30,6 +68,18 @@ export default function AddFixedExpenseForm({
     );
   }, [defaultValues]);
 
+  useEffect(() => {
+    if (displayAmount)
+      setAmountSel({ start: beforeUnitIdxAmt, end: beforeUnitIdxAmt });
+    else setAmountSel(undefined);
+  }, [displayAmount, beforeUnitIdxAmt]);
+
+  useEffect(() => {
+    if (displayBillingDay)
+      setDaySel({ start: beforeUnitIdxDay, end: beforeUnitIdxDay });
+    else setDaySel(undefined);
+  }, [displayBillingDay, beforeUnitIdxDay]);
+
   const submit = () => {
     if (!name || !amount) return; // 최소 검증
     onSubmit({
@@ -38,6 +88,41 @@ export default function AddFixedExpenseForm({
       includeInBudget: include,
       billingDay: billingDay ? Number(billingDay) : undefined,
     });
+  };
+
+  // 공통 selection 변경 핸들러 (사용자 이동 허용 + 단위 앞 클램프)
+  const onSelChangeAmount = (
+    e: NativeSyntheticEvent<TextInputSelectionChangeEventData>
+  ) => {
+    const next = clampSelection(e.nativeEvent.selection, beforeUnitIdxAmt);
+    setAmountSel(next);
+  };
+  const onSelChangeDay = (
+    e: NativeSyntheticEvent<TextInputSelectionChangeEventData>
+  ) => {
+    const next = clampSelection(e.nativeEvent.selection, beforeUnitIdxDay);
+    setDaySel(next);
+  };
+
+  // 백스페이스 시 단위를 지우려 들면 커서를 단위 앞에 고정
+  const onKeyAmt = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === "Backspace" && displayAmount) {
+      if (!amountSel) return;
+      const clampIdx = beforeUnitIdxAmt;
+      // 커서가 단위 영역(>= clampIdx)이라면 보정
+      if (amountSel.start >= clampIdx && amountSel.end >= clampIdx) {
+        setAmountSel({ start: clampIdx, end: clampIdx });
+      }
+    }
+  };
+  const onKeyDay = (e: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+    if (e.nativeEvent.key === "Backspace" && displayBillingDay) {
+      if (!daySel) return;
+      const clampIdx = beforeUnitIdxDay;
+      if (daySel.start >= clampIdx && daySel.end >= clampIdx) {
+        setDaySel({ start: clampIdx, end: clampIdx });
+      }
+    }
   };
 
   return (
@@ -55,13 +140,44 @@ export default function AddFixedExpenseForm({
       <Text style={s.label}>{fieldLabels.amount}</Text>
       <TextInput
         style={s.input}
-        value={amount ? amount.toString() : ""}
-        onChangeText={(v) => setAmount(Number(v.replaceAll(",", "")) || 0)}
-        keyboardType="numeric"
-        placeholder="예: 500000"
+        value={displayAmount}
+        onChangeText={(t) => {
+          setAmount(onlyNum(t)); // 숫자만 유지
+          // 다음 렌더에서 useEffect가 단위 앞 위치로 보정
+        }}
+        onSelectionChange={onSelChangeAmount}
+        selection={amountSel}
+        onKeyPress={onKeyAmt}
+        onFocus={() => {
+          if (displayAmount)
+            setAmountSel({ start: beforeUnitIdxAmt, end: beforeUnitIdxAmt });
+        }}
+        keyboardType="number-pad"
+        inputMode="numeric"
+        placeholder="예: 500,000 원"
+      />
+
+      <Text style={s.label}>{fieldLabels.billingDay}</Text>
+      <TextInput
+        style={s.input}
+        value={displayBillingDay}
+        onChangeText={(t) => {
+          const num = t.replace(/\D/g, "");
+          setBillingDay(num);
+        }}
+        onSelectionChange={onSelChangeDay}
+        selection={daySel}
+        onKeyPress={onKeyDay}
+        onFocus={() => {
+          if (displayBillingDay)
+            setDaySel({ start: beforeUnitIdxDay, end: beforeUnitIdxDay });
+        }}
+        keyboardType="number-pad"
+        placeholder="1~31 일"
       />
 
       <View style={s.inline}>
+        <Text>{fieldLabels.include}</Text>
         <Pressable
           onPress={() => setInclude((v) => !v)}
           style={[s.checkbox, include && s.checkboxOn]}
@@ -70,17 +186,7 @@ export default function AddFixedExpenseForm({
         >
           {include ? <Text style={s.checkMark}>✓</Text> : null}
         </Pressable>
-        <Text>{fieldLabels.include}</Text>
       </View>
-
-      <Text style={s.label}>{fieldLabels.billingDay}</Text>
-      <TextInput
-        style={s.input}
-        value={billingDay}
-        onChangeText={setBillingDay}
-        keyboardType="number-pad"
-        placeholder="1~31"
-      />
 
       <View style={s.actions}>
         {onCancel ? (
@@ -98,7 +204,7 @@ export default function AddFixedExpenseForm({
 
 const s = StyleSheet.create({
   container: { padding: 16, backgroundColor: "#fff", flex: 1 },
-  title: { fontSize: 16, fontWeight: "700", marginBottom: 16 },
+  title: { fontSize: 16, ...font.bold, marginBottom: 16 },
   label: { marginTop: 12, marginBottom: 6 },
   input: {
     borderWidth: 1,
@@ -110,8 +216,8 @@ const s = StyleSheet.create({
   },
   inline: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12 },
   checkbox: {
-    width: 22,
-    height: 22,
+    width: 24,
+    height: 24,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.BLUE_NORMAL,
@@ -119,7 +225,13 @@ const s = StyleSheet.create({
     justifyContent: "center",
   },
   checkboxOn: { backgroundColor: colors.BLUE_NORMAL },
-  checkMark: { color: "#fff", fontWeight: "700" },
+  checkMark: { 
+    color: "#fff", 
+    fontSize: 16,
+    fontWeight: "bold",
+    lineHeight: 16,
+    textAlign: "center",
+  },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
@@ -135,5 +247,5 @@ const s = StyleSheet.create({
   },
   primary: { backgroundColor: colors.BLUE_NORMAL },
   ghost: { backgroundColor: "#E9EEFF" },
-  submitTxt: { color: "#fff", fontWeight: "700" },
+  submitTxt: { color: "#fff", ...font.bold },
 });

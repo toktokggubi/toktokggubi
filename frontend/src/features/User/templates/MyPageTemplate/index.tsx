@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import type { MyPageTemplateProps } from "./types";
 import MenuTile from "@/features/User/ui/MenuTile";
+import { colors } from "@/shared/constants/colors";
 
 export default function MyPageTemplate({
   onPressCard,
@@ -24,6 +25,6 @@ export default function MyPageTemplate({
 }
 
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: "#F8FBFF", padding: 16 },
+  page: { flex: 1, backgroundColor: colors.BACKGROUND_PRIMARY, padding: 16 },
   grid: { flexDirection: "row", gap: 16 },
 });

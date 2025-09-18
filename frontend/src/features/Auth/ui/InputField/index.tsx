@@ -14,6 +14,7 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
     {
       topLabel,
       bottomLabel,
+      rightLabel,
       variant = "default",
       passwordToggle,
       secureTextEntry,
@@ -42,6 +43,9 @@ const InputField = forwardRef<InputFieldRef, InputFieldProps>(
             secureTextEntry={passwordToggle ? hidden : secureTextEntry}
             {...rest}
           />
+          {rightLabel && (
+            <Text style={styles.rightLabel}>{rightLabel}</Text>
+          )}
           {passwordToggle && (
             <TouchableOpacity
               onPress={() => setHidden((p) => !p)}
@@ -89,6 +93,11 @@ const styles = StyleSheet.create({
   },
   topLabel: {
     marginBottom: 4,
+  },
+  rightLabel: {
+    fontSize: 16,
+    color: "#64748b",
+    marginLeft: 8,
   },
 });
 

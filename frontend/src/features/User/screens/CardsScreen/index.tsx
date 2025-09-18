@@ -1,22 +1,24 @@
 // src/features/User/screens/Cards/index.tsx
-import React, { useLayoutEffect, useState, useCallback } from "react";
+import { getUserCards, syncUserCards } from "@/features/User/api/cardService";
+import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
+import CardCarouselTemplate from "@/features/User/templates/CardTemplate";
+import { CardActionMenu } from "@/features/User/ui/CardActionMeun";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useNavigation } from "expo-router";
+import React, { useCallback, useLayoutEffect, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
-  View,
+  Alert,
   Pressable,
   StyleSheet,
+  View,
 } from "react-native";
-import { router, useNavigation } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import CardCarouselTemplate from "@/features/User/templates/CardTemplate";
-import { getUserCards, syncUserCards } from "@/features/User/api/cardService";
-import { CardActionMenu } from "@/features/User/ui/CardActionMeun";
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
 
-const BG = "#F8FBFF";
-const TXT = "#0f172a";
-const ACCENT = "#246BFD";
+const BG = colors.BACKGROUND_PRIMARY;
+const TXT = colors.BLUE_DARKER;
+const ACCENT = colors.BLUE_NORMAL;
 
 export default function CardsScreen() {
   const navigation = useNavigation();
@@ -33,7 +35,7 @@ export default function CardsScreen() {
       setCards(list);
       // 새 데이터 길이에 맞춰 인덱스 보정
       setActiveIndex((prev) => Math.min(prev, Math.max(0, list.length - 1)));
-      Alert.alert("카드 정보가 최신으로 갱신되었습니다");
+      Alert.alert("최신으로 갱신완료");
     } catch (e) {
       Alert.alert(
         "동기화 실패",
@@ -72,7 +74,7 @@ export default function CardsScreen() {
       headerTintColor: TXT,
       headerStyle: { backgroundColor: BG },
       headerShadowVisible: false,
-      headerTitleStyle: { fontSize: 18, fontWeight: "800" },
+      headerTitleStyle: { fontSize: 18, ...font.bold },
       headerLeft: () => (
         <Pressable
           onPress={() => router.back()}

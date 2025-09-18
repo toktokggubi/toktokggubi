@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import MyPageTemplate from "@/features/User/templates/MyPageTemplate";
 
 const cardImg = require("@/assets/images/illustration/my_card.png");
@@ -9,10 +9,8 @@ const MypageScreen = () => {
     <MyPageTemplate
       cardImage={cardImg}
       gifticonImage={giftImg}
-      onPressCard={() => router.push("/(tabs)/mypage/cards")}
-      onPressGifticon={() => {
-        /* 나중에 /mypage/gifticons 로 이동 */
-      }}
+      onPressCard={() => router.push("/cards" as Href)}
+      onPressGifticon={() => router.push("/gifticons" as Href)}
     />
   );
 };

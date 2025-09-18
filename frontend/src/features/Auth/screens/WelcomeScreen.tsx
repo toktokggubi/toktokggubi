@@ -7,7 +7,9 @@ export default function WelcomeScreen() {
   const router = useRouter();
 
   const handleStart = () => {
-    router.push("/home");
+    // 전체 앱을 리셋하여 깨끗한 상태로 메인 화면으로 이동
+    router.dismissAll();
+    router.replace("/home");
   };
 
   return (

@@ -1,5 +1,6 @@
+import { font } from "@/shared/typography/font";
 import React, { memo } from "react";
-import { View, Image, Text, StyleSheet } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 import type { CardSlideProps } from "./types";
 
 function CardSlideImpl({ card }: CardSlideProps) {
@@ -13,7 +14,10 @@ function CardSlideImpl({ card }: CardSlideProps) {
 }
 
 const s = StyleSheet.create({
-  wrap: { alignItems: "center", width: "100%" },
+  wrap: {
+    alignItems: "center",
+    width: "100%",
+  },
   cardImg: {
     width: "100%",
     height: 280,
@@ -22,7 +26,7 @@ const s = StyleSheet.create({
     marginBottom: 12,
     marginTop: 12,
   },
-  name: { fontSize: 16, fontWeight: "700" },
+  name: { fontSize: 16, ...font.bold },
   sub: { marginTop: 4, color: "#6b7280" },
 });
 

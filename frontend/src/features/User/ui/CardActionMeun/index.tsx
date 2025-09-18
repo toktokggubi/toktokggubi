@@ -1,13 +1,11 @@
-import React, { memo, useState, useCallback } from "react";
-import { Modal, Pressable, View, Text, StyleSheet } from "react-native";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import { Ionicons } from "@expo/vector-icons";
-import type {
-  CardActionMenuProps,
-  CardActionMenuControlledProps,
-  MenuViewProps,
-} from "./types";
+import React, { memo, useCallback, useState } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import type { CardActionMenuProps, MenuViewProps } from "./types";
 
-const TXT = "#0f172a";
+const TXT = colors.BLUE_DARK;
 
 function MenuView({
   onSelectImport,
@@ -43,27 +41,8 @@ function MenuView({
   );
 }
 
-/** A. 부모가 open/close 제어하는 버전 */
-export const CardActionMenuControlled = memo(function CardActionMenuControlled({
-  open,
-  onClose,
-  ...rest
-}: CardActionMenuControlledProps) {
-  return (
-    <Modal
-      transparent
-      visible={open}
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <MenuView onClose={onClose} {...rest} />
-    </Modal>
-  );
-});
-
-/** B. 자체 +버튼을 포함한 버전(헤더에 꽂기 좋음) */
 export const CardActionMenu = memo(function CardActionMenu({
-  color = "#246BFD",
+  color = colors.BLUE_NORMAL,
   top,
   right,
   onSelectImport,
@@ -118,7 +97,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   item: { paddingHorizontal: 14, paddingVertical: 12 },
-  text: { color: TXT, fontSize: 14, fontWeight: "500" },
+  text: { color: TXT, fontSize: 14, ...font.medium },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: "#E7EBF2",

@@ -13,6 +13,8 @@
     },
     "android": {
       "adaptiveIcon": {
+        "package": "com.technologia.toktokggubi",
+        "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"],
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
@@ -34,7 +36,8 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-location"
     ],
     "experiments": {
       "typedRoutes": true
