@@ -52,7 +52,6 @@ const s = StyleSheet.create({
   wrap: {
     flexDirection: "row",
     gap: 8,
-    paddingHorizontal: 16,
     paddingTop: 0,
     paddingBottom: 14, // ↓ 필요 이상이면 줄이기
   },
