@@ -6,10 +6,88 @@ import model_functions.ae_functions as ae
 import model_functions.it_functions as it
 import logging
 import json
+from huggingface_hub import InferenceClient
+
+# Conditionally import transformers and torch for local HF models
+try:
+    import torch
+    from transformers import AutoTokenizer, AutoModelForCausalLM
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# --- LLM Configuration ---
+# Set the provider using the LLM_PROVIDER environment variable.
+# Options: 'huggingface-local', 'huggingface-api', 'local' (OpenAI-compatible), 'openai', or 'none'.
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "huggingface-local").lower()
+LLM_MODEL_NAME = os.environ.get("LLM_MODEL_NAME", "EleutherAI/polyglot-ko-1.3b")  # Using a smaller model for local use
+LLM_ENABLED = True
+
+# Globals for different clients/models
+hf_client = None
+local_hf_model = None
+local_hf_tokenizer = None
+
+if LLM_PROVIDER == "huggingface-local":
+    if TRANSFORMERS_AVAILABLE and LLM_MODEL_NAME:
+        logger.info(f"Attempting to load local Hugging Face model '{LLM_MODEL_NAME}'. This may take a while...")
+        try:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            local_hf_tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
+            # Set pad token if it's not set. This is crucial for models where pad_token is not configured.
+            # It helps in batching and avoids warnings when pad_token_id is the same as eos_token_id.
+            if local_hf_tokenizer.pad_token is None:
+                local_hf_tokenizer.pad_token = local_hf_tokenizer.eos_token
+            local_hf_model = AutoModelForCausalLM.from_pretrained(
+                LLM_MODEL_NAME,
+                torch_dtype=torch.bfloat16,  # Use bfloat16 for better performance on modern GPUs
+                device_map="auto",  # `accelerate` will handle device placement
+                trust_remote_code=True # Allow custom code for models that require it
+            )
+            LLM_ENABLED = True
+            logger.info(f"Successfully loaded model '{LLM_MODEL_NAME}' on device map '{local_hf_model.hf_device_map}'. LLM features enabled.")
+        except Exception as e:
+            logger.error(f"Failed to load local Hugging Face model '{LLM_MODEL_NAME}': {e}", exc_info=True)
+    else:
+        logger.warning("LLM_PROVIDER is 'huggingface-local' but 'transformers' library is not installed or LLM_MODEL_NAME is not set. LLM features disabled.")
+
+elif LLM_PROVIDER == "huggingface-api":
+    HF_TOKEN = os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    if HF_TOKEN:
+        LLM_ENABLED = True
+        hf_client = InferenceClient(model=LLM_MODEL_NAME, token=HF_TOKEN)
+        logger.info(f"Using Hugging Face Inference API with model '{LLM_MODEL_NAME}'. LLM features enabled.")
+    else:
+        logger.warning("LLM_PROVIDER is 'huggingface-api' but HUGGING_FACE_HUB_TOKEN is not set. LLM features disabled.")
+        logger.info("To use Hugging Face API, please set the HUGGING_FACE_HUB_TOKEN environment variable.")
+        logger.info("You can get a token at: https://huggingface.co/settings/tokens")
+
+elif LLM_PROVIDER == "local":
+    LOCAL_LLM_URL = os.environ.get("LOCAL_LLM_URL")
+    if LOCAL_LLM_URL:
+        LLM_ENABLED = True
+        LLM_MODEL_NAME = LLM_MODEL_NAME or "local-model"
+        logger.info(f"Using local OpenAI-compatible LLM at {LOCAL_LLM_URL} with model '{LLM_MODEL_NAME}'. LLM features enabled.")
+    else:
+        logger.warning("LLM_PROVIDER is 'local' but LOCAL_LLM_URL is not set. LLM features disabled.")
+
+elif LLM_PROVIDER == "openai":
+    OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
+    if OPENAI_KEY:
+        LLM_ENABLED = True
+        openai.api_key = OPENAI_KEY
+        LLM_MODEL_NAME = LLM_MODEL_NAME or "gpt-3.5-turbo"
+        logger.info(f"Using OpenAI API with model '{LLM_MODEL_NAME}'. LLM features enabled.")
+    else:
+        logger.warning("LLM_PROVIDER is 'openai' but OPENAI_API_KEY is not set. LLM features disabled.")
+
+else:
+    logger.warning("No valid LLM_PROVIDER configured. LLM features will be disabled.")
+
 
 # Configuration for non-expense categories
 # These categories will be excluded from expense calculations
@@ -104,6 +182,80 @@ HTML_TEMPLATE = """
 </body>
 </html>
 """
+def generate_llm_response(prompt, max_tokens=200, is_json=False):
+    """
+    Generates a response from the configured LLM.
+    """
+    if not LLM_ENABLED:
+        logger.warning("LLM is disabled. Skipping API call.")
+        return None
+
+    system_message = "You are a helpful financial assistant providing analysis for a user's spending habits. Your responses must be in Korean."
+    if is_json:
+        system_message += " You must respond only with the requested JSON object, without any additional text or explanations."
+
+    messages = [
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": prompt}
+    ]
+
+    llm_response_content = None
+
+    try:
+        if LLM_PROVIDER == "huggingface-local":
+            # Format the chat messages and tokenize them, returning an attention mask to avoid warnings.
+            chat_string = local_hf_tokenizer.apply_chat_template(
+                messages, tokenize=False, add_generation_prompt=True
+            )
+            inputs = local_hf_tokenizer(
+                chat_string, return_tensors="pt", padding=True
+            ).to(local_hf_model.device)
+
+            outputs = local_hf_model.generate(
+                **inputs,
+                max_new_tokens=max_tokens,
+                do_sample=True,
+                temperature=0.2,
+                top_p=0.9,
+                eos_token_id=local_hf_tokenizer.eos_token_id,
+                pad_token_id=local_hf_tokenizer.pad_token_id
+            )
+            # Decode only the newly generated tokens
+            response = local_hf_tokenizer.decode(outputs[0][inputs.input_ids.shape[-1]:], skip_special_tokens=True)
+
+            # Post-process to remove conversational artifacts if the model continues generating.
+            # The model sometimes outputs 'assistant' or other markers for the next turn.
+            if "assistant" in response:
+                response = response.split("assistant")[0]
+            llm_response_content = response.strip()
+
+        elif LLM_PROVIDER == "huggingface-api":
+            response = hf_client.chat_completion(
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=0.5,
+            )
+            llm_response_content = response.choices[0].message.content.strip()
+
+        elif LLM_PROVIDER in ["local", "openai"]:
+            response = openai.chat.completions.create(
+                model=LLM_MODEL_NAME,
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=0.5,
+            )
+            llm_response_content = response.choices[0].message.content.strip()
+        
+        else:
+            logger.error("LLM is enabled but no provider is recognized.")
+            return None
+        
+        logger.info(f"LLM Raw Response:\n---\n{llm_response_content}\n---")
+        return llm_response_content
+
+    except Exception as e:
+        logger.error(f"Error calling {LLM_PROVIDER} LLM API: {e}")
+        return None
 
 @app.route("/ai/")
 def hello_world():
@@ -286,9 +438,9 @@ def combined_anomaly_detection():
         anomaly_count = len(filtered_df)
 
         # Save as a CSV file
-        if not combined_df.empty:
-            combined_df.sort_values(['날짜', '시간']).to_csv('anomalies.csv', index=False)
-            logger.info(f"Saved {len(combined_df)} anomalies to anomalies.csv")
+        # if not combined_df.empty:
+        #     combined_df.sort_values(['날짜', '시간']).to_csv('anomalies.csv', index=False)
+        #     logger.info(f"Saved {len(combined_df)} anomalies to anomalies.csv")
 
         if filtered_df.empty:
             logger.info("No expense anomalies detected after filtering.")
@@ -305,15 +457,31 @@ def combined_anomaly_detection():
 
         # --- Generate JSON Response ---
 
-        # 1. Generate `overall_summary`
         anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
-        top_bad_category = max(anomaly_categories, key=anomaly_categories.get)
-
-        overall_summary = (
-            f"총 {total_transactions}건의 거래 중 {anomaly_count}건의 이상 소비가 발견되었습니다. "
-            f"특히 '{top_bad_category}' 분야에서 지출이 많은 것으로 보입니다. "
-            f"해당 분야의 지출 내역을 검토해보시는 것을 추천합니다."
+        anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
+        
+        # 1. Generate `overall_summary` using LLM
+        summary_prompt = (
+            f"사용자의 소비 데이터를 분석한 결과입니다. 이 정보를 바탕으로 사용자에게 현재 소비 상태에 대한 전반적인 요약(overall_summary)을 한국어로 생성해주세요.\n\n"
+            f"- 총 거래 건수: {total_transactions}건\n"
+            f"- 발견된 이상 소비 건수: {anomaly_count}건\n"
+            f"- 이상 소비가 가장 많은 상위 카테고리:\n"
         )
+        for category, count in list(anomaly_categories.items())[:3]:
+            summary_prompt += f"  - {category}: {count}건\n"
+        summary_prompt += "\n요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 어떤 분야에 주의해야 하는지 언급해주세요."
+
+        overall_summary = generate_llm_response(summary_prompt, max_tokens=150)
+        
+        # Fallback for summary
+        if not overall_summary:
+            logger.warning("LLM summary generation failed. Using template-based summary.")
+            top_bad_category = max(anomaly_categories, key=anomaly_categories.get)
+            overall_summary = (
+                f"총 {total_transactions}건의 거래 중 {anomaly_count}건의 이상 소비가 발견되었습니다. "
+                f"특히 '{top_bad_category}' 분야에서 지출이 많은 것으로 보입니다. "
+                f"해당 분야의 지출 내역을 검토해보시는 것을 추천합니다."
+            )
 
         # 2. Format `anomalies` list
         anomalies_list_df = filtered_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
@@ -324,16 +492,55 @@ def combined_anomaly_detection():
         anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시각'])
         anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
 
-        # 3. Generate `adjustment`
-        anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
+        # 3. Generate `adjustment` using LLM
         recommend_category = anomaly_amount_by_cat.index[0]
         savings = int(anomaly_amount_by_cat.iloc[0])
+        anomaly_count_in_cat = anomaly_categories[recommend_category]
 
-        adjustment = {
-            "recommendation": f"'{recommend_category}' 분야의 지출을 줄이는 것을 고려해보세요. 이 분야에서 {anomaly_categories[recommend_category]}건의 이상 소비가 감지되었습니다.",
-            "budget_change_impact": f"'{recommend_category}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
-            "predicted_savings": savings
-        }
+        adjustment_prompt = (
+            f"사용자의 이상 소비 분석 결과, '{recommend_category}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
+            f"- 조정 추천 카테고리: '{recommend_category}'\n"
+            f"- 해당 카테고리 내 이상 소비 건수: {anomaly_count_in_cat}건\n"
+            f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n\n"
+            "JSON 형식은 다음과 같아야 합니다:\n"
+            "{\n"
+            "  \"recommendation\": \"'{category}' 분야의 지출을 줄이는 것을 추천하는 문장\",\n"
+            "  \"budget_change_impact\": \"지출을 줄였을 때의 긍정적 효과에 대한 설명\",\n"
+            "  \"predicted_savings\": {amount_integer}\n"
+            "}\n\n"
+            "predicted_savings 값은 주어진 이상 소비 총액({savings})을 그대로 사용해주세요. 모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
+        )
+
+        llm_adjustment_str = generate_llm_response(adjustment_prompt, max_tokens=300, is_json=True)
+        adjustment = None
+
+        if llm_adjustment_str:
+            try:
+                # The model sometimes returns extra text after the JSON object.
+                # We use raw_decode to parse only the first valid JSON object from the string.
+                json_decoder = json.JSONDecoder()
+                start_index = llm_adjustment_str.find('{')
+                if start_index == -1:
+                    raise json.JSONDecodeError("No JSON object found in response", llm_adjustment_str, 0)
+                
+                adjustment, _ = json_decoder.raw_decode(llm_adjustment_str[start_index:])
+
+                if 'predicted_savings' in adjustment:
+                    adjustment['predicted_savings'] = int(adjustment['predicted_savings'])
+                else: # Ensure the key exists
+                    adjustment['predicted_savings'] = savings
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Failed to parse LLM adjustment response: {e}. Response was: {llm_adjustment_str}")
+                adjustment = None
+
+        # Fallback for adjustment
+        if not adjustment:
+            logger.warning("LLM adjustment generation failed. Using template-based adjustment.")
+            adjustment = {
+                "recommendation": f"'{recommend_category}' 분야의 지출을 줄이는 것을 고려해보세요. 이 분야에서 {anomaly_count_in_cat}건의 이상 소비가 감지되었습니다.",
+                "budget_change_impact": f"'{recommend_category}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
+                "predicted_savings": savings
+            }
 
         # Final JSON response
         response_data = {
@@ -353,4 +560,4 @@ def combined_anomaly_detection():
 if __name__ == "__main__":
     # Create necessary directories
     os.makedirs('data', exist_ok=True)
-    app.run(host='0.0.0.0', port=5000, debug=True)  
+    app.run(host='0.0.0.0', port=5000, debug=True)
