@@ -1,12 +1,3 @@
-// src/features/User/screens/Cards/index.tsx
-import { getUserCards, syncUserCards } from "@/features/User/api/cardService";
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
-import CardCarouselTemplate from "@/features/User/templates/CardTemplate";
-import { CardActionMenu } from "@/features/User/ui/CardActionMeun";
-import { colors } from "@/shared/constants/colors";
-import { font } from "@/shared/typography/font";
-import { Ionicons } from "@expo/vector-icons";
-import { router, useNavigation } from "expo-router";
 import React, { useCallback, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -15,6 +6,19 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useNavigation } from "expo-router";
+
+import CardCarouselTemplate from "@/features/User/templates/CardTemplate";
+import { CardActionMenu } from "@/features/User/ui/CardActionMeun";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+
+import {
+  useUserCards,
+  useRefetchUserCards,
+} from "@/features/User/model/card/hooks";
+import type { UserCardVM } from "@/features/User/model/card/types";
 
 const BG = colors.BACKGROUND_PRIMARY;
 const TXT = colors.BLUE_DARKER;
@@ -22,49 +26,29 @@ const ACCENT = colors.BLUE_NORMAL;
 
 export default function CardsScreen() {
   const navigation = useNavigation();
-  const [cards, setCards] = useState<UserCard[]>(getUserCards());
-  const [loading, setLoading] = useState(false);
+  const { data: cards = [], isFetching, isLoading, isError } = useUserCards();
+  const refetchCards = useRefetchUserCards();
+
   const [activeIndex, setActiveIndex] = useState<number>(0);
-  const userId = "me"; // TODO: 실제 사용자 id
 
   const handleImport = useCallback(async () => {
-    if (loading) return;
-    setLoading(true);
     try {
-      const { list } = await syncUserCards(userId);
-      setCards(list);
-      // 새 데이터 길이에 맞춰 인덱스 보정
-      setActiveIndex((prev) => Math.min(prev, Math.max(0, list.length - 1)));
-      Alert.alert("최신으로 갱신완료");
+      await refetchCards();
+      Alert.alert("완료", "최신 카드 목록으로 갱신했어요.");
+      if (activeIndex > cards.length - 1) {
+        setActiveIndex(Math.max(0, cards.length - 1));
+      }
     } catch (e) {
       Alert.alert(
         "동기화 실패",
         e instanceof Error ? e.message : "Unknown error"
       );
-    } finally {
-      setLoading(false);
     }
-  }, [userId, loading]);
+  }, [refetchCards, activeIndex, cards.length]);
 
   const handleDelete = useCallback(() => {
-    if (cards.length === 0) return;
-
-    const target = activeIndex;
-    const next = cards.filter((_, idx) => idx !== target);
-
-    setCards(next);
-
-    if (next.length === 0) {
-      setActiveIndex(0);
-      Alert.alert("삭제 완료", "마지막 카드를 삭제했습니다.");
-      return;
-    }
-
-    // 다음 활성 인덱스: 지운 자리에 오른쪽 카드가 있었다면 같은 인덱스로 유지,
-    // 마지막을 지웠다면 왼쪽 카드로 이동
-    const nextIndex = Math.min(target, next.length - 1);
-    setActiveIndex(nextIndex);
-  }, [cards, activeIndex]);
+    Alert.alert("안내", "삭제 기능은 서버 API 스펙 확정 후 연결할게요.");
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -93,6 +77,8 @@ export default function CardsScreen() {
     });
   }, [navigation, handleImport, handleDelete]);
 
+  const loading = isLoading || isFetching;
+
   return (
     <View style={{ flex: 1, backgroundColor: BG }}>
       {loading && (
@@ -111,11 +97,17 @@ export default function CardsScreen() {
         </View>
       )}
 
-      <CardCarouselTemplate
-        cards={cards}
-        activeIndex={activeIndex}
-        onActiveChange={setActiveIndex}
-      />
+      {isError ? (
+        <View
+          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+        />
+      ) : (
+        <CardCarouselTemplate
+          cards={cards as UserCardVM[]}
+          activeIndex={activeIndex}
+          onActiveChange={setActiveIndex}
+        />
+      )}
     </View>
   );
 }
