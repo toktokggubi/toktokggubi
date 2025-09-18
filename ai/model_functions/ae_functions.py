@@ -8,7 +8,6 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense
 
 warnings.filterwarnings('ignore')
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -40,14 +39,14 @@ def run(data_path):
 
     # 3. 범주형 데이터 인코딩
     # Preserve original categories before one-hot encoding
-    df = df.drop(columns=["소분류"])
+    df = df.drop(columns=["소분류", "결제수단"], errors='ignore')
     
     # Store original category information
     if '대분류' in df.columns:
         category_mapping = df[['날짜', '시간', '내용', '금액', '대분류']].copy()
     
     # Create dummies for model training
-    df = pd.get_dummies(df, columns=['대분류', '결제수단'])
+    df = pd.get_dummies(df, columns=['대분류'])
 
     # 4. 금액 정규화 (Normalization)
     # '금액' 컬럼의 값 범위를 0과 1 사이로 조정하여 모델 학습을 용이하게 합니다.
@@ -179,5 +178,7 @@ def run(data_path):
         "reconstruction_errors": df[df['이상거래'] == 1]['재구성_손실'].tolist() if not anomalies.empty else []
     }
     
-    return results
-
+    return {
+        "anomalies_df": results,
+        "stats": stats,
+    }

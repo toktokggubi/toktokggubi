@@ -280,87 +280,75 @@ def combined_anomaly_detection():
             filtered_df = combined_df[~combined_df['대분류'].isin(NON_EXPENSE_CATEGORIES)]
         else:
             filtered_df = combined_df
-            
+
         # Calculate statistics
         total_transactions = len(pd.read_csv(data_path))
         anomaly_count = len(filtered_df)
-        
-        if combined_df.empty:
-            logger.info("No anomalies detected by either method")
-            return render_template_string(
-                HTML_TEMPLATE, 
-                anomalies_table="<p>No anomalies detected by either method.</p>", 
-                error=None, 
-                stats={
-                    "anomaly_count": 0,
-                    "anomaly_percentage": 0.0,
-                    "total_transactions": total_transactions,
-                    "total_amount": 0,
-                    "anomaly_categories": {}
-                },
-                timestamps=[],
-                amounts=[],
-                colors=[],
-                error_indices=[],
-                reconstruction_errors=[]
-            )
-        
-        # Prepare the results
-        stats = {
-            "anomaly_count": anomaly_count,
-            "anomaly_percentage": anomaly_count / total_transactions if total_transactions > 0 else 0,
-            "total_transactions": total_transactions,
-            "total_amount": filtered_df['금액'].sum() if not filtered_df.empty else 0,
-            "anomaly_categories": filtered_df['대분류'].value_counts().to_dict() if not filtered_df.empty else {}
-        }
-        
-        # Sort by date and time (most recent first)
-        if not filtered_df.empty:
-            if '날짜' in filtered_df.columns and '시간' in filtered_df.columns:
-                # Create a temporary datetime column for sorting
-                filtered_df['datetime'] = pd.to_datetime(filtered_df['날짜'] + ' ' + filtered_df['시간'])
-                filtered_df = filtered_df.sort_values('datetime', ascending=False)
-                filtered_df = filtered_df.drop(columns=['datetime'])  # Remove the temporary column
-        
-        # Convert to HTML table
-        display_columns = ['날짜', '시간', '대분류', '내용', '금액', 'detection_method']
-        if 'anomaly_score' in filtered_df.columns:
-            display_columns.append('anomaly_score')
-            
-        anomalies_table = filtered_df[display_columns].to_html(index=False) if not filtered_df.empty else "<p>No expense anomalies detected after filtering.</p>"
-        
+
         # Save as a CSV file
-        combined_df = combined_df.sort_values(['날짜', '시간'])
-        combined_df.to_csv('anomalies.csv', index=False)
-        
-        logger.info(f"Combined detection found {anomaly_count} anomalies")
-        
-        # Prepare plot data (using autoencoder's plot data if available)
-        plot_data = {}
-        if hasattr(ae_results, 'get') and 'plot_data' in ae_results:
-            plot_data = ae_results['plot_data']
-        
-        return render_template_string(
-            HTML_TEMPLATE, 
-            anomalies_table=anomalies_table, 
-            error=None, 
-            stats=stats,
-            timestamps=plot_data.get('timestamps', []),
-            amounts=plot_data.get('amounts', []),
-            colors=plot_data.get('colors', []),
-            error_indices=plot_data.get('error_indices', []),
-            reconstruction_errors=plot_data.get('reconstruction_errors', [])
+        if not combined_df.empty:
+            combined_df.sort_values(['날짜', '시간']).to_csv('anomalies.csv', index=False)
+            logger.info(f"Saved {len(combined_df)} anomalies to anomalies.csv")
+
+        if filtered_df.empty:
+            logger.info("No expense anomalies detected after filtering.")
+            summary = "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
+            return jsonify({
+                "overall_summary": summary,
+                "anomalies": [],
+                "adjustment": {
+                    "recommendation": "현재 이상 소비가 없어 예산 조정이 필요하지 않습니다.",
+                    "budget_change_impact": "현재 소비 패턴이 안정적이므로 예산 조정은 필요하지 않습니다.",
+                    "predicted_savings": 0
+                }
+            })
+
+        # --- Generate JSON Response ---
+
+        # 1. Generate `overall_summary`
+        anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
+        top_bad_category = max(anomaly_categories, key=anomaly_categories.get)
+
+        overall_summary = (
+            f"총 {total_transactions}건의 거래 중 {anomaly_count}건의 이상 소비가 발견되었습니다. "
+            f"특히 '{top_bad_category}' 분야에서 지출이 많은 것으로 보입니다. "
+            f"해당 분야의 지출 내역을 검토해보시는 것을 추천합니다."
         )
-        
+
+        # 2. Format `anomalies` list
+        anomalies_list_df = filtered_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
+        anomalies_list_df.rename(columns={'시간': '시각'}, inplace=True)
+        anomalies_list_df['금액'] = anomalies_list_df['금액'].astype(int)
+
+        # Sort by date and time (most recent first)
+        anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시각'])
+        anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
+
+        # 3. Generate `adjustment`
+        anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
+        recommend_category = anomaly_amount_by_cat.index[0]
+        savings = int(anomaly_amount_by_cat.iloc[0])
+
+        adjustment = {
+            "recommendation": f"'{recommend_category}' 분야의 지출을 줄이는 것을 고려해보세요. 이 분야에서 {anomaly_categories[recommend_category]}건의 이상 소비가 감지되었습니다.",
+            "budget_change_impact": f"'{recommend_category}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
+            "predicted_savings": savings
+        }
+
+        # Final JSON response
+        response_data = {
+            "overall_summary": overall_summary,
+            "anomalies": anomalies_list_df.to_dict('records'),
+            "adjustment": adjustment
+        }
+
+        logger.info(f"Combined detection found {anomaly_count} anomalies. Returning JSON response.")
+        return jsonify(response_data)
+
     except Exception as e:
         error_msg = f"Error during combined anomaly detection: {str(e)}"
         logger.error(error_msg, exc_info=True)
-        return render_template_string(
-            HTML_TEMPLATE, 
-            error=error_msg, 
-            anomalies_table="", 
-            stats={}
-        )
+        return jsonify({"error": error_msg}), 500
 
 if __name__ == "__main__":
     # Create necessary directories

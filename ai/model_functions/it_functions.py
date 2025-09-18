@@ -29,7 +29,7 @@ def run(data_path):
 
     # Encoding features with One-Hot Encoding
     logger.info("Encoding features with One-Hot Encoding")
-    df = df.drop('소분류', axis=1)
+    df = df.drop(columns=['소분류', '결제수단'], errors='ignore')
 
     encoder = OneHotEncoder(handle_unknown='ignore')
     encoded_features = encoder.fit_transform(df[['대분류']]).toarray()
