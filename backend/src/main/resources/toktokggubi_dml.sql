@@ -13,8 +13,7 @@ INSERT INTO `category` (`name`, `description`, `sort_order`) VALUES
                                                                  ('교통',        NULL, 7),
                                                                  ('자동차',       NULL, 8),
                                                                  ('의료/건강',    NULL, 9),
-                                                                 ('문화',        NULL,10),
-                                                                 ('기타',        NULL,11);
+                                                                 ('문화',        NULL,10);
 
 -- ========== franchise ==========
 INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('스타벅스', '/images/franchise/starbucks.png');
@@ -3689,6 +3688,22 @@ FROM staging_fin_card_api f
          LEFT JOIN staging_card_csv sc
                    ON sc.issuer_name = ci.card_issuer_name
                        AND sc.card_name   = f.card_name;
+
+/* 2) 기존 행 업데이트 (JOIN으로 갱신) */
+UPDATE card_product cp
+    JOIN staging_fin_card_api f
+    ON f.card_unique_no = cp.card_unique_no
+    LEFT JOIN card_issuer ci
+    ON ci.card_issuer_code = f.card_issuer_code
+    LEFT JOIN staging_card_csv sc
+    ON sc.issuer_name = ci.card_issuer_name
+        AND sc.card_name   = f.card_name
+SET
+    cp.card_issuer_code = f.card_issuer_code,
+    cp.card_name        = f.card_name,
+    cp.card_type_name   = CASE WHEN f.card_name LIKE '%체크%' THEN 'CHECK' ELSE 'CREDIT' END,
+    cp.image_url        = COALESCE(CONCAT(@card_image_base, sc.image_file), cp.image_url),
+    cp.card_description = COALESCE(sc.card_description, cp.card_description);
 
 -- =========================================
 -- 3) 브랜드 혜택 추출 → card_product_benefit 적재

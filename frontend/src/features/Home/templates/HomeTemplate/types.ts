@@ -59,4 +59,9 @@ export interface HomeTemplateProps {
   
   // 예산 설정 여부
   hasBudget?: boolean;
+  
+  // 로딩 및 에러 상태
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }

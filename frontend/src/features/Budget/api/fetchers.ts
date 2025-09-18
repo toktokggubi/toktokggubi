@@ -13,6 +13,17 @@ export interface BudgetStatusResponse {
   totalAmount: number;
 }
 
+// 고정지출 총액 응답 타입
+export interface FixedIncludedTotalResponse {
+  fixedIncludedTotal: number;
+}
+
+// 카테고리별 예산 응답 타입
+export interface CategoryAllocation {
+  categoryId: number;
+  finalAmount: number;
+}
+
 // BD-1 총예산 입력(redis)
 export async function saveDraftTotal(dto: DraftTotalRequest): Promise<DraftSaveResponse> {
   console.log('=== saveDraftTotal API 호출 ===');
@@ -84,33 +95,69 @@ export async function commitBudget(): Promise<BudgetCommitResponse> {
   return data;
 }
 
-// 예산 설정 여부 확인
+// 고정지출 총액 조회
+export async function fetchFixedIncludedTotal(): Promise<FixedIncludedTotalResponse> {
+  const { data } = await http.get("/budget/fixed");
+  return data;
+}
+
+// 카테고리별 예산 조회
+export async function fetchCategoryAllocations(): Promise<CategoryAllocation[]> {
+  const { data } = await http.get("/budget/category");
+  return data;
+}
+
+// 예산 설정 여부 확인 (총예산, 고정지출, 카테고리별 예산 중 하나라도 있으면 설정된 것으로 판단)
 export async function checkBudgetStatus(): Promise<BudgetStatusResponse> {
   console.log('=== checkBudgetStatus API 호출 ===');
-  console.log('엔드포인트:', BUDGET_ENDPOINTS.getTotalAmount);
   
   try {
-    const { data } = await http.get(BUDGET_ENDPOINTS.getTotalAmount);
+    // 모든 예산 관련 API를 병렬로 호출
+    const [totalResponse, fixedResponse, categoryResponse] = await Promise.allSettled([
+      http.get(BUDGET_ENDPOINTS.getTotalAmount),
+      fetchFixedIncludedTotal(),
+      fetchCategoryAllocations()
+    ]);
+
     console.log('=== checkBudgetStatus API 응답 ===');
-    console.log('응답 데이터:', data);
-    
-    // totalAmount가 0이면 예산이 설정되지 않은 것으로 판단
-    if (data.totalAmount === 0) {
+    console.log('총예산 응답:', totalResponse);
+    console.log('고정지출 응답:', fixedResponse);
+    console.log('카테고리별 예산 응답:', categoryResponse);
+
+    // 각 응답에서 금액 추출
+    const totalAmount = totalResponse.status === 'fulfilled' ? totalResponse.value.data.totalAmount : 0;
+    const fixedAmount = fixedResponse.status === 'fulfilled' ? fixedResponse.value.fixedIncludedTotal : 0;
+    const categoryAmount = categoryResponse.status === 'fulfilled' 
+      ? categoryResponse.value.reduce((sum: number, cat: CategoryAllocation) => sum + cat.finalAmount, 0)
+      : 0;
+
+    console.log('총예산:', totalAmount);
+    console.log('고정지출:', fixedAmount);
+    console.log('카테고리별 예산 합계:', categoryAmount);
+
+    // 모든 예산이 0이면 예산이 설정되지 않은 것으로 판단
+    if (totalAmount === 0 && fixedAmount === 0 && categoryAmount === 0) {
+      console.log('모든 예산이 0 - 예산 설정되지 않음');
       throw new Error('BUDGET_NOT_SET');
     }
+
+    // 하나라도 있으면 설정된 것으로 판단 (총예산을 반환)
+    return { totalAmount };
     
-    return data;
   } catch (error: any) {
     console.log('=== checkBudgetStatus API 에러 ===');
     console.log('에러:', error);
+    
     // BUDGET_NOT_SET 에러는 그대로 전달
     if (error?.message === 'BUDGET_NOT_SET') {
       throw error;
     }
+    
     // 404 에러는 예산이 설정되지 않음을 의미
     if (error?.response?.status === 404) {
       throw new Error('BUDGET_NOT_FOUND');
     }
+    
     throw error;
   }
 }
