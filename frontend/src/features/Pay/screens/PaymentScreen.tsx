@@ -18,6 +18,7 @@ import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
 
 import { useCardBenefits } from "@/features/User/model/benefit/hooks";
 import BenefitsList from "@/features/User/ui/BenefitsList";
+import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 
 import { colors } from "@/shared/constants/colors";
 
@@ -90,6 +91,9 @@ const LoadingCard = () => null;
 const ErrorCard = ({ onRetry }: { onRetry: () => void }) => null;
 
 export default function PaymentScreen() {
+  // 인증 가드
+  const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
+  
   const [tab, setTab] = useState(0);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const activeCardIndexRef = useRef(0);
@@ -473,6 +477,11 @@ export default function PaymentScreen() {
         <BenefitsList benefits={matchedBenefits} />
       </View>
     ) : null;
+
+  // 인증 로딩 중이거나 인증되지 않은 경우
+  if (authLoading || !isAuthenticated) {
+    return null; // useAuthGuard에서 자동으로 리다이렉트됨
+  }
 
   return (
     <>

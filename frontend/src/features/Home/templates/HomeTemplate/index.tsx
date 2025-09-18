@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, ScrollView, StyleSheet, Dimensions } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { HomeTemplateProps } from "./types";
 import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
@@ -18,9 +18,31 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   transactions = {},
   onTotalBudgetPress,
   onCategoryPress,
+  onBudgetSetup,
   month = "12월",
   listTitle = "카테고리별 사용현황",
+  hasBudget = true,
 }) => {
+  // 예산이 설정되지 않았을 때
+  if (!hasBudget) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.noBudgetContainer}>
+          <Text style={styles.noBudgetTitle}>예산을 설정해주세요</Text>
+          <Text style={styles.noBudgetSubtitle}>
+            예산을 설정하면{'\n'}더 체계적으로 소비를 관리할 수 있어요
+          </Text>
+          <TouchableOpacity 
+            style={styles.budgetSetupButton}
+            onPress={onBudgetSetup}
+          >
+            <Text style={styles.budgetSetupButtonText}>예산 설정하러 가기</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* 전체 화면을 차지하는 CharacterBackground */}
@@ -69,5 +91,44 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
     backgroundColor: "transparent",
+  },
+  noBudgetContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  noBudgetTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.GRAY_DARKER,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  noBudgetSubtitle: {
+    fontSize: 16,
+    color: colors.GRAY_NORMAL,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  budgetSetupButton: {
+    backgroundColor: colors.BLUE_NORMAL,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  budgetSetupButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

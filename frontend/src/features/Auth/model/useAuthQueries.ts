@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
-import { login, kakaoLogin, fetchProfile, logout, signup, signupComplete } from "../api/fetchers";
+import { login, kakaoLogin, fetchProfile, logout, signup, signupComplete, updateProfile } from "../api/fetchers";
 import type { SignupRequest } from "../types/signup.types";
 
 export const authKeys = {
@@ -89,6 +89,17 @@ export const useSignupComplete = () => {
       }
       
       // 프로필 쿼리 무효화
+      qc.invalidateQueries({ queryKey: authKeys.me() });
+    },
+  });
+};
+
+// 프로필 수정
+export const useUpdateProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: updateProfile,
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: authKeys.me() });
     },
   });

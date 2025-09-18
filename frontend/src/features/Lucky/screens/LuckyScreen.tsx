@@ -6,11 +6,15 @@ import { useSalesByMonth } from "@/features/Lucky/model/hooks";
 import type { Category } from "@/features/Lucky/model/types";
 import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types";
 import { useRouter } from "expo-router"; // ✅ 변경: 훅 사용
+import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 
 const now = new Date();
 
 export default function LuckyScreen() {
   const router = useRouter(); // ✅ 훅으로 라우터 가져오기
+  
+  // 인증 가드
+  const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
 
   // month/year를 state로
   const [year, setYear] = useState(now.getFullYear());
@@ -62,6 +66,11 @@ export default function LuckyScreen() {
   const handlePressMolbbang = useCallback(() => {
     router.push("/molbbang");
   }, [router]);
+
+  // 인증 로딩 중이거나 인증되지 않은 경우
+  if (authLoading || !isAuthenticated) {
+    return null; // useAuthGuard에서 자동으로 리다이렉트됨
+  }
 
   if (isLoading || !data) {
     return (

@@ -51,8 +51,12 @@ export interface HomeTemplateProps {
   // 이벤트 핸들러
   onTotalBudgetPress?: () => void;
   onCategoryPress?: (category: Category) => void;
+  onBudgetSetup?: () => void;
   
   // UI 설정
   month?: string;
   listTitle?: string;
+  
+  // 예산 설정 여부
+  hasBudget?: boolean;
 }
