@@ -1,3 +1,4 @@
+// src/features/User/screens/GifticonScreen.tsx
 import React, { useLayoutEffect, useMemo, useState, useCallback } from "react";
 import { Pressable, Alert, Image as RNImage } from "react-native";
 import { useNavigation, router } from "expo-router";
@@ -16,34 +17,75 @@ const TXT = colors.BLUE_DARKER;
 const ACCENT = colors.BLUE_NORMAL;
 
 const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "");
+const gid = (g: Gifticon): string =>
+  String(g.gifticonId ?? `${g.merchantName}|${g.label}|${g.expiresAt ?? "na"}`);
 
 export default function GifticonsScreen() {
   const navigation = useNavigation();
 
-  // 원본(사용 가능만)
-  const all = useMemo<Gifticon[]>(
-    () => dummyGifticons.filter((g) => g.status === "ACTIVE"),
-    []
+  // 🔹 목록(가변) – 삭제 반영을 위해 useState로 들고 있음
+  const [items, setItems] = useState<Gifticon[]>(() =>
+    dummyGifticons.filter((g) => g.status === "ACTIVE")
   );
 
-  // 🔍 검색 상태
+  // 🔎 검색 상태
   const [query, setQuery] = useState("");
 
   // 🔽 정렬 상태
   const [sort, setSort] = useState<GifticonSort>("createdAtDesc");
 
-  // 1) 검색 필터
+  // ✅ 선택 모드 & 선택된 아이템
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelecting = useCallback(() => {
+    setSelecting((v) => {
+      if (v) setSelectedIds(new Set()); // 종료 시 선택 초기화
+      return !v;
+    });
+  }, []);
+
+  const toggleSelectOne = useCallback((g: Gifticon) => {
+    const id = gid(g);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }, []);
+
+  const deleteSelected = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    Alert.alert(
+      "삭제",
+      `선택한 ${selectedIds.size}개의 기프티콘을 삭제할까요?`,
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: () => {
+            setItems((prev) => prev.filter((g) => !selectedIds.has(gid(g))));
+            setSelectedIds(new Set());
+            setSelecting(false);
+          },
+        },
+      ]
+    );
+  }, [selectedIds]);
+
+  // 1) 검색
   const filtered = useMemo(() => {
-    if (!query) return all;
+    if (!query) return items;
     const q = normalize(query);
-    return all.filter((g) =>
+    return items.filter((g) =>
       [g.label, g.merchantName, g.categoryName].some((x) =>
         normalize(x).includes(q)
       )
     );
-  }, [all, query]);
+  }, [items, query]);
 
-  // 2) 정렬 (더미 안전 가드: createdAt 없으면 gifticonId 기준)
+  // 2) 정렬
   const data = useMemo(() => {
     const arr = [...filtered];
     if (sort === "createdAtDesc") {
@@ -53,12 +95,12 @@ export default function GifticonsScreen() {
         return tb - ta; // 최신순
       });
     } else {
-      arr.sort((a, b) => (a.remainingDays ?? 9e9) - (b.remainingDays ?? 9e9)); // 만료임박순
+      arr.sort((a, b) => (a.remainingDays ?? 9e9) - (b.remainingDays ?? 9e9));
     }
     return arr;
   }, [filtered, sort]);
 
-  // 이미지 뷰어
+  // 🖼 이미지 뷰어
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
@@ -72,10 +114,18 @@ export default function GifticonsScreen() {
     [data]
   );
 
-  const handleSelect = useCallback((item: Gifticon, index: number) => {
-    setViewerIndex(index);
-    setViewerOpen(true);
-  }, []);
+  // 카드 탭 동작: 선택모드면 체크 토글, 아니면 뷰어 열기
+  const handleCardPress = useCallback(
+    (item: Gifticon, index: number) => {
+      if (selecting) {
+        toggleSelectOne(item);
+      } else {
+        setViewerIndex(index);
+        setViewerOpen(true);
+      }
+    },
+    [selecting, toggleSelectOne]
+  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -111,14 +161,23 @@ export default function GifticonsScreen() {
     <>
       <GifticonsTemplate
         data={data}
-        onSelect={handleSelect}
+        onSelect={handleCardPress}
+        // 검색/정렬
         query={query}
         onQueryChange={setQuery}
         onClearQuery={() => setQuery("")}
         onSubmitSearch={(text) => setQuery(text)}
         sort={sort}
         onSortChange={setSort}
+        // 삭제/선택 관련
+        selecting={selecting}
+        onToggleSelecting={toggleSelecting}
+        selectedIds={selectedIds}
+        onToggleSelectItem={toggleSelectOne}
+        onDeleteSelected={deleteSelected}
+        getId={gid}
       />
+
       <GifticonImageViewer
         visible={viewerOpen}
         images={imagesForViewer}
