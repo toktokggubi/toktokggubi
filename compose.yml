@@ -101,7 +101,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/toktokggubi-sa.json
       # Other common environment variables for backend
+    volumes:
+      - ./secrets/toktokggubi-sa.json:/app/config/toktokggubi-sa.json:ro
 
   # Frontend Service (React)
   # frontend:
