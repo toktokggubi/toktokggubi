@@ -11,7 +11,7 @@ import { queryClient } from "@/shared/lib/queryClient";
 // 1) 공용 axios 인스턴스
 // ─────────────────────────────────────────────────────────────
 export const http = axios.create({
-  baseURL: "http://j13b207.p.ssafy.io/api",
+  baseURL: "https://j13b207.p.ssafy.io/api",
   timeout: 10_000,
   withCredentials: false,
 });
