@@ -4,6 +4,7 @@ import com.ssafy.toktokggubi.domain.budget.dto.*;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetCommitService;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetDraftService;
 
+import com.ssafy.toktokggubi.domain.budget.service.BudgetReadService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
 
@@ -21,6 +22,7 @@ public class BudgetController {
     private final BudgetDraftService draftService;
     private final BudgetCommitService commitService;
     private final YmResolver ymResolver;
+    private final BudgetReadService budgetReadService;
 
     // BD-1, BD-3, BD-6 (draft 저장)
     // BD-1, BD-3, BD-6 (draft 저장)
@@ -90,7 +92,15 @@ public class BudgetController {
     public BudgetCommitResponseDto commit(
             ) {
         Long userId =SecurityUtils.currentUserIdOrNull();
-        String ym = ymResolver.nowYm();                       // ✅ 항상 현재 달
+        String ym = ymResolver.nowYm();
         return commitService.commit(userId, ym, null);
     }
+    @GetMapping("/total-amount")
+    public TotalAmountResponseDto getTotalAmountNow() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getTotalAmount(userId, ym);
+    }
+
+
 }
