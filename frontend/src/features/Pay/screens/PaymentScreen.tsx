@@ -18,6 +18,7 @@ import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
 
 import { useCardBenefits } from "@/features/User/model/benefit/hooks";
 import BenefitsList from "@/features/User/ui/BenefitsList";
+import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 
 import { colors } from "@/shared/constants/colors";
 
@@ -90,6 +91,9 @@ const LoadingCard = () => null;
 const ErrorCard = ({ onRetry }: { onRetry: () => void }) => null;
 
 export default function PaymentScreen() {
+  // 인증 가드
+  const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
+  
   const [tab, setTab] = useState(0);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const activeCardIndexRef = useRef(0);
@@ -123,18 +127,43 @@ export default function PaymentScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const userCardId = cards[activeCardIndex]?.userCardId ?? 0;
-  const q = useCardBenefits(userCardId);
+  
+  // 카드 ID에 따른 혜택 정보 가져오기 (임시 구현)
+  const getCardBenefitsForCard = useCallback((userCardId: number) => {
+    // 실제로는 API에서 가져와야 하지만, 여기서는 간단히 하드코딩
+    const mockBenefits = {
+      101: [
+        // 국민 청춘카드
+        { franchiseName: "스타벅스", discountRate: 25.0 },
+        { franchiseName: "맘스터치", discountRate: 20.0 },
+        { franchiseName: "세븐일레븐", discountRate: 10.0 },
+      ],
+      202: [
+        // 삼성 탭탭오
+        { franchiseName: "이마트", discountRate: 15.0 },
+        { franchiseName: "CGV", discountRate: 12.0 },
+        { franchiseName: "세븐일레븐", discountRate: 8.0 },
+      ],
+      303: [
+        // 신한 Deep
+        { franchiseName: "CGV", discountRate: 30.0 },
+        { franchiseName: "스타벅스", discountRate: 15.0 },
+        { franchiseName: "맘스터치", discountRate: 10.0 },
+        { franchiseName: "GS25", discountRate: 12.0 },
+        { franchiseName: "CU", discountRate: 8.0 },
+      ],
+    };
 
-  // userCardId가 변경될 때 강제로 쿼리 무효화
-  useEffect(() => {
-    if (userCardId > 0) {
-      // React Query 캐시 무효화는 자동으로 처리됨 (queryKey가 변경되므로)
-    }
-  }, [userCardId]);
-
-  // 카드 혜택 정보
-  const benefits = q.data?.benefits ?? [];
+    return mockBenefits[userCardId as keyof typeof mockBenefits] || [];
+  }, []);
+  
+  // 하드코딩된 카드 혜택 정보 사용
+  const benefits = useMemo(() => {
+    return getCardBenefitsForCard(userCardId);
+  }, [userCardId, getCardBenefitsForCard]);
+  
   const benefitNames = benefits.map((b) => b.franchiseName).filter(Boolean);
+
 
   // 주변 장소 검색 옵션을 안정화
   const nearbyPlacesOptions = useMemo(
@@ -223,8 +252,34 @@ export default function PaymentScreen() {
 
   // 최종 가맹점 목록 (모든 가맹점, 거리순) - useMemo로 최적화
   const finalNearbyPlaces = useMemo(() => {
-    return sortedPlacesWithBenefits.map((item) => item.place);
-  }, [sortedPlacesWithBenefits]);
+    return nearbyPlaces || [];
+  }, [nearbyPlaces]);
+
+  // 혜택 정보가 포함된 가맹점 목록 (혜택 표시용)
+  const placesWithBenefitsForDisplay = useMemo(() => {
+    if (!nearbyPlaces || nearbyPlaces.length === 0 || !benefits || benefits.length === 0) {
+      return [];
+    }
+
+    const result = nearbyPlaces.map((place) => {
+      // 이 가맹점에 맞는 혜택들 찾기
+      const matchingBenefits = benefits.filter((benefit) =>
+        isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
+      );
+
+      return {
+        place,
+        benefits: matchingBenefits,
+        benefitCount: matchingBenefits.length,
+        totalDiscount: matchingBenefits.reduce(
+          (sum, b) => sum + (b.discountRate || 0),
+          0
+        ),
+      };
+    });
+
+    return result;
+  }, [nearbyPlaces, benefits]);
 
   const hasNearby = finalNearbyPlaces && finalNearbyPlaces.length > 0;
 
@@ -251,15 +306,28 @@ export default function PaymentScreen() {
 
   // 현재 선택된 가맹점의 혜택 찾기
   const matchedBenefits = useMemo(() => {
-    if (!selectedPlace || !hasNearby) return [];
+    if (!selectedPlace || !hasNearby) {
+      return [];
+    }
 
     // 선택된 가맹점에 맞는 혜택 찾기
-    const placeWithBenefits = sortedPlacesWithBenefits.find(
+    const placeWithBenefits = placesWithBenefitsForDisplay.find(
       (item) => item.place.place_name === selectedPlace.place_name
     );
 
-    return placeWithBenefits?.benefits || [];
-  }, [selectedPlace, hasNearby, sortedPlacesWithBenefits]);
+    // BenefitsList가 기대하는 CardBenefit 형태로 변환
+    const convertedBenefits = (placeWithBenefits?.benefits || []).map((benefit, index) => ({
+      franchiseId: index + 1, // 임시 ID
+      franchiseName: benefit.franchiseName,
+      discountRate: benefit.discountRate,
+      representativeCategory: {
+        categoryId: 1, // 임시 카테고리 ID
+        categoryName: "기타", // 임시 카테고리명
+      },
+    }));
+
+    return convertedBenefits;
+  }, [selectedPlace, hasNearby, placesWithBenefitsForDisplay]);
 
   // 기프티콘 필터링 - 현재 위치에 맞는 기프티콘만 표시
   const filteredGifticons = useMemo(() => {
@@ -280,34 +348,6 @@ export default function PaymentScreen() {
       });
     });
   }, [gifticons, hasNearby, nearbyNames, selectedPlace]);
-
-  // 카드 ID에 따른 혜택 정보 가져오기 (임시 구현)
-  const getCardBenefitsForCard = useCallback((userCardId: number) => {
-    // 실제로는 API에서 가져와야 하지만, 여기서는 간단히 하드코딩
-    const mockBenefits = {
-      101: [
-        // 국민 청춘카드
-        { franchiseName: "스타벅스", discountRate: 25.0 },
-        { franchiseName: "맘스터치", discountRate: 20.0 },
-        { franchiseName: "세븐일레븐", discountRate: 10.0 },
-      ],
-      202: [
-        // 삼성 탭탭오
-        { franchiseName: "이마트", discountRate: 15.0 },
-        { franchiseName: "CGV", discountRate: 12.0 },
-        { franchiseName: "세븐일레븐", discountRate: 8.0 },
-      ],
-      303: [
-        // 신한 Deep
-        { franchiseName: "CGV", discountRate: 30.0 },
-        { franchiseName: "스타벅스", discountRate: 15.0 },
-        { franchiseName: "맘스터치", discountRate: 10.0 },
-        { franchiseName: "GS25", discountRate: 12.0 },
-      ],
-    };
-
-    return mockBenefits[userCardId as keyof typeof mockBenefits] || [];
-  }, []);
 
   // 해당 장소에서 혜택이 가장 큰 카드 찾기
   const findBestCardForPlace = useCallback(
@@ -425,11 +465,7 @@ export default function PaymentScreen() {
     ) : null;
 
   const benefitsSection =
-    tab !== 0 ? null : q.isLoading ? (
-      <LoadingCard />
-    ) : q.error ? (
-      <ErrorCard onRetry={() => q.refetch()} />
-    ) : hasNearby && matchedBenefits.length > 0 ? (
+    tab !== 0 ? null : hasNearby && matchedBenefits.length > 0 ? (
       <View>
         {selectedPlace && (
           <View style={{ marginBottom: 8, paddingHorizontal: 16 }}>
@@ -441,6 +477,11 @@ export default function PaymentScreen() {
         <BenefitsList benefits={matchedBenefits} />
       </View>
     ) : null;
+
+  // 인증 로딩 중이거나 인증되지 않은 경우
+  if (authLoading || !isAuthenticated) {
+    return null; // useAuthGuard에서 자동으로 리다이렉트됨
+  }
 
   return (
     <>

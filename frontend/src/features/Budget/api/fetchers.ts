@@ -8,6 +8,11 @@ import type {
   BudgetCommitResponse,
 } from "../types/budget.types";
 
+// 예산 설정 여부 확인을 위한 타입
+export interface BudgetStatusResponse {
+  totalAmount: number;
+}
+
 // BD-1 총예산 입력(redis)
 export async function saveDraftTotal(dto: DraftTotalRequest): Promise<DraftSaveResponse> {
   console.log('=== saveDraftTotal API 호출 ===');
@@ -77,4 +82,35 @@ export async function commitBudget(): Promise<BudgetCommitResponse> {
   }
 
   return data;
+}
+
+// 예산 설정 여부 확인
+export async function checkBudgetStatus(): Promise<BudgetStatusResponse> {
+  console.log('=== checkBudgetStatus API 호출 ===');
+  console.log('엔드포인트:', BUDGET_ENDPOINTS.getTotalAmount);
+  
+  try {
+    const { data } = await http.get(BUDGET_ENDPOINTS.getTotalAmount);
+    console.log('=== checkBudgetStatus API 응답 ===');
+    console.log('응답 데이터:', data);
+    
+    // totalAmount가 0이면 예산이 설정되지 않은 것으로 판단
+    if (data.totalAmount === 0) {
+      throw new Error('BUDGET_NOT_SET');
+    }
+    
+    return data;
+  } catch (error: any) {
+    console.log('=== checkBudgetStatus API 에러 ===');
+    console.log('에러:', error);
+    // BUDGET_NOT_SET 에러는 그대로 전달
+    if (error?.message === 'BUDGET_NOT_SET') {
+      throw error;
+    }
+    // 404 에러는 예산이 설정되지 않음을 의미
+    if (error?.response?.status === 404) {
+      throw new Error('BUDGET_NOT_FOUND');
+    }
+    throw error;
+  }
 }

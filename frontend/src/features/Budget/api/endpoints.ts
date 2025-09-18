@@ -7,4 +7,6 @@ export const BUDGET_ENDPOINTS = {
   saveDraftCategories: "/budget/draft/save/categories",
   // BD-6 마지막 버튼 (commit)
   commit: "/budget/commit",
+  // 예산 설정 여부 확인
+  getTotalAmount: "/budget/total",
 } as const;

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import { HomeTemplate } from "../templates/HomeTemplate";
 import { colors } from "@/shared/constants/colors";
 import { HomeData, CategoryBudget, Transaction } from "../templates/HomeTemplate/types";
@@ -11,6 +12,8 @@ import {
   fetchMonthlyCategoryList
 } from "../api/fetchers";
 import { Category, CATEGORY_VALUES } from "@/shared/constants/categories";
+import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
+import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 
 // 헬퍼 함수들
 const getCategoryNameById = (categoryId: number): Category => {
@@ -69,10 +72,18 @@ const getCurrentMonth = (): string => {
 
 
 export const HomeScreen: React.FC = () => {
+  const router = useRouter();
+  
+  // 인증 가드
+  const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
+  
   // API 연동을 위한 상태 관리
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // 예산 설정 여부 확인
+  const budgetStatusQuery = useBudgetStatusQuery();
 
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
@@ -184,6 +195,30 @@ export const HomeScreen: React.FC = () => {
     // TODO: 카테고리별 거래 내역 화면으로 이동
   };
 
+  const handleBudgetSetup = () => {
+    router.push("/budget");
+  };
+
+  // 인증 로딩 중일 때
+  if (authLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={colors.BLUE_NORMAL} />
+        <Text style={styles.loadingText}>인증 확인 중...</Text>
+      </View>
+    );
+  }
+
+  // 인증되지 않은 경우 (useAuthGuard에서 자동으로 로그인 페이지로 리다이렉트됨)
+  if (!isAuthenticated) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color={colors.BLUE_NORMAL} />
+        <Text style={styles.loadingText}>로그인 페이지로 이동 중...</Text>
+      </View>
+    );
+  }
+
   // 로딩 중일 때
   if (loading) {
     return (
@@ -207,6 +242,7 @@ export const HomeScreen: React.FC = () => {
     );
   }
 
+
   // 데이터가 없을 때
   if (!data) {
     return (
@@ -215,6 +251,11 @@ export const HomeScreen: React.FC = () => {
       </View>
     );
   }
+
+  // 예산 설정 여부 확인
+  const hasBudget = !budgetStatusQuery.isError || 
+    (budgetStatusQuery.error?.message !== 'BUDGET_NOT_SET' && 
+     budgetStatusQuery.error?.message !== 'BUDGET_NOT_FOUND');
 
   return (
     <View style={styles.container}>
@@ -228,6 +269,8 @@ export const HomeScreen: React.FC = () => {
         listTitle={data.listTitle}
         onTotalBudgetPress={handleTotalBudgetPress}
         onCategoryPress={handleCategoryPress}
+        onBudgetSetup={handleBudgetSetup}
+        hasBudget={hasBudget}
       />
     </View>
   );

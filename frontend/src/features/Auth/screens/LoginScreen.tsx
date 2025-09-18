@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { SafeAreaView, Alert } from "react-native";
 import LoginTemplate from "~features/Auth/templates/LoginTemplate";
 import { useEmailLogin, useKakaoLogin } from "../model/useAuthQueries";
+import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function LoginScreen() {
 
   const emailLoginMutation = useEmailLogin();
   const kakaoLoginMutation = useKakaoLogin();
+  const budgetStatusQuery = useBudgetStatusQuery();
 
   // 이메일 로그인 처리
   const handleEmailLogin = async () => {
@@ -30,8 +32,21 @@ export default function LoginScreen() {
         password: password.trim(),
       });
       
-      // 로그인 성공 시 홈 화면으로 이동
-      router.replace("/(tabs)/home");
+      // 로그인 성공 후 예산 설정 여부 확인
+      try {
+        await budgetStatusQuery.refetch();
+        // 예산이 설정되어 있으면 홈으로 이동
+        router.replace("/(tabs)/home");
+      } catch (budgetError: any) {
+        // 예산이 설정되지 않았으면 예산 소개 화면으로 이동
+        if (budgetError?.message === 'BUDGET_NOT_SET' || budgetError?.message === 'BUDGET_NOT_FOUND') {
+          router.replace("/budget");
+        } else {
+          console.error("예산 상태 확인 실패:", budgetError);
+          // 예산 확인 실패 시에도 홈으로 이동 (fallback)
+          router.replace("/(tabs)/home");
+        }
+      }
     } catch (error: any) {
       console.error("로그인 실패:", error);
       Alert.alert(
