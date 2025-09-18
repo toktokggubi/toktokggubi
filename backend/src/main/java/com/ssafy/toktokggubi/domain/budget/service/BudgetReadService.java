@@ -4,6 +4,7 @@ package com.ssafy.toktokggubi.domain.budget.service;
 import com.ssafy.toktokggubi.domain.budget.dto.*;
 
 import com.ssafy.toktokggubi.domain.budget.entity.UserMonthlyBudget;
+import com.ssafy.toktokggubi.domain.budget.repository.BudgetCategoryRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.FixedExpenseRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class BudgetReadService {
 
     private final UserMonthlyBudgetRepository umbRepo;
 private final FixedExpenseRepository fixedExpenseRepository;
+    private final BudgetCategoryRepository budgetCategoryRepository;
     @Transactional(readOnly = true)
     public TotalAmountResponseDto getTotalAmount(Long userId, String budgetYm) {
         var umb = umbRepo.findByUser_UserIdAndBudgetYm(userId, budgetYm)
@@ -77,6 +79,20 @@ private final FixedExpenseRepository fixedExpenseRepository;
                         fe.getAmount(),
                         fe.getPaymentDay() == null ? null : fe.getPaymentDay().intValue(),
                         fe.getIncludeInBudget()
+                ))
+                .toList();
+    }
+    @Transactional(readOnly = true)
+    public List<CategoryAllocDto> getCategoryAllocations(Long userId, String budgetYm) {
+        UserMonthlyBudget umb = umbRepo.findByUser_UserIdAndBudgetYm(userId, budgetYm)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "userId=" + userId + ", budgetYm=" + budgetYm + " not found"));
+
+        return budgetCategoryRepository.findByUserMonthlyBudget(umb).stream()
+                .map(bc -> new CategoryAllocDto(
+                        bc.getUserSelectedCategory().getCategory().getCategoryId(),
+                        bc.getFinalAmount() == null ? 0L : bc.getFinalAmount()
                 ))
                 .toList();
     }
