@@ -55,7 +55,7 @@
     "react-native-screens": "~4.11.1",
     "react-native-shake": "^6.7.8",
     "react-native-snap-carousel": "^4.0.0-beta.6",
-    "react-native-svg": "15.11.2",
+    "react-native-svg": "^15.11.2",
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "zod": "^3.25.76",
@@ -72,6 +72,7 @@
     "eslint-plugin-import": "^2.32.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.6",
+    "react-native-svg-transformer": "^1.5.1",
     "typescript": "~5.8.3"
   },
   "lint-staged": {
