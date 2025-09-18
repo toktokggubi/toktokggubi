@@ -28,6 +28,7 @@ export default function PersonalInfoTemplate({
   onPressJobTitle,
   onChangeMonthlyIncome,
   onSubmit,
+  isSubmitting = false,
   nicknameHelperText,
   incomeHelperText,
   rightLabel = "만원",
@@ -99,9 +100,9 @@ export default function PersonalInfoTemplate({
           onPress={onPressAgeGroup}
         />
 
-        {/* 직무 (BottomSheet 오픈) */}
+        {/* 직업 (BottomSheet 오픈) */}
         <PressField
-          label="직무"
+          label="직업"
           value={jobTitle || "선택하세요"}
           onPress={onPressJobTitle}
         />
@@ -118,7 +119,7 @@ export default function PersonalInfoTemplate({
           rightLabel={rightLabel}
         />
 
-              <Button value="저장" onPress={onSubmit} />
+              <Button value="저장" onPress={onSubmit} disabled={isSubmitting} />
             </View>
           </View>
         </ScrollView>
@@ -193,7 +194,7 @@ const style = StyleSheet.create({
   wrap: {
     flex: 1,
     backgroundColor: "#F8FBFF",
-    paddingTop: 104,
+    paddingTop: 60,
   },
   container: {
     padding: 16,

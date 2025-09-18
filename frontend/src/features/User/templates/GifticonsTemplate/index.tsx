@@ -1,4 +1,3 @@
-// src/features/User/templates/GifticonsTemplate/index.tsx
 import React, { memo } from "react";
 import { View, StyleSheet, Text, Pressable } from "react-native";
 import type { GifticonsTemplateProps } from "./types";
@@ -7,8 +6,10 @@ import { colors } from "@/shared/constants/colors";
 import { SearchBar } from "@/features/User/ui/SearchBar";
 import { GifticonSortTabs } from "@/features/User/ui/GifticonSortTabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 function GifticonsTemplateImpl({
   data,
+  totalCount,
   onSelect,
   query,
   onQueryChange,
@@ -21,10 +22,19 @@ function GifticonsTemplateImpl({
   selectedIds,
   onToggleSelectItem,
   onDeleteSelected,
+  hasSearched,
   getId,
 }: GifticonsTemplateProps) {
   const insets = useSafeAreaInsets();
   const selectedCount = selectedIds.size;
+
+  const hasNoVisible = data.length === 0;
+
+  // 메시지 규칙
+  const emptyMessage =
+    totalCount === 0 && !hasSearched
+      ? "등록된 기프티콘이 없어요."
+      : "검색 결과가 없습니다.";
 
   return (
     <View style={s.wrap}>
@@ -47,7 +57,7 @@ function GifticonsTemplateImpl({
         </Pressable>
       </View>
 
-      {/* 그리드 */}
+      {/* 그리드 (빈 상태 안내는 ListEmptyComponent에서 처리) */}
       <GifticonGrid
         data={data}
         onSelect={onSelect}
@@ -56,14 +66,12 @@ function GifticonsTemplateImpl({
         onToggleSelectItem={onToggleSelectItem}
         getId={getId}
         extraBottomPadding={(selecting ? 80 : 16) + insets.bottom}
+        ListEmptyComponent={
+          <View style={s.empty}>
+            <Text style={s.emptyTxt}>{emptyMessage}</Text>
+          </View>
+        }
       />
-
-      {/* 빈 상태 */}
-      {data.length === 0 && (
-        <View style={s.empty}>
-          <Text style={s.emptyTxt}>검색 결과가 없습니다.</Text>
-        </View>
-      )}
 
       {/* 선택모드 하단 바 */}
       {selecting && (
@@ -106,8 +114,8 @@ const s = StyleSheet.create({
     marginBottom: 10,
   },
   doneTxt: { color: colors.BLUE_NORMAL },
-  empty: { alignItems: "center", paddingTop: 32 },
-  emptyTxt: { color: colors.GRAY_DARK_ACTIVE },
+  empty: { alignItems: "center", paddingTop: 200 },
+  emptyTxt: { color: colors.GRAY_NORMAL, fontSize: 16 },
   bottomBar: {
     position: "absolute",
     left: 0,

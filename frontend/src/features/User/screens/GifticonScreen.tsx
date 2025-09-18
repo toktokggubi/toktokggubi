@@ -1,16 +1,21 @@
-// src/features/User/screens/GifticonScreen.tsx
-import React, { useLayoutEffect, useMemo, useState, useCallback } from "react";
-import { Pressable, Alert, Image as RNImage } from "react-native";
+// frontend/src/features/User/screens/GifticonScreen.tsx
+import React, {
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useCallback,
+  useEffect,
+} from "react";
+import { Pressable, Alert, ActivityIndicator, View } from "react-native";
 import { useNavigation, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/constants/colors";
 
 import GifticonsTemplate from "@/features/User/templates/GifticonsTemplate";
-import { dummyGifticons } from "@/features/User/model/gifticon/dummy";
 import type { Gifticon } from "@/features/User/model/gifticon/types";
-import { gifticonImages } from "@/features/User/model/gifticon/images";
 import { GifticonImageViewer } from "@/features/User/ui/GifticonImageViewer";
 import type { GifticonSort } from "@/features/User/ui/GifticonSortTabs/types";
+import { useGifticonsQuery } from "@/features/User/model/gifticon/queries";
 
 const BG = colors.BACKGROUND_PRIMARY;
 const TXT = colors.BLUE_DARKER;
@@ -23,13 +28,19 @@ const gid = (g: Gifticon): string =>
 export default function GifticonsScreen() {
   const navigation = useNavigation();
 
-  // 🔹 목록(가변) – 삭제 반영을 위해 useState로 들고 있음
-  const [items, setItems] = useState<Gifticon[]>(() =>
-    dummyGifticons.filter((g) => g.status === "ACTIVE")
-  );
+  const { data: serverItems, isLoading } = useGifticonsQuery();
 
-  // 🔎 검색 상태
+  // 🔹 전체 보유 목록(가변) – 선택/삭제 반영용
+  const [items, setItems] = useState<Gifticon[]>([]);
+
+  // ✅ 서버 데이터만 반영 (비어있으면 빈 배열 유지)
+  useEffect(() => {
+    if (Array.isArray(serverItems)) setItems(serverItems);
+  }, [serverItems]);
+
+  // 🔎 검색 상태 + "검색 시도" 상태
   const [query, setQuery] = useState("");
+  const [hasSearched, setHasSearched] = useState(false); // ★ 추가
 
   // 🔽 정렬 상태
   const [sort, setSort] = useState<GifticonSort>("createdAtDesc");
@@ -68,13 +79,32 @@ export default function GifticonsScreen() {
             setItems((prev) => prev.filter((g) => !selectedIds.has(gid(g))));
             setSelectedIds(new Set());
             setSelecting(false);
+            // TODO: 서버 삭제 API 준비되면 호출 후 목록 refetch
           },
         },
       ]
     );
   }, [selectedIds]);
 
-  // 1) 검색
+  // 1) 검색(텍스트 변경)
+  const handleChangeQuery = useCallback((text: string) => {
+    setQuery(text);
+    // 입력만으로는 검색 '시도'로 보지 않음
+  }, []);
+
+  // 2) 검색 제출(엔터/버튼)
+  const handleSubmitSearch = useCallback((text: string) => {
+    setQuery(text);
+    setHasSearched(true); // ★ 검색 시도
+  }, []);
+
+  // 3) 검색어 지우기
+  const handleClearQuery = useCallback(() => {
+    setQuery("");
+    setHasSearched(false); // ★ 초기화
+  }, []);
+
+  // 필터링
   const filtered = useMemo(() => {
     if (!query) return items;
     const q = normalize(query);
@@ -85,7 +115,7 @@ export default function GifticonsScreen() {
     );
   }, [items, query]);
 
-  // 2) 정렬
+  // 정렬
   const data = useMemo(() => {
     const arr = [...filtered];
     if (sort === "createdAtDesc") {
@@ -100,21 +130,12 @@ export default function GifticonsScreen() {
     return arr;
   }, [filtered, sort]);
 
-  // 🖼 이미지 뷰어
+  // 🖼 이미지 뷰어 (서버 이미지 URL 표시를 추후 확장)
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
-  const imagesForViewer = useMemo(
-    () =>
-      data.map((g) => {
-        const src = gifticonImages[g.imageKey];
-        const resolved = RNImage.resolveAssetSource(src);
-        return { uri: resolved.uri };
-      }),
-    [data]
-  );
+  const imagesForViewer = useMemo(() => data.map(() => ({ uri: "" })), [data]);
 
-  // 카드 탭 동작: 선택모드면 체크 토글, 아니면 뷰어 열기
   const handleCardPress = useCallback(
     (item: Gifticon, index: number) => {
       if (selecting) {
@@ -157,18 +178,35 @@ export default function GifticonsScreen() {
     });
   }, [navigation]);
 
+  if (isLoading && items.length === 0) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: BG,
+        }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
+  }
+
   return (
     <>
       <GifticonsTemplate
         data={data}
+        totalCount={items.length} // ★ 전체 보유 개수
         onSelect={handleCardPress}
         // 검색/정렬
         query={query}
-        onQueryChange={setQuery}
-        onClearQuery={() => setQuery("")}
-        onSubmitSearch={(text) => setQuery(text)}
+        onQueryChange={handleChangeQuery} // ★ 변경
+        onClearQuery={handleClearQuery} // ★ 변경
+        onSubmitSearch={handleSubmitSearch} // ★ 변경
         sort={sort}
         onSortChange={setSort}
+        hasSearched={hasSearched} // ★ 추가
         // 삭제/선택 관련
         selecting={selecting}
         onToggleSelecting={toggleSelecting}

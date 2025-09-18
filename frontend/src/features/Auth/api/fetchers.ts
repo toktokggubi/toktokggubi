@@ -1,6 +1,15 @@
 import { http } from "@/shared/api/http";
 import { AUTH_ENDPOINTS } from "./endpoints";
 
+// UM-1 회원가입
+export async function signup(dto: { email: string; password: string }) {
+  const { data } = await http.post(AUTH_ENDPOINTS.signup, dto);
+  return data as {
+    signupToken: string;
+    message: string;
+  };
+}
+
 // UM-4 이메일 로그인
 export async function login(dto: { email: string; password: string }) {
   const { data } = await http.post(AUTH_ENDPOINTS.login, dto);
@@ -40,8 +49,12 @@ export async function signupComplete(payload: {
   ageGroup: string;
   jobTitle: string;
   monthlyIncome: number;
-}) {
-  const { data } = await http.post(AUTH_ENDPOINTS.signupComplete, payload);
+}, signupToken: string) {
+  const { data } = await http.post(AUTH_ENDPOINTS.signupComplete, payload, {
+    headers: {
+      Authorization: `Bearer ${signupToken}`,
+    },
+  });
   return data;
 }
 
@@ -56,6 +69,17 @@ export async function fetchProfile() {
     jobTitle: string;
     monthlyIncome: number;
   };
+}
+
+// UM-12 프로필 수정
+export async function updateProfile(payload: {
+  nickname: string;
+  ageGroup: string;
+  jobTitle: string;
+  monthlyIncome: number;
+}) {
+  const { data } = await http.put(AUTH_ENDPOINTS.profile, payload);
+  return data as { message: string };
 }
 
 // UM-7 로그아웃

@@ -5,7 +5,6 @@ import {
   View,
   StyleSheet,
   ListRenderItemInfo,
-  Pressable,
   Text,
 } from "react-native";
 import type { GifticonGridProps } from "./types";
@@ -26,6 +25,7 @@ function GifticonGridImpl({
   onToggleSelectItem,
   getId,
   extraBottomPadding = 16,
+  ListEmptyComponent, // ★ 추가
 }: GifticonGridProps) {
   const renderItem = ({ item, index }: ListRenderItemInfo<Gifticon>) => {
     const src = gifticonImages[item.imageKey];
@@ -41,7 +41,6 @@ function GifticonGridImpl({
 
     return (
       <View style={s.col}>
-        {/* ✅ 외부 Pressable 제거, onPress를 카드에 직접 전달 */}
         <View style={{ position: "relative" }}>
           <GifticonCard
             imageSource={src}
@@ -60,6 +59,7 @@ function GifticonGridImpl({
       </View>
     );
   };
+
   return (
     <FlatList
       data={data}
@@ -72,8 +72,9 @@ function GifticonGridImpl({
       contentContainerStyle={[
         s.container,
         { paddingBottom: extraBottomPadding },
-      ]} // ✅ 핵심
+      ]}
       showsVerticalScrollIndicator={false}
+      ListEmptyComponent={ListEmptyComponent} // ★ 전달
     />
   );
 }
@@ -81,7 +82,7 @@ function GifticonGridImpl({
 export const GifticonGrid = memo(GifticonGridImpl);
 
 const s = StyleSheet.create({
-  container: { paddingBottom: 24 },
+  container: { paddingBottom: 24, flexGrow: 1 }, // ★ flexGrow:1 줘야 가운데 배치 잘됨
   row: { gap: GAP, paddingHorizontal: 16, marginBottom: GAP },
   col: { flex: 1, minWidth: 0 },
 
