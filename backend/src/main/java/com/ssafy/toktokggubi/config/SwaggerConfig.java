@@ -18,21 +18,18 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
-                .servers(List.of(new Server().url("/api").description("reverse-proxy base")))
+                .servers(List.of(
+                        new Server().url("/").description("http://localhost:8080/"),
+                        new Server().url("/api").description("http://j13b207.p.ssafy.io/api/")
+                ))
                 .info(new Info().title("TokTokGGUBI API").version("v1"))
                 .components(new Components()
-                        .addSecuritySchemes(ACCESS,
-                                new SecurityScheme()
-                                        .name(ACCESS)
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT"))
-                        .addSecuritySchemes(SIGNUP,
-                                new SecurityScheme()
-                                        .name(SIGNUP)
-                                        .type(SecurityScheme.Type.HTTP)
-                                        .scheme("bearer")
-                                        .bearerFormat("JWT"))
+                        .addSecuritySchemes(ACCESS, new SecurityScheme()
+                                .name(ACCESS).type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer").bearerFormat("JWT"))
+                        .addSecuritySchemes(SIGNUP, new SecurityScheme()
+                                .name(SIGNUP).type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer").bearerFormat("JWT"))
                 )
                 .addSecurityItem(new SecurityRequirement().addList(ACCESS));
     }
