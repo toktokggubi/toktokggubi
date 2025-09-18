@@ -7,7 +7,7 @@ import { font } from "@/shared/typography/font";
 import CardSlide from "@/shared/ui/CardSlide";
 import React, { useEffect, useRef } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
-import Carousel from "react-native-snap-carousel";
+import Carousel from "react-native-reanimated-carousel";
 import type { CardCarouselTemplateProps, UserCard } from "./types";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -28,7 +28,7 @@ export default function CardCarouselTemplate({
   useEffect(() => {
     if (!carouselRef.current || cards.length === 0) return;
     const clamped = Math.max(0, Math.min(activeIndex, cards.length - 1));
-    carouselRef.current.snapToItem(clamped, false);
+    carouselRef.current.scrollTo({ index: clamped, animated: false });
   }, [activeIndex, cards.length]);
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function CardCarouselTemplate({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards.length]);
 
-  const renderCard = ({ item }: { item: UserCard; index: number }) => {
+  const renderCard = ({ item }: { item: UserCard }) => {
     return <CardSlide card={item} />;
   };
 
@@ -55,18 +55,19 @@ export default function CardCarouselTemplate({
         ref={carouselRef}
         data={cards}
         renderItem={renderCard}
-        sliderWidth={SCREEN_W}
-        itemWidth={ITEM_W}
-        inactiveSlideScale={0.92}
-        inactiveSlideOpacity={1}
-        activeSlideAlignment="center"
-        vertical={false}
+        width={SCREEN_W}
+        height={ITEM_W * 0.6}
+        mode="parallax"
+        modeConfig={{
+          parallaxScrollingScale: 0.9,
+          parallaxScrollingOffset: 50,
+        }}
         onSnapToItem={onActiveChange}
         keyExtractor={(item, index) =>
           // @ts-expect-error: UserCard에 id가 없을 수도 있어 폴백
           (item.id as string | undefined) ?? String(index)
         }
-        containerCustomStyle={styles.carouselContainer}
+        style={styles.carouselContainer}
       />
 
       <View style={styles.dotsWrapper}>
