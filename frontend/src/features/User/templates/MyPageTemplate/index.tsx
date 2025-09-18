@@ -1,7 +1,7 @@
 import React from "react";
 import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import Feather from "@expo/vector-icons/Feather";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import Feather from '@expo/vector-icons/Feather';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { MyPageTemplateProps } from "./types";
 import MenuTile from "@/features/User/ui/MenuTile";
 import { colors } from "@/shared/constants/colors";
@@ -33,14 +33,12 @@ export default function MyPageTemplate({
               <Text style={s.settings}>계정설정</Text>
             </TouchableOpacity>
           </View>
-
+          
           <View style={s.infoCard}>
             <View style={s.infoItem}>
               <Text style={s.label}>월 소득</Text>
               <Text style={s.value}>
-                {userInfo.monthlyIncome > 0
-                  ? `${formatCurrency(userInfo.monthlyIncome)} 원`
-                  : "미입력"}
+                {userInfo.monthlyIncome > 0 ? `${formatCurrency(userInfo.monthlyIncome)} 원` : "미입력"}
               </Text>
             </View>
             <View style={s.divider} />
@@ -51,7 +49,7 @@ export default function MyPageTemplate({
           </View>
         </View>
       )}
-
+      
       <View style={s.grid}>
         <MenuTile label="내 카드" image={cardImage} onPress={onPressCard} />
         <MenuTile
@@ -60,7 +58,7 @@ export default function MyPageTemplate({
           onPress={onPressGifticon}
         />
       </View>
-
+      
       {/* 설정 및 로그아웃 메뉴 */}
       <View style={s.menuCard}>
         <TouchableOpacity style={s.menuItem} onPress={onPressSettings}>
@@ -70,11 +68,11 @@ export default function MyPageTemplate({
           </View>
           <Text style={s.arrowIcon}>›</Text>
         </TouchableOpacity>
-
+        
         <View style={s.menuDivider} />
-
-        <TouchableOpacity
-          style={s.menuItem}
+        
+        <TouchableOpacity 
+          style={s.menuItem} 
           onPress={onPressLogout}
           disabled={isLoggingOut}
         >
@@ -150,9 +148,9 @@ const s = StyleSheet.create({
     fontWeight: "600",
     ...font.medium,
   },
-  grid: {
-    flexDirection: "row",
-    gap: 16,
+  grid: { 
+    flexDirection: "row", 
+    gap: 16, 
     paddingHorizontal: 16,
     marginBottom: 16,
   },

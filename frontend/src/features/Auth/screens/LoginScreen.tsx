@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import React from "react";
-import { SafeAreaView } from "react-native";
+import React, { useState } from "react";
+import { SafeAreaView, Alert } from "react-native";
 import LoginTemplate from "~features/Auth/templates/LoginTemplate";
 import { useEmailLogin, useKakaoLogin } from "../model/useAuthQueries";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
@@ -31,7 +31,7 @@ export default function LoginScreen() {
         email: email.trim(),
         password: password.trim(),
       });
-
+      
       // 로그인 성공 후 예산 설정 여부 확인
       try {
         await budgetStatusQuery.refetch();
@@ -39,10 +39,7 @@ export default function LoginScreen() {
         router.replace("/(tabs)/home");
       } catch (budgetError: any) {
         // 예산이 설정되지 않았으면 예산 소개 화면으로 이동
-        if (
-          budgetError?.message === "BUDGET_NOT_SET" ||
-          budgetError?.message === "BUDGET_NOT_FOUND"
-        ) {
+        if (budgetError?.message === 'BUDGET_NOT_SET' || budgetError?.message === 'BUDGET_NOT_FOUND') {
           router.replace("/budget");
         } else {
           console.error("예산 상태 확인 실패:", budgetError);
@@ -54,8 +51,7 @@ export default function LoginScreen() {
       console.error("로그인 실패:", error);
       Alert.alert(
         "로그인 실패",
-        error?.response?.data?.message ||
-          "이메일 또는 비밀번호가 올바르지 않습니다."
+        error?.response?.data?.message || "이메일 또는 비밀번호가 올바르지 않습니다."
       );
     }
   };
@@ -66,7 +62,7 @@ export default function LoginScreen() {
       // TODO: 카카오 로그인 SDK 연동
       // const kakaoAccessToken = await getKakaoAccessToken();
       // await kakaoLoginMutation.mutateAsync(kakaoAccessToken);
-
+      
       Alert.alert("알림", "카카오 로그인은 준비 중입니다.");
     } catch (error: any) {
       console.error("카카오 로그인 실패:", error);
@@ -82,20 +78,20 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <LoginTemplate
-        id={id}
-        password={pw}
-        onChangeId={setId}
-        onChangePassword={setPw}
-        onSubmit={() => {
-          /* mutate/login 로직 */
-        }}
+        id={email}
+        password={password}
+        onChangeId={setEmail}
+        onChangePassword={setPassword}
+        onSubmit={handleEmailLogin}
         onNavigateSignUp={() => router.push("/auth/signup")}
         errorMessage={undefined}
         headerImageSource={require("@/assets/images/character/big-character-01.png")}
         showSocialLogin
-        onPressKakao={() => {
-          /* 카카오 로그인 로직 */
-        }}
+        onPressKakao={handleKakaoLogin}
+        passwordToggle={passwordVisible}
+        onTogglePassword={togglePasswordVisibility}
+        submitting={emailLoginMutation.isPending || kakaoLoginMutation.isPending}
+        disabled={emailLoginMutation.isPending || kakaoLoginMutation.isPending}
       />
     </SafeAreaView>
   );

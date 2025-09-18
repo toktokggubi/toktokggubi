@@ -1,14 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
-import {
-  login,
-  kakaoLogin,
-  fetchProfile,
-  logout,
-  signup,
-  signupComplete,
-  updateProfile,
-} from "../api/fetchers";
+import { login, kakaoLogin, fetchProfile, logout, signup, signupComplete, updateProfile } from "../api/fetchers";
 import type { SignupRequest } from "../types/signup.types";
 
 export const authKeys = {
@@ -87,7 +79,7 @@ export const useSignupComplete = () => {
     onSuccess: async (res) => {
       // 회원가입 완료 후 signupToken 삭제
       await SecureStore.deleteItemAsync("signup_token");
-
+      
       // 액세스 토큰과 리프레시 토큰 저장
       if (res.token?.accessToken) {
         await SecureStore.setItemAsync("access_token", res.token.accessToken);
@@ -95,7 +87,7 @@ export const useSignupComplete = () => {
       if (res.token?.refreshToken) {
         await SecureStore.setItemAsync("refresh_token", res.token.refreshToken);
       }
-
+      
       // 프로필 쿼리 무효화
       qc.invalidateQueries({ queryKey: authKeys.me() });
     },

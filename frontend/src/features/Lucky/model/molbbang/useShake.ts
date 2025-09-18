@@ -18,7 +18,7 @@ export function useShake({
   const [magnitude, setMagnitude] = useState(0);
   const [shakeValue, setShakeValue] = useState(0);
   const subRef = useRef<null | { remove: () => void }>(null);
-  const smoothRef = useRef(0);
+  const smoothRef = useRef(0); // ✅ 최근 스무딩 값 보관
 
   useEffect(() => {
     Accelerometer.setUpdateInterval(1000 / sampleHz);

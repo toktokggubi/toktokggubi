@@ -26,6 +26,9 @@ export interface CategoryBudgetTemplateProps {
   /** 전체 편집 비활성화 */
   disabled?: boolean;
 
+  /** 다음 버튼 비활성화 */
+  nextDisabled?: boolean;
+
   /** 스텝 정보 */
   stepIndex: number;
   stepTotal: number;

@@ -1,18 +1,16 @@
-import { View } from "react-native";
+import { Alert } from "react-native";
 import { router, type Href } from "expo-router";
 import MyPageTemplate from "@/features/User/templates/MyPageTemplate";
-import {
-  useLogout,
-  useProfileQuery,
-} from "@/features/Auth/model/useAuthQueries";
+import { useLogout, useProfileQuery } from "@/features/Auth/model/useAuthQueries";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 
 const cardImg = require("@/assets/images/illustration/my_card.png");
 const giftImg = require("@/assets/images/illustration/my_gifticon.png");
+
 const MypageScreen = () => {
   // 인증 가드
   const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
-
+  
   const logoutMutation = useLogout();
   const { data: profileData, isLoading: isProfileLoading } = useProfileQuery();
 
@@ -49,15 +47,11 @@ const MypageScreen = () => {
 
   return (
     <MyPageTemplate
-      userInfo={
-        profileData
-          ? {
-              nickname: profileData.nickname,
-              monthlyIncome: (profileData.monthlyIncome || 0) * 10000, // 만원 단위를 원 단위로 변환
-              jobTitle: profileData.jobTitle,
-            }
-          : undefined
-      }
+      userInfo={profileData ? {
+        nickname: profileData.nickname,
+        monthlyIncome: (profileData.monthlyIncome || 0) * 10000, // 만원 단위를 원 단위로 변환
+        jobTitle: profileData.jobTitle,
+      } : undefined}
       cardImage={cardImg}
       gifticonImage={giftImg}
       onPressCard={() => router.push("/cards" as Href)}

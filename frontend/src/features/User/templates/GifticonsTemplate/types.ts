@@ -11,8 +11,6 @@ export interface GifticonsTemplateProps {
   onSelect: (item: Gifticon, index: number) => void;
 
   // 검색/정렬
-
-  // 검색/정렬
   query: string;
   onQueryChange: (text: string) => void;
   onClearQuery?: () => void;

@@ -4,7 +4,7 @@ import { HOME_ENDPOINTS } from "./endpoints";
 // TX-1 이번 달 소비 금액 조회 (전체)
 export async function fetchMonthlySummary(params?: {
   from?: string; // yyyyMMdd or yyyy-MM-dd
-  to?: string; // yyyyMMdd or yyyy-MM-dd
+  to?: string;   // yyyyMMdd or yyyy-MM-dd
 }) {
   const { data } = await http.get(HOME_ENDPOINTS.monthlySummary, {
     params,
