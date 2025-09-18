@@ -1,11 +1,19 @@
-import React from "react";
-import { View, Text, Modal, Pressable } from "react-native";
+// src/features/Lucky/templates/Molbbang/GameTemplate/index.tsx
+import React, { useCallback, useState } from "react";
+import { View, Text, Modal, Pressable, LayoutChangeEvent } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 import { AppHeader } from "@/shared/ui/AppHeader";
 import { FloatyCharacter } from "@/features/Lucky/ui/FloatyCharacter";
 import { s } from "./variants";
 import type { GameTemplateProps } from "./types";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
+import {
+  useFloatInBox,
+  type BoxSize,
+} from "@/features/Lucky/model/molbbang/useFloatInBox";
 
 export default function GameTemplate({
   code,
@@ -22,34 +30,74 @@ export default function GameTemplate({
   isFinalRound,
   onNextRound,
   onViewFinal,
+
+  remainingSeconds,
 }: GameTemplateProps) {
+  // ── 캐릭터가 떠다닐 박스 크기 측정
+  const [box, setBox] = useState<BoxSize | null>(null);
+  const onBoxLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setBox({ width, height });
+  }, []);
+
+  // ── 가속도 기반 위치 (중앙 기준 px 오프셋)
+  const { x, y } = useFloatInBox(box, {
+    enabled: !rankModalVisible, // 모달 중엔 멈추기
+    accelScale: 170,
+    friction: 0.84,
+    sampleHz: 90,
+  });
+
+  // ── 애니메이션 스타일(부드럽게 보정)
+  const animStyle = useAnimatedStyle(
+    () => ({
+      transform: [
+        {
+          translateX: withSpring(x, {
+            stiffness: 1000,
+            damping: 18,
+            mass: 0.3,
+          }),
+        },
+        {
+          translateY: withSpring(y, {
+            stiffness: 1000,
+            damping: 18,
+            mass: 0.3,
+          }),
+        },
+      ],
+    }),
+    [x, y]
+  );
+
   return (
     <SafeAreaView style={s.container} edges={["left", "right"]}>
-      {/* 엣지-투-엣지: 상하단 인셋 무시 / 투명 StatusBar */}
-      <StatusBar style="light" />
+      <AppHeader title="몰빵" />
 
-      <AppHeader title={`몰빵 · 라운드 ${round}`} />
-      <Text style={s.sub}>
-        방 #{code} • 금액 {amount.toLocaleString()}원
-      </Text>
+      {/* 안내문구 */}
+      <Text style={s.hint}>휴대폰을 흔들어 점수를 높여보세요!</Text>
 
-      <View style={s.spacerLg} />
-      <FloatyCharacter
-        idleImage={idleImage}
-        shakeImage={shakeImage}
-        magnitude={magnitude}
-      />
-      <View style={s.spacerMd} />
-      <Text style={s.score}>내 흔들기: {Math.round(myScore)}</Text>
+      {/* 큰 카운트 숫자 */}
+      <Text style={s.bigScore}>{Math.round(myScore)}</Text>
 
-      <View style={s.spacerLg} />
-      <View style={[s.btn, s.primary]}>
-        <Text onPress={onFinishRound} style={[s.btnTxt, s.primaryTxt]}>
-          라운드 종료
-        </Text>
+      {/* 캐릭터 박스(여기가 '상자') */}
+      <View style={s.centerArea} onLayout={onBoxLayout}>
+        <Animated.View style={animStyle}>
+          <FloatyCharacter
+            idleImage={idleImage}
+            shakeImage={shakeImage}
+            magnitude={magnitude}
+          />
+        </Animated.View>
       </View>
 
-      {/* 🔹 라운드 종료 모달(현재까지 랭킹) */}
+      {/* 우하단 남은 시간 뱃지 */}
+      <View style={s.timerBadge}>
+        <Text style={s.timerTxt}>{Math.max(0, remainingSeconds)}</Text>
+      </View>
+
+      {/* 랭킹 모달(기존 유지) */}
       <Modal
         visible={rankModalVisible}
         animationType="fade"
@@ -74,12 +122,12 @@ export default function GameTemplate({
 
             <View style={s.modalBtns}>
               {isFinalRound ? (
-                <Pressable style={[s.btn, s.primary]} onPress={onViewFinal}>
-                  <Text style={[s.btnTxt, s.primaryTxt]}>결과 화면으로</Text>
+                <Pressable style={s.modalBtnPrimary} onPress={onViewFinal}>
+                  <Text style={s.modalBtnPrimaryTxt}>결과 화면으로</Text>
                 </Pressable>
               ) : (
-                <Pressable style={[s.btn, s.primary]} onPress={onNextRound}>
-                  <Text style={[s.btnTxt, s.primaryTxt]}>다음 라운드 준비</Text>
+                <Pressable style={s.modalBtnPrimary} onPress={onNextRound}>
+                  <Text style={s.modalBtnPrimaryTxt}>다음 라운드 준비</Text>
                 </Pressable>
               )}
             </View>
