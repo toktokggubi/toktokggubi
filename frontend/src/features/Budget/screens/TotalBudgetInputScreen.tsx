@@ -4,12 +4,12 @@ import TotalBudgetTemplate from "~features/Budget/templates/TotalBudgetTemplate"
 import { useBudgetDraft } from "~features/Budget/context/BudgetDraftContext";
 
 export default function TotalBudgetInputScreen() {
-  const [amount, setAmount] = useState(500_000); // 기본값을 0으로 설정
+  const [totalAmount, setTotalAmount] = useState(500_000); // 기본값을 500,000으로 설정
   const { 
     saveTotal, 
     isSavingTotal, 
     totalError, 
-    totalAmount, 
+    totalAmount: contextTotalAmount, 
     version, 
     draftId,
     loadDraftData 
@@ -18,16 +18,16 @@ export default function TotalBudgetInputScreen() {
   // 이전에 저장된 총예산 데이터가 있으면 불러오기
   useEffect(() => {
     loadDraftData();
-    if (totalAmount) {
-      setAmount(totalAmount);
+    if (contextTotalAmount) {
+      setTotalAmount(contextTotalAmount);
     }
-  }, [totalAmount, loadDraftData]);
+  }, [contextTotalAmount, loadDraftData]);
 
   const goPrev = () => router.back();
   
   const goNext = async () => {
     try {
-      await saveTotal(amount);
+      await saveTotal(totalAmount);
       router.push("/budget/fixed-expense");
     } catch (error) {
       console.error('총예산 저장 실패:', error);
@@ -37,11 +37,11 @@ export default function TotalBudgetInputScreen() {
 
   return (
     <TotalBudgetTemplate
-      amount={amount}
-      onChangeAmount={setAmount}
+      amount={totalAmount}
+      onChangeAmount={setTotalAmount}
       onPressPrev={goPrev}
       onPressNext={goNext}
-      nextDisabled={amount <= 0 || isSavingTotal}
+      nextDisabled={totalAmount <= 0 || isSavingTotal}
     />
   );
 }

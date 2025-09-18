@@ -22,9 +22,8 @@ const getCategoryId = (name: CategoryName): number => {
     '자동차': 8,
     '의료/건강': 9,
     '문화': 10,
-    '기타': 11,
   };
-  return categoryMap[name] || 11;
+  return categoryMap[name] || 1;
 };
 
 export default function BudgetSummaryScreen() {
@@ -102,11 +101,10 @@ export default function BudgetSummaryScreen() {
       8: '자동차',
       9: '의료/건강',
       10: '문화',
-      11: '기타',
     };
 
     return categoryAllocations.map(allocation => ({
-      name: idToName[allocation.categoryId] || '기타',
+      name: idToName[allocation.categoryId] || '식비',
       amount: allocation.finalAmount,
     }));
   }, [categoryAllocations]);

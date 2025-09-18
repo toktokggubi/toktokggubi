@@ -32,9 +32,8 @@ const getCategoryId = (name: CategoryName): number => {
     '자동차': 8,
     '의료/건강': 9,
     '문화': 10,
-    '기타': 11,
   };
-  return categoryMap[name] || 11; // 기본값을 기타로
+  return categoryMap[name] || 1; // 기본값을 식비로
 };
 
 export default function SelectCategoryScreen() {
@@ -68,7 +67,6 @@ export default function SelectCategoryScreen() {
         8: '자동차',
         9: '의료/건강',
         10: '문화',
-        11: '기타',
       };
       
       const categoryNames = selectedCategories
