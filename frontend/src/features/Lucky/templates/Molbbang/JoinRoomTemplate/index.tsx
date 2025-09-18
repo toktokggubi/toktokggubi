@@ -1,9 +1,13 @@
+// src/features/Lucky/templates/Molbbang/JoinRoomTemplate/index.tsx
 import React from "react";
-import { View, Text, TextInput, Pressable } from "react-native";
-import { s } from "./variants";
+import { AppHeader } from "@/shared/ui/AppHeader";
+import { SectionTitle } from "@/features/Lucky/ui/SectionTitle";
+import { FormPage } from "@/features/Lucky/ui/FormPage";
+import { AppInput } from "@/features/Lucky/ui/AppInput";
+import { PrimaryButton } from "@/features/Lucky/ui/PrimaryButton";
 import type { JoinRoomTemplateProps } from "./types";
 import { colors } from "@/shared/constants/colors";
-import { AppHeader } from "@/shared/ui/AppHeader"; // ✅ 공통 헤더
+import characterParticle from "@/assets/images/character/character-paticle.png";
 
 export default function JoinRoomTemplate({
   nickname,
@@ -13,33 +17,31 @@ export default function JoinRoomTemplate({
   onSubmit,
 }: JoinRoomTemplateProps) {
   return (
-    <View style={s.container}>
-      {/* ✅ CardScreen 스타일 헤더 */}
+    <>
       <AppHeader title="몰빵" />
-
-      {/* ✅ 본문 */}
-      <Text style={s.h1}>코드로 참가</Text>
-
-      <TextInput
-        style={s.input}
-        value={nickname}
-        onChangeText={onChangeNickname}
-        placeholder="닉네임"
-        placeholderTextColor={colors.BLUE_LIGHT_ACTIVE}
-      />
-
-      <TextInput
-        style={s.input}
-        value={code}
-        onChangeText={onChangeCode}
-        autoCapitalize="characters"
-        placeholder="초대 코드(대문자)"
-        placeholderTextColor={colors.BLUE_LIGHT_ACTIVE}
-      />
-
-      <Pressable style={s.btn} onPress={onSubmit}>
-        <Text style={s.btnTxt}>입장</Text>
-      </Pressable>
-    </View>
+      <FormPage>
+        <SectionTitle text="코드로 참가" iconSource={characterParticle} />
+        <AppInput
+          value={nickname}
+          onChangeText={onChangeNickname}
+          placeholder="닉네임"
+          placeholderTextColor={colors.BLUE_LIGHT_ACTIVE}
+          accessibilityLabel="닉네임 입력"
+        />
+        <AppInput
+          value={code}
+          onChangeText={onChangeCode}
+          autoCapitalize="characters"
+          placeholder="초대 코드(대문자)"
+          placeholderTextColor={colors.BLUE_LIGHT_ACTIVE}
+          accessibilityLabel="초대 코드 입력"
+        />
+        <PrimaryButton
+          text="입장"
+          onPress={onSubmit}
+          accessibilityLabel="방 입장"
+        />
+      </FormPage>
+    </>
   );
 }
