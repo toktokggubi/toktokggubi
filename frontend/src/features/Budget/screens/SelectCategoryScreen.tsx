@@ -1,17 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState, useEffect } from "react";
+import { router } from "expo-router";
 import SelectCategoryTemplate from "~features/Budget/templates/SelectCategoryTemplate";
+import { useBudgetDraft } from "../context/BudgetDraftContext";
 import {
   CATEGORY_ICON_BY_NAME,
   type CategoryName,
 } from "@/shared/constants/categoryIcons";
 import type { CategoryItem } from "~features/Budget/ui/organisms/CategoryGrid/types";
-
-// 🔄 REDIS 전환 시 수정할 부분들:
-// 1. import 추가: useBudgetDraftQuery, useSaveCategoriesMutation, useCommitBudgetMutation, useBudgetDraftFormData, useBudgetDraftActions, useBudgetDraftCalculations
-// 2. useLocalSearchParams 제거하고 draft store에서 데이터 가져오기
-// 3. 로컬 상태(selected) 대신 draft store 사용
-// 4. goNext에서 파라미터 전달 대신 Redis 저장 후 커밋
 
 // ✅ 초기 선택 없음
 const INITIAL_SELECTED: CategoryName[] = [];
@@ -24,39 +19,71 @@ const ALL: CategoryName[] = Object.keys(
 // (선택) 특정 카테고리 비활성화 예시
 const DISABLED_SET = new Set<CategoryName>([]);
 
+// 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
+const getCategoryId = (name: CategoryName): number => {
+  const categoryMap: Record<CategoryName, number> = {
+    '식비': 1,
+    '카페/간식': 2,
+    '술/유흥': 3,
+    '생활': 4,
+    '쇼핑': 5,
+    '뷰티/미용': 6,
+    '교통': 7,
+    '자동차': 8,
+    '의료/건강': 9,
+    '문화': 10,
+  };
+  return categoryMap[name] || 1; // 기본값을 식비로
+};
+
 export default function SelectCategoryScreen() {
-  // 🔄 REDIS 전환 시: 이 부분을 draft store에서 가져오도록 변경
-  // const { totalAmount, fixedExpenses } = useBudgetDraftFormData();
-  // const { updateCategorySelection } = useBudgetDraftActions();
-  // const { getAvailableBudget } = useBudgetDraftCalculations();
-  // const { version } = useBudgetDraftData();
-  // const saveCategoriesMutation = useSaveCategoriesMutation();
-  // const commitMutation = useCommitBudgetMutation();
-  // const { data: draftData } = useBudgetDraftQuery();
+  const { 
+    availableBudget, 
+    selectedCategories,
+    saveCategories, 
+    version, 
+    isSavingCategories, 
+    categoriesError,
+    loadDraftData 
+  } = useBudgetDraft();
 
-  // 현재: 파라미터로 받은 데이터
-  const { totalAmount, fixedExpenses } = useLocalSearchParams<{
-    totalAmount: string;
-    fixedExpenses: string;
-  }>();
-
-  const totalBudget = totalAmount ? parseInt(totalAmount) : 1000000;
-  const parsedFixedExpenses = fixedExpenses
-    ? JSON.parse(decodeURIComponent(fixedExpenses))
-    : [];
-
-  // 🔄 REDIS 전환 시: 로컬 상태 대신 draft store 사용
-  // const [localSelected, setLocalSelected] = useState<CategoryName[]>(INITIAL_SELECTED);
-  // const [localAllocations, setLocalAllocations] = useState<Record<string, number>>({});
-
-  // 현재: 로컬 상태로 카테고리 선택 관리
+  // 로컬 상태로 카테고리 선택 관리 (이전 방식)
   const [selected, setSelected] = useState<CategoryName[]>(INITIAL_SELECTED);
 
-  // 템플릿에 줄 아이템 변환
+  // 이전에 선택된 카테고리가 있으면 불러오기
+  useEffect(() => {
+    loadDraftData();
+    
+    if (selectedCategories.length > 0) {
+      // ID를 카테고리 이름으로 변환
+      const idToName: Record<number, CategoryName> = {
+        1: '식비',
+        2: '카페/간식',
+        3: '술/유흥',
+        4: '생활',
+        5: '쇼핑',
+        6: '뷰티/미용',
+        7: '교통',
+        8: '자동차',
+        9: '의료/건강',
+        10: '문화',
+      };
+      
+      const categoryNames = selectedCategories
+        .map(id => idToName[id])
+        .filter(Boolean) as CategoryName[];
+      
+      setSelected(categoryNames);
+      console.log('=== 이전 카테고리 선택 데이터 로딩 ===');
+      console.log('불러온 카테고리:', categoryNames);
+    }
+  }, [selectedCategories, loadDraftData]);
+
+  // 템플릿에 줄 아이템 변환 (고유한 ID를 키로 사용)
   const items: CategoryItem[] = useMemo(
     () =>
       ALL.map((name) => ({
-        key: name,
+        key: String(getCategoryId(name)), // 카테고리 ID를 문자열로 변환하여 키로 사용
         label: name,
         icon: CATEGORY_ICON_BY_NAME[name],
         disabled: DISABLED_SET.has(name),
@@ -64,48 +91,54 @@ export default function SelectCategoryScreen() {
     []
   );
 
-  // 선택 토글 핸들러
-  const toggle = useCallback((key: CategoryName) => {
+  // 선택 토글 핸들러 (이전 방식)
+  const toggle = useCallback((key: string) => {
+    // ID를 카테고리 이름으로 변환
+    const categoryName = ALL.find(name => String(getCategoryId(name)) === key);
+    if (!categoryName) return;
+    
     setSelected((prev) =>
-      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+      prev.includes(categoryName) ? prev.filter((k) => k !== categoryName) : [...prev, categoryName]
     );
   }, []);
 
   // 네비게이션
   const goPrev = useCallback(() => router.back(), []);
-  const goNext = useCallback(() => {
-    // 🔄 REDIS 전환 시: 파라미터 전달 대신 Redis 저장 후 커밋
-    // const categoryIds = selected.map(name => CATEGORY_NAME_TO_ID[name]);
-    // const allocations = selected.map(name => ({
-    //   categoryId: CATEGORY_NAME_TO_ID[name],
-    //   finalAmount: localAllocations[name] || 0,
-    // }));
-    //
-    // updateCategorySelection(categoryIds, allocations);
-    // autoSaveCategories(categoryIds, allocations);
-    //
-    // commitMutation.mutate({}, {
-    //   onSuccess: () => {
-    //     router.push("/(tabs)/home");
-    //   },
-    //   onError: (error) => {
-    //     console.error('예산 커밋 실패:', error);
-    //   },
-    // });
+  
+  const goNext = useCallback(async () => {
+    console.log('=== 카테고리 선택 저장 시작 ===');
+    console.log('선택된 카테고리:', selected);
+    console.log('현재 버전:', version);
+    
+    try {
+      const categoryIds = selected.map(name => getCategoryId(name));
+      const allocations = selected.map(name => ({
+        categoryId: getCategoryId(name),
+        finalAmount: 0, // 초기값은 0, 다음 단계에서 설정
+      }));
 
-    // 현재: 파라미터로 모든 데이터 전달 (완료 페이지가 없으므로 홈으로)
-    const selectedCategoriesParam = encodeURIComponent(
-      JSON.stringify(selected)
-    );
-    router.push({
-      pathname: "/budget/category-budget",
-      params: {
-        totalAmount: totalAmount,
-        fixedExpenses: fixedExpenses,
-        selectedCategories: selectedCategoriesParam,
-      },
-    });
-  }, [selected, totalAmount, fixedExpenses]);
+      console.log('=== 변환된 데이터 ===');
+      console.log('categoryIds:', categoryIds);
+      console.log('allocations:', allocations);
+
+      const result = await saveCategories(categoryIds, allocations);
+      console.log('=== 카테고리 선택 저장 성공 ===');
+      console.log('저장 결과:', result);
+      if (result) {
+        console.log('새로운 버전:', result.version);
+        console.log('새로운 draftId:', result.draftId);
+      }
+      
+      router.push("/budget/category-budget");
+    } catch (error) {
+      console.error('=== 카테고리 선택 저장 실패 ===');
+      console.error('에러:', error);
+      // 에러 처리 (토스트 메시지 등)
+    }
+  }, [selected, saveCategories, version]);
+
+  // 선택된 카테고리 이름들을 ID로 변환
+  const selectedKeys = selected.map(name => String(getCategoryId(name)));
 
   return (
     <SelectCategoryTemplate
@@ -114,14 +147,14 @@ export default function SelectCategoryScreen() {
       subtitle="예산을 관리할 카테고리를 선택해주세요."
       // 그리드
       items={items}
-      selectedKeys={selected}
+      selectedKeys={selectedKeys}
       onToggle={toggle}
       // 푸터
       stepIndex={2}
       stepTotal={5}
       onPressPrev={goPrev}
       onPressNext={goNext}
-      nextDisabled={selected.length === 0}
+      nextDisabled={selected.length === 0 || isSavingCategories}
     />
   );
 }

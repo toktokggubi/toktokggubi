@@ -55,7 +55,7 @@ async function doRefresh(): Promise<string> {
   const refresh = await SecureStore.getItemAsync("refresh_token");
   if (!refresh) throw new Error("NO_REFRESH_TOKEN");
 
-  const res = await axios.post(`http://j13b207.p.ssafy.io/auth/token/refresh`, {
+  const res = await axios.post(`http://j13b207.p.ssafy.io/api/auth/token/refresh`, {
     refreshToken: refresh,
   });
 
