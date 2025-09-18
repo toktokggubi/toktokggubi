@@ -4,6 +4,7 @@ import MyPageTemplate from "@/features/User/templates/MyPageTemplate";
 
 const cardImg = require("@/assets/images/illustration/my_card.png");
 const giftImg = require("@/assets/images/illustration/my_gifticon.png");
+
 const MypageScreen = () => {
   return (
     <MyPageTemplate
@@ -11,6 +12,9 @@ const MypageScreen = () => {
       gifticonImage={giftImg}
       onPressCard={() => router.push("/cards" as Href)}
       onPressGifticon={() => router.push("/gifticons" as Href)}
+      // 임시 핸들러들 - 나중에 제거 예정
+      onPressLogin={() => router.push("/auth/login" as Href)}
+      onPressBudget={() => router.push("/budget" as Href)}
     />
   );
 };

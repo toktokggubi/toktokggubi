@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Dimensions, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather, AntDesign, Ionicons } from "@expo/vector-icons";
 import Svg, {
@@ -81,6 +81,9 @@ export default function SvgTabBar({
   tabs,
 }: SvgTabBarProps) {
   const insets = useSafeAreaInsets();
+  
+  // 현재 활성 탭이 홈인지 확인
+  const isHomeTab = state.routes[state.index]?.name === "home/index";
 
   const getIconComponent = (iconName: string, color: string, size: number) => {
     switch (iconName) {
@@ -98,6 +101,15 @@ export default function SvgTabBar({
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom }]}>
       <View style={styles.tabBarContainer}>
+        {/* 홈 탭일 때만 water.png 배경 표시 */}
+        {isHomeTab && (
+          <Image
+            source={require("@/assets/images/illustration/water.png")}
+            style={styles.waterBackground}
+            resizeMode="cover"
+          />
+        )}
+        
         {/* SVG 탭바 배경 */}
         <TabBarBackground />
 
@@ -202,5 +214,14 @@ const styles = StyleSheet.create({
   },
   centerTabItem: {
     zIndex: 2, // 중앙 탭이 위에 오도록
+  },
+  waterBackground: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 50, // SVG 도형이 시작되기 전까지만 표시 (SVG의 top: -20을 고려하여 80px로 설정)
+    width: "100%",
+    zIndex: 0, // SVG 배경보다 뒤에 위치
   },
 });
