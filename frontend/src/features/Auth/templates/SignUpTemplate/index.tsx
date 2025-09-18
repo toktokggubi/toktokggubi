@@ -23,15 +23,10 @@ export default function SignUpTemplate({
   confirmPassword,
   onChangeConfirmPassword,
   confirmPasswordToggle,
-  onTogglePassword,
-  onToggleConfirmPassword,
   onNavigatePersonalInfo,
   headerImageSource,
   //
   errorMessage,
-  idError,
-  passwordError,
-  confirmPasswordError,
 }: SignUpTemplateProps) {
   return (
     <KeyboardAvoidingView 
@@ -69,11 +64,10 @@ export default function SignUpTemplate({
               <View style={style.signUpSection}>
                 {/* 아이디 입력 */}
                 <InputField
-                  placeholder="이메일"
+                  placeholder="아이디"
                   value={id}
                   onChangeText={onChangeId}
                   bottomLabel="6~12자 영문, 숫자로 입력해주세요"
-                  error={idError}
                 />
 
                 {/* 비밀번호 입력 */}
@@ -82,8 +76,7 @@ export default function SignUpTemplate({
                   value={password}
                   onChangeText={onChangePassword}
                   secureTextEntry
-                  onTogglePassword={onTogglePassword}
-                  error={passwordError}
+                  passwordToggle={passwordToggle ?? true}
                 />
 
                 {/* 비밀번호 확인 입력 */}
@@ -92,9 +85,8 @@ export default function SignUpTemplate({
                   value={confirmPassword}
                   onChangeText={onChangeConfirmPassword}
                   secureTextEntry
-                  onTogglePassword={onToggleConfirmPassword}
+                  passwordToggle={confirmPasswordToggle ?? true}
                   bottomLabel="비밀번호는 영문 대소문자, 숫자, 특수문자(.!@#$%)를 혼합하여 8~20자로 입력해주세요."
-                  error={confirmPasswordError}
                 />
 
                 {/* 회원가입 버튼 */}
