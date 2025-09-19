@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     zIndex: 10,
-    paddingTop: 260, // CharacterBackground 아래쪽부터 시작 (더 여백 줄임)
+    paddingTop: 280, // CharacterBackground 아래쪽부터 시작 (더 여백 줄임)
   },
   scrollContainer: {
     flex: 1,
