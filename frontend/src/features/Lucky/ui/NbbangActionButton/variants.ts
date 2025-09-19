@@ -36,3 +36,4 @@ export const s = StyleSheet.create({
     color: colors.GRAY_NORMAL,
   },
 });
+
