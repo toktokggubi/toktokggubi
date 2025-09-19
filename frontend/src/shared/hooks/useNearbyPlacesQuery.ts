@@ -41,7 +41,7 @@ const searchNearbyPlaces = async (
 
           results.push(...docs);
         } catch (error) {
-          console.error(`❌ 카테고리 "${cat}" API 호출 실패:`, error);
+          // 에러 무시하고 계속 진행
         }
 
         if (options.delayMsBetweenCalls && options.delayMsBetweenCalls > 0) {
@@ -63,7 +63,7 @@ const searchNearbyPlaces = async (
 
           results.push(...docs);
         } catch (error) {
-          console.error(`❌ 키워드 API 호출 실패:`, error);
+          // 에러 무시하고 계속 진행
         }
 
         if (options.delayMsBetweenCalls && options.delayMsBetweenCalls > 0) {
@@ -109,6 +109,7 @@ export function useNearbyPlacesQuery(
     const getCurrentLocation = async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
+        
         if (status !== "granted") {
           setLocationError("위치 권한이 거부되었습니다.");
           return;
@@ -159,6 +160,7 @@ export function useNearbyPlacesQuery(
     queryKey,
     queryFn: () => {
       if (!location) throw new Error("위치 정보가 없습니다.");
+      if (!apiKey) throw new Error("카카오 API 키가 설정되지 않았습니다.");
       return searchNearbyPlaces(location.lat, location.lng, apiKey, stableOptions);
     },
     enabled: !!location && !!apiKey,

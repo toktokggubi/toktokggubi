@@ -14,8 +14,16 @@ export const ProgressList: React.FC<ProgressListProps> = ({
 }) => {
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
 
+
   const handleUsageDetailsPress = (category: Category) => {
     setExpandedCategory(expandedCategory === category ? null : category);
+  };
+
+  const handleCategoryPress = (category: Category) => {
+    // 카테고리 클릭 시 토글 처리
+    setExpandedCategory(expandedCategory === category ? null : category);
+    // 기존 onCategoryPress도 호출 (필요한 경우)
+    onCategoryPress?.(category);
   };
 
   return (
@@ -27,37 +35,43 @@ export const ProgressList: React.FC<ProgressListProps> = ({
 
       {/* 카테고리별 예산 리스트 */}
       <View style={styles.listContent}>
-        {categoryBudgets.map((item, index) => {
-          const isExpanded = expandedCategory === item.category;
-          const categoryTransactions = transactions[item.category] || [];
+        {categoryBudgets.length > 0 ? (
+          categoryBudgets.map((item, index) => {
+            const isExpanded = expandedCategory === item.category;
+            const categoryTransactions = transactions[item.category] || [];
 
-          return (
-            <View key={item.category}>
-              <ProgressRow
-                type="category"
-                category={item.category}
-                currentAmount={item.currentAmount}
-                totalAmount={item.totalAmount}
-                onPress={() => onCategoryPress?.(item.category)}
-                isExpanded={isExpanded}
-                onUsageDetailsPress={() => handleUsageDetailsPress(item.category)}
-              />
-              
-              {/* 토글된 거래 내역 */}
-              {isExpanded && categoryTransactions.length > 0 && (
-                <View style={styles.transactionContainer}>
-                  <TransactionList
-                    transactions={categoryTransactions}
-                    onTransactionPress={(transaction) => console.log("거래 내역 클릭:", transaction)}
-                  />
-                </View>
-              )}
-              
-              {/* 구분선 */}
-              {index < categoryBudgets.length - 1 && <View style={styles.separator} />}
-            </View>
-          );
-        })}
+            return (
+              <View key={item.category}>
+                <ProgressRow
+                  type="category"
+                  category={item.category}
+                  currentAmount={item.currentAmount}
+                  totalAmount={item.totalAmount}
+                  onPress={() => handleCategoryPress(item.category)}
+                  isExpanded={isExpanded}
+                  onUsageDetailsPress={() => handleUsageDetailsPress(item.category)}
+                />
+                
+                {/* 토글된 거래 내역 */}
+                {isExpanded && categoryTransactions.length > 0 && (
+                  <View style={styles.transactionContainer}>
+                    <TransactionList
+                      transactions={categoryTransactions}
+                      onTransactionPress={(transaction) => console.log("거래 내역 클릭:", transaction)}
+                    />
+                  </View>
+                )}
+                
+                {/* 구분선 */}
+                {index < categoryBudgets.length - 1 && <View style={styles.separator} />}
+              </View>
+            );
+          })
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>카테고리별 예산 데이터가 없습니다.</Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -91,6 +105,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 8,
+    paddingLeft: 0,
   },
   separator: {
     height: 4,
@@ -98,5 +113,16 @@ const styles = StyleSheet.create({
   transactionContainer: {
     marginTop: 4,
     marginBottom: 4,
+    paddingLeft: 16,
+    width: "100%",
+  },
+  emptyContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.GRAY_NORMAL,
+    textAlign: 'center',
   },
 });
