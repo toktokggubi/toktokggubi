@@ -1,13 +1,12 @@
-import React, { memo } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import type { SaleEventListProps } from "./types";
 import { colors } from "@/shared/constants/colors";
+import React, { memo } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import type { SaleEventListProps } from "./types";
 
 function SaleEventListImpl({ items }: SaleEventListProps) {
   if (!items.length) return null;
   return (
     <View style={s.wrap}>
-      <Text style={s.title}>상세 정보</Text>
       {items.map((it) => {
         const bg =
           it.color === "yellow"
@@ -44,10 +43,11 @@ const s = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     marginBottom: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   badge: {
     alignSelf: "flex-start",

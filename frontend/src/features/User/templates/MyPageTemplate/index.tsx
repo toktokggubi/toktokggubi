@@ -1,11 +1,11 @@
-import React from "react";
-import { View, StyleSheet, Text, TouchableOpacity } from "react-native";
-import Feather from '@expo/vector-icons/Feather';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import type { MyPageTemplateProps } from "./types";
 import MenuTile from "@/features/User/ui/MenuTile";
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
+import Feather from "@expo/vector-icons/Feather";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import type { MyPageTemplateProps } from "./types";
 
 export default function MyPageTemplate({
   userInfo,
@@ -33,12 +33,14 @@ export default function MyPageTemplate({
               <Text style={s.settings}>계정설정</Text>
             </TouchableOpacity>
           </View>
-          
+
           <View style={s.infoCard}>
             <View style={s.infoItem}>
               <Text style={s.label}>월 소득</Text>
               <Text style={s.value}>
-                {userInfo.monthlyIncome > 0 ? `${formatCurrency(userInfo.monthlyIncome)} 원` : "미입력"}
+                {userInfo.monthlyIncome > 0
+                  ? `${formatCurrency(userInfo.monthlyIncome)} 원`
+                  : "미입력"}
               </Text>
             </View>
             <View style={s.divider} />
@@ -49,7 +51,7 @@ export default function MyPageTemplate({
           </View>
         </View>
       )}
-      
+
       <View style={s.grid}>
         <MenuTile label="내 카드" image={cardImage} onPress={onPressCard} />
         <MenuTile
@@ -58,7 +60,7 @@ export default function MyPageTemplate({
           onPress={onPressGifticon}
         />
       </View>
-      
+
       {/* 설정 및 로그아웃 메뉴 */}
       <View style={s.menuCard}>
         <TouchableOpacity style={s.menuItem} onPress={onPressSettings}>
@@ -68,11 +70,11 @@ export default function MyPageTemplate({
           </View>
           <Text style={s.arrowIcon}>›</Text>
         </TouchableOpacity>
-        
+
         <View style={s.menuDivider} />
-        
-        <TouchableOpacity 
-          style={s.menuItem} 
+
+        <TouchableOpacity
+          style={s.menuItem}
           onPress={onPressLogout}
           disabled={isLoggingOut}
         >
@@ -98,13 +100,13 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 8,
   },
   nickname: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "600",
     color: "#1F2937",
-    ...font.medium,
+    ...font.bold,
   },
   settings: {
     fontSize: 14,
@@ -114,16 +116,17 @@ const s = StyleSheet.create({
   infoCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 8,
-    padding: 20,
+    paddingVertical: 0,
+    paddingHorizontal: 20,
     flexDirection: "row",
-    shadowColor: "#000",
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 0,
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 5,
   },
   infoItem: {
     flex: 1,
@@ -131,26 +134,25 @@ const s = StyleSheet.create({
   },
   divider: {
     width: 1,
-    backgroundColor: "#E2E8F0",
+    height: 50,
+    backgroundColor: colors.BLUE_LIGHT_HOVER,
     marginHorizontal: 20,
-    alignSelf: "stretch",
+    alignSelf: "center",
   },
   label: {
     fontSize: 14,
     color: colors.BLUE_NORMAL,
-    fontWeight: "500",
-    marginBottom: 8,
+    marginBottom: -15,
     ...font.medium,
   },
   value: {
-    fontSize: 20,
-    color: "#1F2937",
-    fontWeight: "600",
+    fontSize: 18,
+    color: colors.BLUE_DARKER,
     ...font.medium,
   },
-  grid: { 
-    flexDirection: "row", 
-    gap: 16, 
+  grid: {
+    flexDirection: "row",
+    gap: 16,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
@@ -159,20 +161,20 @@ const s = StyleSheet.create({
     borderRadius: 8,
     marginHorizontal: 16,
     marginTop: 16,
-    shadowColor: "#000",
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 0,
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 5,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 16,
+    paddingVertical: 10,
     paddingHorizontal: 20,
   },
   menuItemLeft: {
@@ -187,13 +189,13 @@ const s = StyleSheet.create({
     ...font.medium,
   },
   arrowIcon: {
-    fontSize: 20,
-    color: "#9CA3AF",
-    fontWeight: "300",
+    fontSize: 30,
+    color: colors.GRAY_LIGHT_ACTIVE,
   },
   menuDivider: {
+    width: "90%",
     height: 1,
-    backgroundColor: "#E2E8F0",
-    marginLeft: 20,
+    backgroundColor: colors.BLUE_LIGHT,
+    alignSelf: "center",
   },
 });
