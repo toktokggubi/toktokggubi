@@ -8,7 +8,7 @@ import CardSlide from "@/shared/ui/CardSlide";
 import React, { useEffect, useRef } from "react";
 import { Dimensions, StyleSheet, Text, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Carousel from "react-native-snap-carousel";
+import Carousel from "react-native-reanimated-carousel";
 import type { CardCarouselTemplateProps, UserCard } from "./types";
 
 const { width: SCREEN_W } = Dimensions.get("window");
@@ -19,11 +19,10 @@ export default function CardCarouselTemplate({
   activeIndex,
   onActiveChange,
 }: CardCarouselTemplateProps) {
-  const carouselRef = useRef<Carousel<UserCard> | null>(null);
+  const carouselRef = useRef<any>(null);
 
   const activeCard = cards?.[activeIndex];
   const activeUserCardId = activeCard?.userCardId ?? -1;
-
 
   const { data, isLoading, isError } = useCardBenefits(activeUserCardId);
 
@@ -58,19 +57,17 @@ export default function CardCarouselTemplate({
     <SafeAreaView style={styles.root} edges={['bottom']}>
       {/* 카드 캐러셀 - 고정 높이 */}
       <View style={styles.carouselSection}>
-        <Carousel<UserCard>
+        <Carousel
           ref={carouselRef}
           data={cards || []}
           renderItem={renderCard}
-          sliderWidth={SCREEN_W}
-          itemWidth={ITEM_W}
-          inactiveSlideScale={0.92}
-          inactiveSlideOpacity={1}
-          activeSlideAlignment="center"
-          vertical={false}
+          width={ITEM_W}
+          height={240}
+          loop={false}
+          autoPlay={false}
+          scrollAnimationDuration={300}
           onSnapToItem={onActiveChange}
-          keyExtractor={(item, index) => String(item.userCardId ?? index)}
-          containerCustomStyle={styles.carouselContainer}
+          style={styles.carouselContainer}
         />
 
         <View style={styles.dotsWrapper}>
