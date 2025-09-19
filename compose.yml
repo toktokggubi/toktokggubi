@@ -106,8 +106,8 @@ services:
     secrets:
       - gcp_sa_json
     volumes:
-      - /opt/toktokggubi/uploads:/app/uploads
-
+      - ./backend/uploads:/data/uploads
+      
   # Frontend Service (React)
   # frontend:
   #   build:
@@ -123,6 +123,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
       - backend
@@ -133,6 +135,7 @@ services:
     image: jenkins/jenkins:lts-jdk21
     privileged: true # Allows Jenkins to run Docker commands
     user: root
+    command: --prefix=/jenkins
     ports:
       - "8081:8080" # Jenkins web UI
       - "50000:50000" # Jenkins agent port (for build agents)
@@ -144,3 +147,7 @@ services:
       # Mount Docker client binary from host if docker-compose isn't in Jenkins image
       # - /usr/local/bin/docker:/usr/local/bin/docker
     restart: always
+
+secrets:
+  gcp_sa_json:
+    file: ./secrets/toktokggubi-sa.json

@@ -37,7 +37,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/ai/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment", "/images/**").permitAll()
                         .requestMatchers("/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
                                 "/auth/token/refresh", "/auth/kakao/login").permitAll()
                         .anyRequest().authenticated()
