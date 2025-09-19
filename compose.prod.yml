@@ -31,9 +31,11 @@ services:
   nginx:
     ports:
       - "80:80" # Expose Nginx port for public access
+      - "443:443"
     volumes:
       # Mount the production-specific Nginx configuration
       - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       # - frontend # Nginx proxies to the production frontend and backend
       - backend
