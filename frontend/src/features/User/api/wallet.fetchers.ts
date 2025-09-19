@@ -25,10 +25,16 @@ export async function fetchUserCards(): Promise<CardListResponse> {
 
 /** -------- 카드별 혜택 -------- */
 // 서버 샘플엔 card 블록이 없으므로 card는 optional로 파싱
+const BenefitCategoryZ = z.object({
+  categoryId: z.number(),
+  categoryName: z.string(),
+});
+
 const BenefitZ = z.object({
   franchiseId: z.number(),
   franchiseName: z.string(),
   discountRate: z.number(),
+  representativeCategory: BenefitCategoryZ.optional(),
 });
 const CardBenefitsResponseZ = z.object({
   userCardId: z.number(),

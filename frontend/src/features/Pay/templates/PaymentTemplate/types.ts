@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types";
+import type { UserCardVM } from "@/features/User/model/card/types";
 import type { Gifticon } from "@/shared/types/gifticon";
 import type { RefreshControlProps } from "react-native";
 
@@ -8,7 +8,7 @@ export interface PaymentTemplateProps {
   onChangeTab: (index: number) => void;
   children?: ReactNode; // 각 탭에서 보여줄 뷰
   // 카드 관련 props
-  cards?: UserCard[];
+  cards?: UserCardVM[];
   activeCardIndex?: number;
   onActiveCardChange?: (index: number, userCardId: number) => void;
   benefitsSection?: React.ReactNode;

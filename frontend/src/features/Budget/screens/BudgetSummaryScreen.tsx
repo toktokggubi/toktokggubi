@@ -9,19 +9,20 @@ import type {
 } from "~features/Budget/templates/BudgetSummaryTemplate/types";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
 
+import * as SecureStore from "expo-secure-store";
 // 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
 const getCategoryId = (name: CategoryName): number => {
   const categoryMap: Record<CategoryName, number> = {
-    '식비': 1,
-    '카페/간식': 2,
-    '술/유흥': 3,
-    '생활': 4,
-    '쇼핑': 5,
-    '뷰티/미용': 6,
-    '교통': 7,
-    '자동차': 8,
-    '의료/건강': 9,
-    '문화': 10,
+    식비: 1,
+    "카페/간식": 2,
+    "술/유흥": 3,
+    생활: 4,
+    쇼핑: 5,
+    "뷰티/미용": 6,
+    교통: 7,
+    자동차: 8,
+    "의료/건강": 9,
+    문화: 10,
   };
   return categoryMap[name] || 1;
 };
@@ -30,27 +31,34 @@ export default function BudgetSummaryScreen() {
   // 모달 상태
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const { 
-    totalAmount, 
-    fixedExpenses, 
+  const {
+    totalAmount,
+    fixedExpenses,
     categoryAllocations,
-    commit, 
-    isCommitting, 
+    commit,
+    isCommitting,
     commitError,
-    loadDraftData 
+    loadDraftData,
   } = useBudgetDraft();
 
   // 데이터 로딩 및 Context 상태 확인
   useEffect(() => {
     loadDraftData();
-    
-    console.log('=== BudgetSummaryScreen Context 데이터 ===');
-    console.log('totalAmount:', totalAmount);
-    console.log('fixedExpenses:', fixedExpenses);
-    console.log('categoryAllocations:', categoryAllocations);
-    console.log('isCommitting:', isCommitting);
-    console.log('commitError:', commitError);
-  }, [totalAmount, fixedExpenses, categoryAllocations, isCommitting, commitError, loadDraftData]);
+
+    console.log("=== BudgetSummaryScreen Context 데이터 ===");
+    console.log("totalAmount:", totalAmount);
+    console.log("fixedExpenses:", fixedExpenses);
+    console.log("categoryAllocations:", categoryAllocations);
+    console.log("isCommitting:", isCommitting);
+    console.log("commitError:", commitError);
+  }, [
+    totalAmount,
+    fixedExpenses,
+    categoryAllocations,
+    isCommitting,
+    commitError,
+    loadDraftData,
+  ]);
 
   // 고정지출 (예산 포함/미포함) 분리
   const fixedIncludedExpenses: FixedExpenseItem[] = useMemo(() => {
@@ -91,20 +99,20 @@ export default function BudgetSummaryScreen() {
   // 카테고리별 예산 데이터 변환 (데이터베이스와 일치)
   const categoryBudgetsData: CategoryBudgetItem[] = useMemo(() => {
     const idToName: Record<number, CategoryName> = {
-      1: '식비',
-      2: '카페/간식',
-      3: '술/유흥',
-      4: '생활',
-      5: '쇼핑',
-      6: '뷰티/미용',
-      7: '교통',
-      8: '자동차',
-      9: '의료/건강',
-      10: '문화',
+      1: "식비",
+      2: "카페/간식",
+      3: "술/유흥",
+      4: "생활",
+      5: "쇼핑",
+      6: "뷰티/미용",
+      7: "교통",
+      8: "자동차",
+      9: "의료/건강",
+      10: "문화",
     };
 
-    return categoryAllocations.map(allocation => ({
-      name: idToName[allocation.categoryId] || '식비',
+    return categoryAllocations.map((allocation) => ({
+      name: idToName[allocation.categoryId] || "식비",
       amount: allocation.finalAmount,
     }));
   }, [categoryAllocations]);
@@ -131,21 +139,25 @@ export default function BudgetSummaryScreen() {
   }, []);
 
   const handleConfirmBudget = useCallback(async () => {
-    console.log('=== 예산 확정 시작 ===');
-    console.log('총예산:', totalAmount);
-    console.log('고정지출:', fixedExpenses);
-    console.log('카테고리 예산:', categoryAllocations);
-    
+    console.log("=== 예산 확정 시작 ===");
+    console.log("총예산:", totalAmount);
+    console.log("고정지출:", fixedExpenses);
+    console.log("카테고리 예산:", categoryAllocations);
+    console.log(
+      "AT(before commit) =",
+      await SecureStore.getItemAsync("access_token")
+    );
+
     try {
       const result = await commit();
-      console.log('=== 예산 확정 성공 ===');
-      console.log('확정 결과:', result);
-      
+      console.log("=== 예산 확정 성공 ===");
+      console.log("확정 결과:", result);
+
       setShowConfirmModal(false);
       router.push("/(tabs)/home");
     } catch (error) {
-      console.error('=== 예산 확정 실패 ===');
-      console.error('에러:', error);
+      console.error("=== 예산 확정 실패 ===");
+      console.error("에러:", error);
       // 에러 처리 (토스트 메시지 등)
       setShowConfirmModal(false); // 모달은 닫고 에러 메시지 표시
     }

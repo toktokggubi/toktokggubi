@@ -160,6 +160,7 @@ export function useNearbyPlacesQuery(
     queryKey,
     queryFn: () => {
       if (!location) throw new Error("위치 정보가 없습니다.");
+      if (!apiKey) throw new Error("카카오 API 키가 설정되지 않았습니다.");
       return searchNearbyPlaces(location.lat, location.lng, apiKey, stableOptions);
     },
     enabled: !!location && !!apiKey,

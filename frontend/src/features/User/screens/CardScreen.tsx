@@ -4,6 +4,7 @@ import {
   Alert,
   Pressable,
   StyleSheet,
+  Text,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -100,7 +101,11 @@ export default function CardsScreen() {
       {isError ? (
         <View
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        />
+        >
+          <Text style={{ color: colors.GRAY_NORMAL, fontSize: 14, ...font.medium }}>
+            카드를 불러오는데 실패했어요
+          </Text>
+        </View>
       ) : (
         <CardCarouselTemplate
           cards={cards as UserCardVM[]}
