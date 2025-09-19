@@ -32,7 +32,7 @@ const s = StyleSheet.create({
   wrap: { alignItems: "center", width: "100%" },
   cardImg: {
     width: "100%",
-    height: 280,
+    height: 240,
     borderRadius: 12,
     resizeMode: "contain",
     marginBottom: 12,
