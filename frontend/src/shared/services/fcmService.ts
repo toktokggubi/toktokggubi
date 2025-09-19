@@ -1,9 +1,9 @@
-import messaging from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { http } from '@/shared/api/http';
+import Constants from 'expo-constants';
 
 // 알림 설정
 Notifications.setNotificationHandler({
@@ -31,6 +31,7 @@ export interface TokenResponse {
 class FCMService {
   private static instance: FCMService;
   private isInitialized = false;
+  private messaging: any = null;
 
   public static getInstance(): FCMService {
     if (!FCMService.instance) {
@@ -40,12 +41,43 @@ class FCMService {
   }
 
   /**
+   * Firebase 메시징 모듈 동적 로드
+   */
+  private async loadMessaging(): Promise<any> {
+    if (this.messaging) return this.messaging;
+    
+    try {
+      // Expo 개발 환경에서는 Firebase 모듈이 없을 수 있음
+      if (Constants.appOwnership === 'expo') {
+        console.log('Expo 개발 환경에서는 Firebase 메시징을 사용할 수 없습니다.');
+        return null;
+      }
+      
+      const messagingModule = await import('@react-native-firebase/messaging');
+      this.messaging = messagingModule.default;
+      return this.messaging;
+    } catch (error) {
+      console.log('Firebase 메시징 모듈을 로드할 수 없습니다:', error);
+      return null;
+    }
+  }
+
+  /**
    * FCM 서비스 초기화
    */
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
     try {
+      // Firebase 메시징 모듈 로드
+      const messaging = await this.loadMessaging();
+      
+      if (!messaging) {
+        console.log('Firebase 메시징을 사용할 수 없어 FCM 서비스를 건너뜁니다.');
+        this.isInitialized = true;
+        return;
+      }
+
       // 알림 권한 요청
       await this.requestPermission();
       
@@ -62,7 +94,8 @@ class FCMService {
       console.log('FCM 서비스가 초기화되었습니다.');
     } catch (error) {
       console.error('FCM 초기화 실패:', error);
-      throw error;
+      // 오류가 발생해도 앱이 중단되지 않도록 함
+      this.isInitialized = true;
     }
   }
 
@@ -71,11 +104,13 @@ class FCMService {
    */
   private async requestPermission(): Promise<boolean> {
     try {
+      if (!this.messaging) return false;
+      
       if (Platform.OS === 'ios') {
-        const authStatus = await messaging().requestPermission();
+        const authStatus = await this.messaging().requestPermission();
         const enabled =
-          authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-          authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+          authStatus === this.messaging.AuthorizationStatus.AUTHORIZED ||
+          authStatus === this.messaging.AuthorizationStatus.PROVISIONAL;
 
         if (!enabled) {
           console.log('iOS 알림 권한이 거부되었습니다.');
@@ -96,7 +131,9 @@ class FCMService {
    */
   async getToken(): Promise<string | null> {
     try {
-      const token = await messaging().getToken();
+      if (!this.messaging) return null;
+      
+      const token = await this.messaging().getToken();
       console.log('FCM 토큰:', token);
       return token;
     } catch (error) {
@@ -146,7 +183,9 @@ class FCMService {
    * 백그라운드 메시지 핸들러 설정
    */
   private setupBackgroundMessageHandler(): void {
-    messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    if (!this.messaging) return;
+    
+    this.messaging().setBackgroundMessageHandler(async (remoteMessage) => {
       console.log('백그라운드에서 메시지 수신:', remoteMessage);
       
       // 백그라운드에서는 시스템 알림만 표시됨
@@ -158,7 +197,9 @@ class FCMService {
    * 포그라운드 메시지 핸들러 설정
    */
   private setupForegroundMessageHandler(): void {
-    messaging().onMessage(async (remoteMessage) => {
+    if (!this.messaging) return;
+    
+    this.messaging().onMessage(async (remoteMessage) => {
       console.log('포그라운드에서 메시지 수신:', remoteMessage);
       
       // 포그라운드에서는 커스텀 알림 표시
@@ -170,8 +211,10 @@ class FCMService {
    * 알림 클릭 핸들러 설정
    */
   private setupNotificationOpenedHandler(): void {
+    if (!this.messaging) return;
+    
     // 앱이 종료된 상태에서 알림을 클릭했을 때
-    messaging()
+    this.messaging()
       .getInitialNotification()
       .then((remoteMessage) => {
         if (remoteMessage) {
@@ -181,7 +224,7 @@ class FCMService {
       });
 
     // 앱이 백그라운드에 있을 때 알림을 클릭했을 때
-    messaging().onNotificationOpenedApp((remoteMessage) => {
+    this.messaging().onNotificationOpenedApp((remoteMessage) => {
       console.log('백그라운드에서 알림 클릭:', remoteMessage);
       this.handleNotificationClick(remoteMessage);
     });
@@ -273,7 +316,9 @@ class FCMService {
    * 토큰 갱신 리스너 설정
    */
   setupTokenRefreshListener(): void {
-    messaging().onTokenRefresh((token) => {
+    if (!this.messaging) return;
+    
+    this.messaging().onTokenRefresh((token) => {
       console.log('FCM 토큰이 갱신되었습니다:', token);
       
       // 토큰이 갱신되면 서버에 새 토큰 전송
@@ -297,6 +342,58 @@ class FCMService {
     } catch (error) {
       console.error('토큰 갱신 처리 실패:', error);
     }
+  }
+
+  /**
+   * 토큰 확인을 위한 테스트 함수 (개발용)
+   */
+  async testTokenRetrieval(): Promise<void> {
+    console.log('=== FCM 토큰 테스트 시작 ===');
+    
+    try {
+      // Firebase 메시징 모듈 로드 확인
+      const messaging = await this.loadMessaging();
+      
+      if (!messaging) {
+        console.log('❌ Firebase 메시징 모듈을 사용할 수 없습니다.');
+        console.log('현재 환경:', Constants.appOwnership);
+        console.log('💡 해결방법: Development Build 또는 실제 디바이스 빌드 필요');
+        return;
+      }
+      
+      console.log('✅ Firebase 메시징 모듈 로드 성공');
+      
+      // 토큰 가져오기
+      const token = await this.getToken();
+      
+      if (token) {
+        console.log('✅ FCM 토큰 획득 성공!');
+        console.log('토큰 길이:', token.length);
+        console.log('토큰 앞 30자:', token.substring(0, 30) + '...');
+        console.log('토큰 뒤 30자:', '...' + token.substring(token.length - 30));
+        console.log('전체 토큰:', token);
+        console.log('💡 이 토큰을 백엔드에 전송하면 푸시 알림을 받을 수 있습니다');
+        
+        // 토큰 유효성 간단 체크
+        if (token.length > 100 && token.includes(':')) {
+          console.log('✅ 토큰 형식이 올바릅니다');
+        } else {
+          console.log('⚠️ 토큰 형식이 이상할 수 있습니다');
+        }
+      } else {
+        console.log('❌ FCM 토큰 획득 실패');
+        console.log('💡 가능한 원인:');
+        console.log('  - 네트워크 연결 문제');
+        console.log('  - Firebase 설정 문제');
+        console.log('  - 디바이스 권한 문제');
+      }
+      
+    } catch (error) {
+      console.error('❌ 토큰 테스트 중 오류:', error);
+      console.log('💡 오류 상세:', error.message);
+    }
+    
+    console.log('=== FCM 토큰 테스트 완료 ===');
   }
 }
 
