@@ -1,4 +1,4 @@
-import type { UserCard } from "@/features/User/screens/MyPageScreen/types"; // TODO: 맞춰서 수정
+import type { UserCardVM } from "@/features/User/model/card/types";
 import PagerDots from "@/features/User/ui/PagerDots";
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
@@ -46,7 +46,7 @@ function PaymentTemplate({
   refreshControl,
 }: PaymentTemplateProps) {
   const router = useRouter();
-  const carouselRef = useRef<Carousel<UserCard> | null>(null);
+  const carouselRef = useRef<Carousel<UserCardVM> | null>(null);
   const isInitialized = useRef(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -147,7 +147,7 @@ function PaymentTemplate({
     if (id != null) onActiveCardChange?.(index, id);
   };
 
-  const renderCard = ({ item }: { item: UserCard }) => {
+  const renderCard = ({ item }: { item: UserCardVM; index: number }) => {
     return <CardSlide card={item} />;
   };
 
@@ -202,7 +202,7 @@ function PaymentTemplate({
                   {cardTopSection}
                 </View>
               ) : null}
-              <Carousel<UserCard>
+              <Carousel<UserCardVM>
                 ref={carouselRef}
                 data={cards}
                 renderItem={renderCard}

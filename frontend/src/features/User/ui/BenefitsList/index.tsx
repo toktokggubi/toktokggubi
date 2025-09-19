@@ -50,7 +50,7 @@ function BenefitsListImpl({ benefits }: BenefitsListProps) {
           key={`${b.franchiseId}-${b.franchiseName}`}
           name={b.franchiseName}
           percent={b.discountRate}
-          category={b.representativeCategory.categoryName}
+          category={b.representativeCategory?.categoryName || "기타"}
         />
       ))}
     </View>

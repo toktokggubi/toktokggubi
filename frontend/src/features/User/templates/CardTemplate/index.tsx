@@ -20,28 +20,31 @@ export default function CardCarouselTemplate({
 }: CardCarouselTemplateProps) {
   const carouselRef = useRef<Carousel<UserCard> | null>(null);
 
-  const activeCard = cards[activeIndex];
+  const activeCard = cards?.[activeIndex];
   const activeUserCardId = activeCard?.userCardId ?? -1;
 
   const { data, isLoading, isError } = useCardBenefits(activeUserCardId);
 
   useEffect(() => {
-    if (!carouselRef.current || cards.length === 0) return;
+    if (!carouselRef.current || !cards || cards.length === 0) return;
     const clamped = Math.max(0, Math.min(activeIndex, cards.length - 1));
     carouselRef.current.scrollTo({ index: clamped, animated: false });
   }, [activeIndex, cards.length]);
 
   useEffect(() => {
-    if (cards.length === 0) onActiveChange(0);
-    else if (activeIndex > cards.length - 1) onActiveChange(cards.length - 1);
+    if (!cards || cards.length === 0) {
+      onActiveChange(0);
+    } else if (activeIndex > cards.length - 1) {
+      onActiveChange(Math.max(0, cards.length - 1));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards.length]);
+  }, [cards?.length]);
 
   const renderCard = ({ item }: { item: UserCard }) => {
     return <CardSlide card={item} />;
   };
 
-  if (cards.length === 0) {
+  if (!cards || cards.length === 0) {
     return (
       <View style={[styles.root, styles.empty]}>
         <Text style={styles.emptyText}>등록된 카드가 없어요</Text>
@@ -53,7 +56,7 @@ export default function CardCarouselTemplate({
     <View style={styles.root}>
       <Carousel<UserCard>
         ref={carouselRef}
-        data={cards}
+        data={cards || []}
         renderItem={renderCard}
         width={SCREEN_W}
         height={ITEM_W * 0.6}
@@ -63,15 +66,12 @@ export default function CardCarouselTemplate({
           parallaxScrollingOffset: 50,
         }}
         onSnapToItem={onActiveChange}
-        keyExtractor={(item, index) =>
-          // @ts-expect-error: UserCard에 id가 없을 수도 있어 폴백
-          (item.id as string | undefined) ?? String(index)
-        }
-        style={styles.carouselContainer}
+        keyExtractor={(item, index) => String(item.userCardId ?? index)}
+        containerCustomStyle={styles.carouselContainer}
       />
 
       <View style={styles.dotsWrapper}>
-        <PagerDots length={cards.length} activeIndex={activeIndex} top={20} />
+        <PagerDots length={cards?.length || 0} activeIndex={activeIndex} top={20} />
       </View>
 
       {isLoading ? (
