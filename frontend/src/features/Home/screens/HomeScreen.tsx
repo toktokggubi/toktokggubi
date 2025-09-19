@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Text, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { HomeTemplate } from "../templates/HomeTemplate";
 import { colors } from "@/shared/constants/colors";
@@ -14,6 +14,7 @@ import {
 import { Category, CATEGORY_VALUES } from "@/shared/constants/categories";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import FCMService from "@/shared/services/fcmService";
 
 // 헬퍼 함수들
 const getCategoryNameById = (categoryId: number): Category => {
@@ -85,6 +86,38 @@ export const HomeScreen: React.FC = () => {
   
   // 예산 설정 여부 확인
   const budgetStatusQuery = useBudgetStatusQuery();
+
+  // FCM 토큰 테스트 함수
+  const testFCMToken = async () => {
+    try {
+      const fcmService = FCMService.getInstance();
+      await fcmService.testTokenRetrieval();
+      
+      // 토큰을 직접 가져와서 Alert로 표시
+      const token = await fcmService.getToken();
+      if (token) {
+        Alert.alert(
+          "✅ FCM 토큰 획득 성공!", 
+          `토큰 길이: ${token.length}\n앞 30자: ${token.substring(0, 30)}...\n\n💡 이 토큰을 백엔드 API에 전송하면 푸시 알림을 받을 수 있습니다.\n\n전체 토큰은 콘솔에서 확인하세요.`,
+          [
+            { text: "콘솔에서 확인", onPress: () => console.log("전체 FCM 토큰:", token) },
+            { text: "확인" }
+          ]
+        );
+      } else {
+        Alert.alert(
+          "❌ FCM 토큰 획득 실패", 
+          "토큰을 가져올 수 없습니다.\n\n가능한 원인:\n• Expo Go 환경 (Development Build 필요)\n• 네트워크 연결 문제\n• Firebase 설정 문제\n\n자세한 내용은 콘솔을 확인하세요."
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        "❌ 오류 발생", 
+        `FCM 토큰 테스트 중 오류가 발생했습니다.\n\n오류: ${error.message}\n\n자세한 내용은 콘솔을 확인하세요.`
+      );
+      console.error("FCM 토큰 테스트 오류:", error);
+    }
+  };
 
   // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
@@ -288,6 +321,14 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* 개발용 FCM 토큰 테스트 버튼 */}
+      <TouchableOpacity 
+        style={styles.testButton} 
+        onPress={testFCMToken}
+      >
+        <Text style={styles.testButtonText}>FCM 토큰 테스트</Text>
+      </TouchableOpacity>
+      
       <HomeTemplate
         totalBudget={data?.totalBudget || { currentAmount: 0, totalAmount: 0 }}
         availableAmount={data?.availableAmount || 0}
@@ -323,5 +364,20 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: colors.GRAY_DARK,
+  },
+  testButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: colors.BLUE_NORMAL,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    zIndex: 1000,
+  },
+  testButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
