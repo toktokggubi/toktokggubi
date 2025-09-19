@@ -1,20 +1,17 @@
-import { Tabs, router } from "expo-router";
-import React, { useEffect } from "react";
-import { useIsFocused } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useIsFocused } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
+import React, { useEffect } from "react";
 
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Feather from "@expo/vector-icons/Feather";
 // import FontAwesome6 from "@expo/vector-icons/FontAwesome6"; 소비 탭
-import Ionicons from "@expo/vector-icons/Ionicons";
 
 import { useShakeAdvanced } from "@/shared/hooks/useShake";
 import SvgTabBar from "@/shared/ui/SvgTabBar";
+import PaymentScreen from "../pay/payment";
 import HomeScreen from "./home/index";
 import LuckyScreen from "./lucky/index";
 import MyPageScreen from "./mypage/index";
-import PaymentScreen from "../pay/payment";
 
 // 더미 컴포넌트들 (라우터가 없는 탭들용)
 const ReportScreen = () => null;
@@ -33,8 +30,7 @@ export default function TabLayout() {
   const isFocused = useIsFocused();
 
   // 컴포넌트가 마운트될 때 흔들기 훅 초기화
-  useEffect(() => {
-  }, [isFocused]);
+  useEffect(() => {}, [isFocused]);
 
   // 탭 화면에서만 흔들기 활성화
   useShakeAdvanced(
@@ -56,7 +52,7 @@ export default function TabLayout() {
       setTimeout(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       }, 150);
-      
+
       router.push({
         pathname: "/pay/payment",
         params: { source: "shake" },
@@ -70,6 +66,12 @@ export default function TabLayout() {
       tabBar={(props) => <SvgTabBar {...props} tabs={tabs} />}
       screenOptions={{
         headerShown: false,
+        tabBarStyle: {
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
       }}
     >
       <Tab.Screen name="home/index" component={HomeScreen} />

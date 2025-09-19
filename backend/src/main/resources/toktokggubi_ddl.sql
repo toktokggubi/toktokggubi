@@ -316,7 +316,7 @@ CREATE TABLE `gifticon` (
                             `image_url`   VARCHAR(500) NULL,
                             `expires_at`  DATE         NULL,
                             `created_at`  DATETIME     NOT NULL,
-                            `status`      VARCHAR(16)  NULL DEFAULT 'ACTIVE' COMMENT 'ENUM(`ACTIVE`, `USED`, `EXPIRED`)',
+                            `status`      VARCHAR(16)  NULL DEFAULT 'ACTIVE' COMMENT 'ENUM(`ACTIVE`, `USED`, `EXPIRED`, `INACTIVE`)',
                             CONSTRAINT `PK_GIFTICON` PRIMARY KEY (`gifticon_id`),
                             KEY `idx_gi_user_status_exp` (`user_id`, `status`, `expires_at`),
                             KEY `idx_gi_franchise` (`franchise_id`),

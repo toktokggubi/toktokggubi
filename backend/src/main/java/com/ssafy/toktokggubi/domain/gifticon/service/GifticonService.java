@@ -3,6 +3,8 @@ package com.ssafy.toktokggubi.domain.gifticon.service;
 import com.ssafy.toktokggubi.domain.franchise.entity.Franchise;
 import com.ssafy.toktokggubi.domain.franchise.repository.FranchiseRepository;
 import com.ssafy.toktokggubi.domain.gifticon.dto.response.GifticonCreateResponse;
+import com.ssafy.toktokggubi.domain.gifticon.dto.response.GifticonItemResponse;
+import com.ssafy.toktokggubi.domain.gifticon.dto.response.GifticonListResponse;
 import com.ssafy.toktokggubi.domain.gifticon.entity.Gifticon;
 import com.ssafy.toktokggubi.domain.gifticon.entity.GifticonStatus;
 import com.ssafy.toktokggubi.domain.gifticon.repository.GifticonRepository;
@@ -18,6 +20,9 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @Service
@@ -105,5 +110,89 @@ public class GifticonService {
                 entity.getStatus(),
                 allText
         );
+    }
+
+    /**
+     * 조회 파라미터
+     * @param franchiseId  프랜차이즈(브랜드) 필터 (nullable)
+     * @param usableOnly   사용 가능만 (null이면 무시)
+     * @param sort         latest | expires (기본 latest)
+     */
+    public GifticonListResponse list(Long userId, Long franchiseId, Boolean usableOnly, String sort) {
+        // 사용자 존재 체크(권한 경계)
+        userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+
+        // 삭제(INACTIVE) 제외 기본셋
+        List<Gifticon> all = gifticonRepository.findByUser_UserIdAndStatusNot(userId, GifticonStatus.INACTIVE);
+
+        // 프랜차이즈 필터
+        if (franchiseId != null) {
+            all = all.stream()
+                    .filter(g -> g.getFranchise() != null && franchiseId.equals(g.getFranchise().getFranchiseId()))
+                    .toList();
+        }
+
+        // 사용 가능만: 상태 ACTIVE 이고 (만료일이 없거나 오늘 이후)
+        if (Boolean.TRUE.equals(usableOnly)) {
+            LocalDate today = LocalDate.now();
+            all = all.stream()
+                    .filter(g -> g.getStatus() == GifticonStatus.ACTIVE
+                            && (g.getExpiresAt() == null || !g.getExpiresAt().isBefore(today)))
+                    .toList();
+        }
+
+        // 정렬
+        Comparator<Gifticon> comp;
+        if ("expires".equalsIgnoreCase(sort)) {
+            // 만료 임박순(남은 일수 ASC, null은 뒤로) -> 동일하면 최신 생성순 DESC
+            LocalDate today = LocalDate.now();
+            comp = Comparator
+                    .comparing((Gifticon g) -> daysUntil(today, g.getExpiresAt()), Comparator.nullsLast(Long::compareTo))
+                    .thenComparing(Gifticon::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
+        } else {
+            // 최신 생성순
+            comp = Comparator.comparing(Gifticon::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
+        }
+        List<GifticonItemResponse> items = all.stream()
+                .sorted(comp)
+                .map(this::toItem)
+                .toList();
+
+        return new GifticonListResponse(items);
+    }
+
+    @Transactional
+    public void delete(Long userId, Long gifticonId) {
+        Gifticon g = gifticonRepository.findById(gifticonId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "기프티콘을 찾을 수 없습니다."));
+        if (!g.getUser().getUserId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "삭제 권한이 없습니다.");
+        }
+        // 물리삭제 대신 상태 전환(요구사항: 수동 삭제)
+        g = g.toBuilder().status(GifticonStatus.INACTIVE).build();
+        gifticonRepository.save(g);
+    }
+
+    // ===== 내부 =====
+
+    private GifticonItemResponse toItem(Gifticon g) {
+        Long franchiseId = g.getFranchise() != null ? g.getFranchise().getFranchiseId() : null;
+        String franchiseName = g.getFranchise() != null ? g.getFranchise().getMerchantName() : null;
+        Long days = daysUntil(LocalDate.now(), g.getExpiresAt());
+        return new GifticonItemResponse(
+                g.getGifticonId(),
+                g.getLabel(),
+                franchiseId,
+                franchiseName,
+                g.getImageUrl(),
+                g.getExpiresAt(),
+                days,
+                g.getStatus()
+        );
+    }
+
+    private Long daysUntil(LocalDate from, LocalDate to) {
+        if (to == null) return null;
+        return ChronoUnit.DAYS.between(from, to);
     }
 }

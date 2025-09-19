@@ -101,11 +101,12 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/toktokggubi-sa.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_sa_json
       # Other common environment variables for backend
+    secrets:
+      - gcp_sa_json
     volumes:
-      - ./secrets/toktokggubi-sa.json:/app/config/toktokggubi-sa.json:ro
-      - /opt/toktokggubi/uploads:/app/uploads
+      - ./backend/uploads:/data/uploads
       
   # Frontend Service (React)
   # frontend:
@@ -120,8 +121,35 @@ services:
       context: ./nginx # Build from the Dockerfile in the ./nginx directory
     restart: always
     ports:
-      - "80:80" 
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
       - backend
       - ai # Nginx might proxy to AI service directly too
+
+  # Jenkins CI/CD Server (only in development/CI environment)
+  jenkins:
+    image: jenkins/jenkins:lts-jdk21
+    privileged: true # Allows Jenkins to run Docker commands
+    user: root
+    command: --prefix=/jenkins
+    ports:
+      - "8081:8080" # Jenkins web UI
+      - "50000:50000" # Jenkins agent port (for build agents)
+    volumes:
+      # Persist Jenkins data
+      - ./jenkins/jenkins_home:/var/jenkins_home
+      # Mount Docker socket to allow Jenkins to build/run other Docker containers
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Mount Docker client binary from host if docker-compose isn't in Jenkins image
+      # - /usr/local/bin/docker:/usr/local/bin/docker
+    group_add:
+      - "122"  
+    restart: always
+
+secrets:
+  gcp_sa_json:
+    file: ./secrets/toktokggubi-sa.json
