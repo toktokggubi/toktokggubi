@@ -1,4 +1,3 @@
-// com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponse.java
 package com.ssafy.toktokggubi.domain.transaction.dto;
 
 import java.util.List;
