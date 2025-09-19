@@ -1,7 +1,11 @@
 // src/features/Lucky/templates/LuckyTemplate/index.tsx
 import React from "react";
 import { Text, StyleSheet, View, ScrollView } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import type { LuckyTemplateProps } from "./types";
 import { colors } from "@/shared/constants/colors";
 import { CategoryChips } from "@/features/Lucky/ui/CategoryChips";
@@ -23,8 +27,6 @@ export default function LuckyTemplate({
   eventsForDay,
   onPressNbbang,
   onPressMolbbang,
-
-  /** 🔹 추가: 외부에서 주입받는 이미지 */
   nImageSource,
   molImageSource,
 }: LuckyTemplateProps) {
@@ -32,54 +34,82 @@ export default function LuckyTemplate({
   const safeMerchants = Array.isArray(merchants) ? merchants : [];
   const safeList = Array.isArray(eventsForDay) ? eventsForDay : [];
 
+  // 👇 HomeTemplate처럼: 탭바 + 안전영역 고려
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight(); // 커스텀 탭바여도 react-navigation 탭이면 OK
+
   return (
-    <SafeAreaView
-      style={s.container}
-      edges={["top", "bottom", "left", "right"]}
-    >
-      <ScrollView
-        contentContainerStyle={s.content}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={s.header}>세일</Text>
+    <SafeAreaView style={s.safeArea} edges={["top", "bottom"]}>
+      {/* HomeTemplate의 overlayContainer 패턴 */}
+      <View style={s.overlayContainer}>
+        <ScrollView
+          style={s.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            s.content,
+            {
+              // 👇 탭바 뒤로 안 들어가게 여유를 넉넉히
+              paddingBottom: tabBarHeight + insets.bottom + 24,
+            },
+          ]}
+        >
+          <Text style={s.header}>세일</Text>
 
-        <CategoryChips value={category} onChange={onChangeCategory} />
+          <CategoryChips value={category} onChange={onChangeCategory} />
 
-        <SaleCalendar
-          year={year}
-          month={month}
-          events={safeEvents}
-          merchants={safeMerchants}
-          selectedDay={selectedDay ?? null}
-          onSelectDay={onSelectDay}
-          onChangeMonth={onChangeMonth}
-        />
+          <SaleCalendar
+            year={year}
+            month={month}
+            events={safeEvents}
+            merchants={safeMerchants}
+            selectedDay={selectedDay ?? null}
+            onSelectDay={onSelectDay}
+            onChangeMonth={onChangeMonth}
+          />
 
-        <SaleEventList items={safeList} />
+          <SaleEventList items={safeList} />
 
-        {(onPressNbbang || onPressMolbbang) && (
-          <>
-            <View style={s.spacerLarge} />
-            <SeriesCards
-              onPressNbbang={onPressNbbang ?? (() => {})}
-              onPressMolbbang={onPressMolbbang ?? (() => {})}
-              /** 🔹 여기서 전달 */
-              nImageSource={nImageSource}
-              molImageSource={molImageSource}
-            />
-          </>
-        )}
-
-        <View style={s.bottomSpace} />
-      </ScrollView>
+          {(onPressNbbang || onPressMolbbang) && (
+            <>
+              <View style={s.spacerLarge} />
+              <SeriesCards
+                onPressNbbang={onPressNbbang ?? (() => {})}
+                onPressMolbbang={onPressMolbbang ?? (() => {})}
+                nImageSource={nImageSource}
+                molImageSource={molImageSource}
+              />
+            </>
+          )}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FBFF" },
-  content: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#F8FBFF",
+  },
+  // HomeTemplate처럼 오버레이로 전체 감싸기
+  overlayContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  scroll: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    // paddingBottom은 runtime에서 추가됨
+  },
   header: {
     fontSize: 20,
     color: colors.BLUE_DARKER,
@@ -87,5 +117,4 @@ const s = StyleSheet.create({
     ...font.bold,
   },
   spacerLarge: { height: 24 },
-  bottomSpace: { height: 24 },
 });
