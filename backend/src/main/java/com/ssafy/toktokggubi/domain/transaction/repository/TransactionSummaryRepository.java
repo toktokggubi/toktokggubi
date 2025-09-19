@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface TransactionSummaryRepository extends JpaRepository<CardTransaction, String> {
 
     @Query(value = """
@@ -15,9 +17,9 @@ public interface TransactionSummaryRepository extends JpaRepository<CardTransact
         WHERE ct.user_id = :userId
           AND ct.transaction_ymd BETWEEN :fromYmd AND :toYmd
         """, nativeQuery = true)
-    Object[] sumForUserRange(@Param("userId") long userId,
-                             @Param("fromYmd") String fromYmd,
-                             @Param("toYmd") String toYmd);
+    List<Object[]> sumForUserRange(@Param("userId") long userId,
+                                   @Param("fromYmd") String fromYmd,
+                                   @Param("toYmd") String toYmd);
 
 
 
