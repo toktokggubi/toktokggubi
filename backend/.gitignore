@@ -199,6 +199,4 @@ gradle-app.setting
 
 # Firebase service account
 src/main/resources/firebase-service-account.json
-secrets/
 secrets/firebase-service-account.json
-../secrets/
