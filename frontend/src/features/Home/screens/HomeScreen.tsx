@@ -29,9 +29,9 @@ const getCategoryNameById = (categoryId: number): Category => {
     8: 'car',            // 자동차
     9: 'health',         // 의료/건강
     10: 'culture',       // 문화
-    11: 'food',          // 기타 (기본값으로 food 사용)
+    11: 'life',          // 기타 (기본값으로 life 사용)
   };
-  return categoryMap[categoryId] || 'food';
+  return categoryMap[categoryId] || 'life';
 };
 
 const getCategoryIdByName = (categoryName: Category): number => {
@@ -81,6 +81,7 @@ export const HomeScreen: React.FC = () => {
   const [data, setData] = useState<HomeData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   
   // 예산 설정 여부 확인
   const budgetStatusQuery = useBudgetStatusQuery();
@@ -98,26 +99,68 @@ export const HomeScreen: React.FC = () => {
   }, [budgetStatusQuery.isLoading, budgetStatusQuery.error, budgetStatusQuery.data]);
 
   // API 호출 함수
-  const loadHomeData = async () => {
+  const loadHomeData = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
       
       // 예산 설정 여부 확인
       if (budgetStatusQuery.error || !budgetStatusQuery.data || budgetStatusQuery.data.totalAmount === 0) {
         console.log('예산이 설정되지 않음 - 예산 설정 버튼 표시');
-        setLoading(false);
+        if (isRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
         return;
       }
       
-      // 예산 관련 API 호출
-      const [budgetTotalResponse, budgetCategoryResponse, monthlySummaryResponse, monthlySummaryByCategoryResponse, monthlyCategoryListResponse] = await Promise.all([
-        fetchBudgetTotal(),
-        fetchBudgetCategory(),
-        fetchMonthlySummary(),
-        fetchMonthlySummaryByCategory(),
-        fetchMonthlyCategoryList()
-      ]);
+      // 예산 관련 API 호출 - 개별적으로 에러 처리
+      let budgetTotalResponse, budgetCategoryResponse, monthlySummaryResponse, monthlySummaryByCategoryResponse, monthlyCategoryListResponse;
+      
+      try {
+        budgetTotalResponse = await fetchBudgetTotal();
+      } catch (err) {
+        console.error('budgetTotalResponse 실패:', err);
+        throw err;
+      }
+      
+      try {
+        budgetCategoryResponse = await fetchBudgetCategory();
+      } catch (err) {
+        console.error('budgetCategoryResponse 실패:', err);
+        throw err;
+      }
+      
+      try {
+        // 테스트를 위해 2025년 9월 데이터 조회
+        monthlySummaryResponse = await fetchMonthlySummary({
+          from: '20250901',
+          to: '20250930'
+        });
+      } catch (err) {
+        console.error('monthlySummaryResponse 실패:', err);
+        throw err;
+      }
+      
+      try {
+        monthlySummaryByCategoryResponse = await fetchMonthlySummaryByCategory();
+      } catch (err) {
+        console.error('monthlySummaryByCategoryResponse 실패:', err);
+        throw err;
+      }
+      
+      try {
+        monthlyCategoryListResponse = await fetchMonthlyCategoryList();
+      } catch (err) {
+        console.error('monthlyCategoryListResponse 실패:', err);
+        throw err;
+      }
+
 
       // 카테고리별 예산 데이터 변환
       const categoryBudgets: CategoryBudget[] = budgetCategoryResponse.map((budget: { categoryId: number; finalAmount: number }) => {
@@ -132,9 +175,11 @@ export const HomeScreen: React.FC = () => {
 
       // 거래 내역에서 카테고리별 사용 금액 계산
       const categoryUsageMap = new Map<number, number>();
-      monthlySummaryByCategoryResponse.categories.forEach((category: { categoryId: number; amount: number }) => {
-        categoryUsageMap.set(category.categoryId, category.amount);
-      });
+      if (monthlySummaryByCategoryResponse.categories) {
+        monthlySummaryByCategoryResponse.categories.forEach((category: { categoryId: number; amount: number }) => {
+          categoryUsageMap.set(category.categoryId, category.amount);
+        });
+      }
 
       // 카테고리별 예산에 실제 사용 금액 업데이트
       const updatedCategoryBudgets = categoryBudgets.map(budget => {
@@ -146,34 +191,37 @@ export const HomeScreen: React.FC = () => {
         };
       });
 
+
       // 거래 내역 데이터 변환
       const transactions: Partial<Record<Category, Transaction[]>> = {};
-      monthlyCategoryListResponse.categories.forEach((category: {
-        categoryId: number;
-        transactions: Array<{
-          transactionUniqueNo: string;
-          merchantName: string;
-          cardName: string;
-          amount: number;
-          dateTime: string;
-        }>;
-      }) => {
-        const categoryName = getCategoryNameById(category.categoryId);
-        transactions[categoryName] = category.transactions.map((transaction: {
-          transactionUniqueNo: string;
-          merchantName: string;
-          cardName: string;
-          amount: number;
-          dateTime: string;
-        }) => ({
-          id: transaction.transactionUniqueNo,
-          merchantName: transaction.merchantName,
-          category: categoryName,
-          paymentMethod: transaction.cardName,
-          amount: transaction.amount,
-          date: transaction.dateTime
-        }));
-      });
+      if (monthlyCategoryListResponse.categories) {
+        monthlyCategoryListResponse.categories.forEach((category: {
+          categoryId: number;
+          transactions: Array<{
+            transactionUniqueNo: string;
+            merchantName: string;
+            cardName: string;
+            amount: number;
+            dateTime: string;
+          }>;
+        }) => {
+          const categoryName = getCategoryNameById(category.categoryId);
+          transactions[categoryName] = category.transactions.map((transaction: {
+            transactionUniqueNo: string;
+            merchantName: string;
+            cardName: string;
+            amount: number;
+            dateTime: string;
+          }) => ({
+            id: transaction.transactionUniqueNo,
+            merchantName: transaction.merchantName,
+            category: categoryName,
+            paymentMethod: transaction.cardName,
+            amount: transaction.amount,
+            date: transaction.dateTime
+          }));
+        });
+      }
 
       // HomeData 형식으로 변환
       const homeData: HomeData = {
@@ -195,7 +243,11 @@ export const HomeScreen: React.FC = () => {
       console.error('API 호출 실패:', err);
       setError(err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.');
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -211,6 +263,10 @@ export const HomeScreen: React.FC = () => {
 
   const handleBudgetSetup = () => {
     router.push("/budget");
+  };
+
+  const handleRefresh = () => {
+    loadHomeData(true);
   };
 
   // 인증 로딩 중이거나 인증되지 않은 경우
@@ -247,6 +303,8 @@ export const HomeScreen: React.FC = () => {
         loading={loading}
         error={error}
         onRetry={loadHomeData}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
       />
     </View>
   );

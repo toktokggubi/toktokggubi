@@ -6,9 +6,13 @@ export async function fetchMonthlySummary(params?: {
   from?: string; // yyyyMMdd or yyyy-MM-dd
   to?: string;   // yyyyMMdd or yyyy-MM-dd
 }) {
+  console.log('=== transaction/summary API 호출 ===');
+  console.log('URL:', HOME_ENDPOINTS.monthlySummary);
+  console.log('파라미터:', params);
   const { data } = await http.get(HOME_ENDPOINTS.monthlySummary, {
     params,
   });
+  console.log('transaction/summary 응답:', data);
   return data as {
     month: string;
     totalAmount: number;
@@ -18,7 +22,10 @@ export async function fetchMonthlySummary(params?: {
 
 // TX-1 이번 달 소비 금액 조회 (카테고리별)
 export async function fetchMonthlySummaryByCategory() {
-  const { data } = await http.get(HOME_ENDPOINTS.monthlySummaryByCategory);
+  // 테스트를 위해 2025년 9월 데이터 조회
+  const { data } = await http.get(HOME_ENDPOINTS.monthlySummaryByCategory, {
+    params: { ym: '202509' }
+  });
   return data as {
     categories: Array<{
       categoryId: number;
@@ -31,7 +38,10 @@ export async function fetchMonthlySummaryByCategory() {
 
 // TX-1 이번달 카테고리별 소비 목록 조회
 export async function fetchMonthlyCategoryList() {
-  const { data } = await http.get(HOME_ENDPOINTS.monthlyCategoryList);
+  // 테스트를 위해 2025년 9월 데이터 조회
+  const { data } = await http.get(HOME_ENDPOINTS.monthlyCategoryList, {
+    params: { ym: '202509' }
+  });
   return data as {
     userId: number;
     period: string;

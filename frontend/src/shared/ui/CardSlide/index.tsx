@@ -14,7 +14,7 @@ function CardSlideImpl({ card }: CardSlideProps) {
   // 1) 서버 image 우선 → 2) 과거 issuerCode 매핑 → 3) 기본 이미지
   const source =
     card.image ??
-    (card.cardIssuerCode
+    (card.cardIssuerCode && CARD_IMAGE_BY_ISSUER[card.cardIssuerCode]
       ? CARD_IMAGE_BY_ISSUER[card.cardIssuerCode]
       : undefined) ??
     DEFAULT_CARD_IMAGE;
@@ -22,8 +22,8 @@ function CardSlideImpl({ card }: CardSlideProps) {
   return (
     <View style={s.wrap}>
       <Image source={source} style={s.cardImg} />
-      <Text style={s.name}>{card.cardName}</Text>
-      <Text style={s.sub}>**** **** **** {card.last4}</Text>
+      <Text style={s.name}>{card.cardName || "카드명 없음"}</Text>
+      <Text style={s.sub}>**** **** **** {card.last4 || "0000"}</Text>
     </View>
   );
 }
