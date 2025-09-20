@@ -9,7 +9,7 @@ import { Category } from "@/shared/constants/categories";
 export const ProgressList: React.FC<ProgressListProps> = ({
   categoryBudgets,
   onCategoryPress,
-  title = "카테고리별 사용현황",
+  title,
   transactions = {},
 }) => {
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
@@ -28,10 +28,12 @@ export const ProgressList: React.FC<ProgressListProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 제목 */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>{title}</Text>
-      </View>
+      {/* 제목 - title이 있을 때만 표시 */}
+      {title && (
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{title}</Text>
+        </View>
+      )}
 
       {/* 카테고리별 예산 리스트 */}
       <View style={styles.listContent}>

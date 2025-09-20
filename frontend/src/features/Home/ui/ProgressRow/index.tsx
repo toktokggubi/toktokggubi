@@ -17,13 +17,16 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
   onUsageDetailsPress,
 }) => {
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
+  const remainingAmount = totalAmount - currentAmount;
   
   const isTotalType = type === "total";
   const label = isTotalType ? "나의 전체예산" : (category ? CATEGORY_LABELS[category] : "");
-  const amountText = `${currentAmount.toLocaleString("ko-KR")}/${totalAmount.toLocaleString("ko-KR")}원`;
   
   // 카테고리 아이콘
   const categoryIcon = !isTotalType && category ? CATEGORY_ICON_BY_NAME[label] : null;
+  
+  // 80% 이상 사용 시 빨간색, 미만 시 파란색
+  const progressBarColor = progressPercentage >= 80 ? "#FF4444" : colors.BLUE_NORMAL;
 
   return (
     <TouchableOpacity
@@ -34,9 +37,9 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
       ]}
       disabled={!onPress}
     >
-      {/* 상단 텍스트 */}
-      <View style={styles.textRow}>
-        <View style={styles.labelContainer}>
+      {/* 상단 텍스트 - 카테고리명 + 사용률, 남은 금액 + 화살표 */}
+      <View style={styles.topRow}>
+        <View style={styles.leftSection}>
           {categoryIcon && (
             <Image
               source={categoryIcon}
@@ -47,10 +50,13 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
           <Text style={[styles.label, isTotalType ? styles.totalLabel : styles.categoryLabel]}>
             {label}
           </Text>
+          <Text style={styles.percentage}>{Math.round(progressPercentage)}%</Text>
         </View>
-        <Text style={[styles.amount, isTotalType ? styles.totalAmount : styles.categoryAmount]}>
-          {amountText}
-        </Text>
+        <View style={styles.rightSection}>
+          <Text style={styles.remainingAmount}>
+            {remainingAmount.toLocaleString("ko-KR")}원 남음
+          </Text>
+        </View>
       </View>
 
       {/* 프로그레스 바 */}
@@ -61,105 +67,110 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
               styles.progressBarFill,
               {
                 width: `${progressPercentage}%`,
-                backgroundColor: colors.BLUE_NORMAL,
+                backgroundColor: progressBarColor,
               },
             ]}
           />
         </View>
       </View>
 
-      {/* 사용내역 링크 (카테고리별만) */}
-      {!isTotalType && showUsageDetails && (
-        <TouchableOpacity 
-          style={styles.usageDetailsContainer}
-          onPress={onUsageDetailsPress}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.usageDetailsText}>사용내역</Text>
-          <Text style={styles.chevron}>{isExpanded ? "▲" : "▼"}</Text>
-        </TouchableOpacity>
-      )}
+      {/* 하단 텍스트 - 지출 금액 + 예산 금액 */}
+      <View style={styles.bottomRow}>
+        <Text style={styles.spentAmount}>
+          {currentAmount.toLocaleString("ko-KR")}원 지출
+        </Text>
+        <Text style={styles.budgetAmount}>
+          예산 {totalAmount.toLocaleString("ko-KR")}원
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "white",
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    backgroundColor: "#FFFFFF", // 화이트 배경
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     width: "100%",
+    borderRadius: 12,
   },
   totalContainer: {
     marginHorizontal: 16,
-    borderRadius: 12,
     marginTop: 8,
   },
   categoryContainer: {
     marginHorizontal: 4,
-    borderRadius: 8,
     marginVertical: 2,
   },
-  textRow: {
+  topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  labelContainer: {
+  leftSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  rightSection: {
     flexDirection: "row",
     alignItems: "center",
   },
   categoryIcon: {
-    width: 20,
-    height: 20,
-    marginRight: 8,
+    width: 24,
+    height: 24,
+    marginRight: 12,
   },
   label: {
     fontSize: 16,
     fontWeight: "600",
+    color: "#333333", // 다크 그레이 텍스트
+    marginRight: 8,
   },
   totalLabel: {
-    color: colors.GRAY_DARKER,
+    color: "#333333",
   },
   categoryLabel: {
-    color: colors.GRAY_DARKER,
+    color: "#333333",
   },
-  amount: {
-    fontSize: 16,
+  percentage: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#999999", // 라이트 그레이 텍스트
+  },
+  remainingAmount: {
+    fontSize: 14,
     fontWeight: "600",
-  },
-  totalAmount: {
-    color: colors.GRAY_DARKER,
-  },
-  categoryAmount: {
-    color: colors.GRAY_DARKER,
+    color: "#333333", // 다크 그레이 텍스트
   },
   progressBarContainer: {
-    marginBottom: 8,
+    marginBottom: 12,
   },
   progressBarBackground: {
-    height: 8,
-    backgroundColor: colors.BLUE_LIGHT,
-    borderRadius: 4,
+    height: 6,
+    backgroundColor: "#E5E5E5", // 라이트 그레이 배경
+    borderRadius: 3,
     overflow: "hidden",
   },
   progressBarFill: {
     height: "100%",
-    borderRadius: 4,
+    borderRadius: 3,
   },
-  usageDetailsContainer: {
+  bottomRow: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     alignItems: "center",
   },
-  usageDetailsText: {
-    fontSize: 12,
-    color: colors.GRAY_NORMAL,
-    marginRight: 4,
+  spentAmount: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#333333", // 다크 그레이 텍스트
   },
-  chevron: {
-    fontSize: 10,
-    color: colors.GRAY_NORMAL,
+  budgetAmount: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#999999", // 라이트 그레이 텍스트
   },
 });
