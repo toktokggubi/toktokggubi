@@ -144,8 +144,8 @@ services:
       - ./jenkins/jenkins_home:/var/jenkins_home
       # Mount Docker socket to allow Jenkins to build/run other Docker containers
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker 
-      - /usr/libexec/docker/cli-plugins/docker-compose:/usr/libexec/docker/cli-plugins/docker-compose
+      - /usr/bin/docker:/usr/bin/docker
+      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
       # Mount Docker client binary from host if docker-compose isn't in Jenkins image
       # - /usr/local/bin/docker:/usr/local/bin/docker
     group_add:
