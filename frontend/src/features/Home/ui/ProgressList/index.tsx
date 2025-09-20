@@ -57,7 +57,7 @@ export const ProgressList: React.FC<ProgressListProps> = ({
                   <View style={styles.transactionContainer}>
                     <TransactionList
                       transactions={categoryTransactions}
-                      onTransactionPress={(transaction) => console.log("거래 내역 클릭:", transaction)}
+                      onTransactionPress={(transaction) => {}}
                     />
                   </View>
                 )}

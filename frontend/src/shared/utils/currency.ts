@@ -15,7 +15,6 @@ export const hasValidToken = async (): Promise<boolean> => {
     const accessToken = await SecureStore.getItemAsync("access_token");
     return !!accessToken;
   } catch (error) {
-    console.error("토큰 확인 중 오류:", error);
     return false;
   }
 };

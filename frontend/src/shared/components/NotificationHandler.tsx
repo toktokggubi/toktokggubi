@@ -21,7 +21,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
   useEffect(() => {
     // 포그라운드 알림 수신 리스너
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-      console.log('포그라운드 알림 수신:', notification);
       
       // 포그라운드에서는 커스텀 알림 표시
       showForegroundNotification(notification);
@@ -29,7 +28,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
 
     // 알림 클릭 리스너
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('알림 클릭:', response);
       
       // 알림 클릭 처리
       handleNotificationClick(response);
@@ -70,7 +68,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
         { cancelable: true }
       );
     } catch (error) {
-      console.error('포그라운드 알림 표시 실패:', error);
     }
   };
 
@@ -82,7 +79,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
       const { notification } = response;
       const { data } = notification.request.content;
       
-      console.log('알림 데이터:', data);
       
       // 링크가 있으면 해당 페이지로 이동
       if (data?.link) {
@@ -92,7 +88,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
         navigateToBudgetPage();
       }
     } catch (error) {
-      console.error('알림 클릭 처리 실패:', error);
     }
   };
 
@@ -100,7 +95,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
    * 링크로 네비게이션
    */
   const navigateToLink = (link: string) => {
-    console.log('링크로 이동:', link);
     
     try {
       // 링크에 따른 네비게이션 처리
@@ -117,7 +111,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
         router.push('/(tabs)/home');
       }
     } catch (error) {
-      console.error('네비게이션 실패:', error);
       // 실패 시 홈으로 이동
       router.push('/(tabs)/home');
     }
@@ -127,11 +120,9 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
    * 예산 페이지로 이동
    */
   const navigateToBudgetPage = () => {
-    console.log('예산 페이지로 이동');
     try {
       router.push('/budget');
     } catch (error) {
-      console.error('예산 페이지 이동 실패:', error);
       router.push('/(tabs)/home');
     }
   };

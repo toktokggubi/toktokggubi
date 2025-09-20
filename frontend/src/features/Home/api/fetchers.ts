@@ -6,13 +6,9 @@ export async function fetchMonthlySummary(params?: {
   from?: string; // yyyyMMdd or yyyy-MM-dd
   to?: string;   // yyyyMMdd or yyyy-MM-dd
 }) {
-  console.log('=== transaction/summary API 호출 ===');
-  console.log('URL:', HOME_ENDPOINTS.monthlySummary);
-  console.log('파라미터:', params);
   const { data } = await http.get(HOME_ENDPOINTS.monthlySummary, {
     params,
   });
-  console.log('transaction/summary 응답:', data);
   return data as {
     month: string;
     totalAmount: number;

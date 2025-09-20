@@ -17,9 +17,7 @@ export default function FCMTokenTest() {
         const fcmService = FCMService.getInstance();
         const token = await fcmService.getToken();
         setFcmToken(token);
-        console.log('FCM 토큰 획득 성공:', token);
       } catch (error) {
-        console.error('FCM 토큰 획득 실패:', error);
         Alert.alert('오류', 'FCM 토큰을 가져올 수 없습니다.');
       }
     };
@@ -36,7 +34,6 @@ export default function FCMTokenTest() {
       setFcmToken(token);
       Alert.alert('성공', 'FCM 토큰이 새로고침되었습니다.');
     } catch (error) {
-      console.error('토큰 새로고침 실패:', error);
       Alert.alert('오류', '토큰 새로고침 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);

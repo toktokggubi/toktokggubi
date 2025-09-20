@@ -31,10 +31,6 @@ export default function FixedExpenseScreen() {
 
   // 데이터 로딩
   useEffect(() => {
-    console.log('=== FixedExpenseScreen 데이터 로딩 ===');
-    console.log('fixedExpenses:', fixedExpenses);
-    console.log('fixedExpenses.length:', fixedExpenses.length);
-    console.log('items:', items);
     
     loadDraftData();
   }, [loadDraftData]);
@@ -57,9 +53,6 @@ export default function FixedExpenseScreen() {
   const closeForm = () => setFormVisible(false);
 
   const submitForm = useCallback((v: AddFixedExpenseFormValues) => {
-    console.log('=== 고정지출 폼 제출 ===');
-    console.log('편집 중인 항목:', editing);
-    console.log('입력값:', v);
     
     let newExpenses;
     
@@ -89,7 +82,6 @@ export default function FixedExpenseScreen() {
       ];
     }
     
-    console.log('새로운 고정지출:', newExpenses);
     updateFixedExpenses(newExpenses);
     setFormVisible(false);
   }, [editing, fixedExpenses, updateFixedExpenses]);
@@ -98,23 +90,14 @@ export default function FixedExpenseScreen() {
   const goPrev = () => router.back();
   
   const goNext = useCallback(async () => {
-    console.log('=== 고정지출 저장 시작 ===');
-    console.log('Context fixedExpenses:', fixedExpenses);
-    console.log('현재 버전:', version);
     
     try {
       const result = await saveFixed(fixedExpenses);
-      console.log('=== 고정지출 저장 성공 ===');
-      console.log('저장 결과:', result);
       if (result) {
-        console.log('새로운 버전:', result.version);
-        console.log('새로운 draftId:', result.draftId);
       }
       
       router.push("/budget/select-category");
     } catch (error) {
-      console.error('=== 고정지출 저장 실패 ===');
-      console.error('에러:', error);
       // 에러 처리 (토스트 메시지 등)
     }
   }, [fixedExpenses, saveFixed, version]);

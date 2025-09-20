@@ -307,7 +307,6 @@ export default function PaymentScreen() {
       invalidateNearbyCache();
       await refetchNearbyPlaces();
     } catch (error) {
-      console.error("새로고침 실패:", error);
     } finally {
       setRefreshing(false);
     }

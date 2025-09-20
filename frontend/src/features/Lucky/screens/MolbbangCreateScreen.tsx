@@ -33,7 +33,6 @@ export default function MolbbangCreateScreen() {
         },
       });
     } catch (err: any) {
-      console.error("createRoom error:", err);
       Alert.alert(
         "방 생성 실패",
         "서버에 연결할 수 없었어요. 목 서버가 켜져 있는지, 주소가 맞는지 확인해줘.\n\n" +
