@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 12,
     shadowColor: "#000",
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   transactionContainer: {
     marginTop: 4,
     marginBottom: 4,
-    paddingLeft: 16,
+    paddingLeft: 8,
     width: "100%",
   },
   emptyContainer: {

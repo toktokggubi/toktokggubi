@@ -90,7 +90,7 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF", // 화이트 배경
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 16,
     width: "100%",
     borderRadius: 12,
