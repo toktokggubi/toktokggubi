@@ -9,6 +9,7 @@ import logging
 import model
 import json
 from huggingface_hub import InferenceClient
+import requests
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 
@@ -945,10 +946,81 @@ def analyze_user_data():
         logger.error(error_msg, exc_info=True)
         return jsonify({"error": error_msg}), 500
 
+
+@app.route("/ai/model", methods=['GET'])
+def make_model(): 
+    '''
+    새로운 유저가 등록되었을 떄, 사용되는 API
+    Input : user_id, username
+    Output : None
+    - user_id로 결제내역 API 호출
+    - 결제내역을 바탕으로 AutoEncoder와 IsolationForest 모델을 학습
+    - 학습된 모델을 저장
+    '''
+    try:
+        req_data = request.get_json()
+        if not req_data or 'user_id' not in req_data or 'username' not in req_data:
+            return jsonify({"error": "Request body must be JSON and contain 'user_id', 'username'"}), 400
+
+        user_id = req_data['user_id']
+        username = req_data['username']
+
+        # Register user in the database if they don't exist
+        register_user_if_not_exists(user_id, username)
+
+        ae_model_path = os.path.join("./model", user_id, "_autoencoder_model.keras")
+        models_exist = os.path.exists(ae_model_path)
+
+        if not models_exist:
+            logger.info(f"Models for user '{user_id}' not found. Starting initial training.")
+            
+            response = requests.get("https://j13b207.p.ssafy.io/api/ai/transaction?userId=" + user_id)
+            response.raise_for_status()
+
+            api_data = response.json()
+            items = api_data.get('items', [])
+
+            processed_transactions = []
+            for item in items:
+                if item.get('cardStatus') == 'APPROVED':
+                    dt = pd.to_datetime(item['dateTime'])
+                    processed_transactions.append({
+                        '날짜': dt.strftime('%Y-%m-%d'),
+                        '시간': dt.strftime('%H:%M:%S'),
+                        '타입': '지출',
+                        '대분류': item['categoryName'],
+                        '내용': item['merchantName'],
+                        '금액': item['amount']
+                    })
+            
+            train_df = pd.DataFrame(processed_transactions)
+
+            if train_df.empty:
+                return jsonify({"message": "No transactions found for user."}), 400
+
+            logger.info(f"Training models on {len(train_df)} transactions...")
+            ae_model, ae_scaler, ae_cols = ae.train_ae(train_df.copy())
+            if_model, if_encoder = it.train_if(train_df.copy())
+            model.save_autoencoder_model(ae_model, user_id)
+            model.save_isolation_forest_model(if_model, user_id)
+            model.save_preprocessor(ae_scaler, user_id, "ae_scaler")
+            model.save_preprocessor(ae_cols, user_id, "ae_train_cols")
+            model.save_preprocessor(if_encoder, user_id, "if_encoder")
+        else:
+            logger.info(f"Models for user '{user_id}' already exist. Skipping training.")
+            return jsonify({"message": "Models already exist for user"}), 200
+
+    except Exception as e:
+        logger.error(f"Failed to create models for user '{user_id}': {str(e)}")
+        return jsonify({"error": "Failed to create models for user"}), 500
+    
+    return jsonify({"message": "Models created successfully"}), 200
+
+    
 @app.route('/ai/transaction/anomaly', methods=['POST'])
 def transaction_anomaly():
     """
-    This endpoint receives a transaction and checks if it's an expense or income.
+    This endpoint receives a transaction and checks if it's an expense.
     It returns a JSON with the following structure:
     {
         "is_expense": bool  # True if the transaction is an expense, False otherwise
@@ -1002,6 +1074,7 @@ def transaction_anomaly():
 
     response_data = {'is_expense': is_expense}
     return jsonify(response_data)
+    
 
 
 
