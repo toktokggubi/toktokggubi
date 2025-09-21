@@ -1020,11 +1020,9 @@ def make_model():
 @app.route('/ai/transaction/anomaly', methods=['POST'])
 def transaction_anomaly():
     """
-    This endpoint receives a transaction and checks if it's an expense.
-    It returns a JSON with the following structure:
-    {
-        "is_expense": bool  # True if the transaction is an expense, False otherwise
-    }
+    각각의 결제내역에 대해 Anomaly Detection을 수행하는 API
+    Input : user_id, username, transaction
+    Output : is_expense : bool = True/False
     """
 
     data = request.get_json()
