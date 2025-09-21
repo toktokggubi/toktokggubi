@@ -10,9 +10,9 @@ import logging
 
 def find_autoencoder_model(uid: str):
     """Helper function to find and load autoencoder model"""
-    model_path = os.path.join("./model", uid, "_autoencoder_model.h5")
+    model_path = os.path.join("./model", uid, "_autoencoder_model.keras")
     if os.path.exists(model_path):
-        return tf.keras.models.load_model(model_path)
+        return tf.keras.models.load_model(model_path, custom_objects={'mse': tf.keras.losses.MeanSquaredError()})
     return None
 
 def find_isolation_forest_model(uid: str):
@@ -26,7 +26,7 @@ def save_autoencoder_model(model, uid: str):
     """Helper function to save autoencoder model"""
     model_dir = os.path.join("./model", uid)
     os.makedirs(model_dir, exist_ok=True)
-    model_path = os.path.join(model_dir, "_autoencoder_model.h5")
+    model_path = os.path.join(model_dir, "_autoencoder_model.keras")
     model.save(model_path)
     logging.info(f"Autoencoder model saved to {model_path}")
 

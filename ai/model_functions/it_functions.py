@@ -135,7 +135,17 @@ def predict_if(df: pd.DataFrame, model: IsolationForest, encoder: OneHotEncoder)
     # Prediction
     predictions = model.predict(features)
     
-    original_df['anomaly'] = predictions
+    original_df['날짜'] = pd.to_datetime(original_df['날짜']).dt.strftime('%Y-%m-%d')
+    original_df['시간'] = pd.to_datetime(original_df['시간']).dt.strftime('%H:%M')
+    
+    # Create a Series with predictions, using the index of the filtered df
+    # This ensures that the predictions align with the rows they were generated from
+    prediction_series = pd.Series(predictions, index=df.index)
+
+    # Initialize 'anomaly' column in original_df with a default value (e.g., 0 for non-anomalous)
+    original_df['anomaly'] = 0
+    # Assign predictions back to original_df based on the index
+    original_df.loc[df.index, 'anomaly'] = prediction_series
     anomalies = original_df[original_df['anomaly'] == -1].copy()
     
     return anomalies

@@ -100,3 +100,4 @@ jenkins/
 # Remove ai data files
 ai/data/
 data/data/
+ai/model/

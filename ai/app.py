@@ -2,6 +2,7 @@ from flask import Flask, jsonify, render_template_string, request
 import pandas as pd
 import os
 import numpy as np
+import sys
 import model_functions.ae_functions as ae
 import model_functions.it_functions as it
 import logging
@@ -40,7 +41,8 @@ if LLM_PROVIDER == "huggingface-local":
     if TRANSFORMERS_AVAILABLE and LLM_MODEL_NAME:
         logger.info(f"Attempting to load local Hugging Face model '{LLM_MODEL_NAME}'. This may take a while...")
         try:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            # device = "cuda" if torch.cuda.is_available() else "cpu"
+            device = "cpu"
             local_hf_tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
             # Set pad token if it's not set. This is crucial for models where pad_token is not configured.
             # It helps in batching and avoids warnings when pad_token_id is the same as eos_token_id.
@@ -92,6 +94,25 @@ elif LLM_PROVIDER == "openai":
 else:
     logger.warning("No valid LLM_PROVIDER configured. LLM features will be disabled.")
 
+# Mapping from budget keys (English) to transaction categories (Korean '대분류')
+# This is necessary because the budget is received with English keys,
+# but the transaction data uses Korean categories.
+BUDGET_CATEGORY_MAPPING = {
+    "total": "total",
+    "food": "식비",
+    "cafe": "카페/간식",
+    "nightlife": "술/유흥",
+    "life": "생활",
+    "cosmetics": "뷰티/미용",
+    "transportation": "교통",
+    "car": "자동차",
+    "medical": "의료/건강",
+    "entertainment": "문화/여가",
+    "shopping": "쇼핑",
+    "etc": "기타"
+}
+KOREAN_TO_ENGLISH_MAPPING = {v: k for k, v in BUDGET_CATEGORY_MAPPING.items()}
+
 
 # --- Database Configuration ---
 # To connect to the database, ensure the following environment variables are set in compose.yml:
@@ -106,16 +127,34 @@ try:
     DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
 except ImportError:
     PSYCOPG2_AVAILABLE = False
-    logger.warning("psycopg2-binary is not installed. Database operations will be disabled.")
+    win_msg = " For Windows, it is recommended to install 'psycopg2-binary' via pip."
+    logger.warning(
+        f"psycopg2 is not installed.{win_msg if sys.platform == 'win32' else ''} "
+        "Database operations will be disabled."
+    )
 
 def get_db_connection():
     """Establishes a connection to the PostgreSQL database."""
-    if not PSYCOPG2_AVAILABLE or not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
-        logger.error("Database connection details are not fully configured or psycopg2 is not installed.")
+    if not PSYCOPG2_AVAILABLE:
+        logger.error("Cannot connect to database because 'psycopg2' library is not installed.")
+        return None
+    if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+        logger.error("Database connection details are not fully configured. Please set DB_HOST, POSTGRES_DB, POSTGRES_USER, and POSTGRES_PASSWORD environment variables.")
         return None
     try:
-        conn = psycopg2.connect(host=DB_HOST, dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD)
+        conn = psycopg2.connect(
+            host=DB_HOST,
+            dbname=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            client_encoding='utf8'
+        )
         return conn
+    except UnicodeDecodeError as e:
+        logger.error(f"A Unicode decoding error occurred during database connection: {e}")
+        logger.error("This is a common issue on Windows if a PostgreSQL configuration file (e.g., pgpass.conf) is not saved in UTF-8 format.")
+        logger.error(r"To fix this, find the file at '%APPDATA%\postgresql\pgpass.conf', open it, and re-save it with 'UTF-8' encoding.")
+        return None
     except psycopg2.OperationalError as e:
         logger.error(f"Could not connect to PostgreSQL database: {e}")
         return None
@@ -427,7 +466,7 @@ def combined_anomaly_detection():
         logger.info("Starting combined anomaly detection")
         
         # Load and preprocess data
-        data_path = os.path.join('data', 'payment_lee.csv')
+        data_path = os.path.join('data', 'payment_lhy.csv')
         if not os.path.exists(data_path):
             error_msg = f"Data file not found at {data_path}"
             logger.error(error_msg)
@@ -614,19 +653,19 @@ def combined_anomaly_detection():
         logger.error(error_msg, exc_info=True)
         return jsonify({"error": error_msg}), 500
 
-def get_user_transactions(user_id: str, start_date: datetime, end_date: datetime):
+def get_user_transactions(user_id: str, user_name: str, start_date: datetime, end_date: datetime):
     """
     Placeholder function to fetch user transaction data.
     In a real application, this would query a database.
     For this example, it loads a user-specific CSV or a default one and filters by date.
     """
-    logger.info(f"Fetching data for user '{user_id}' from {start_date.date()} to {end_date.date()}")
+    logger.info(f"Fetching data for user '{user_name}' from {start_date.date()} to {end_date.date()}")
     
-    data_path = os.path.join('data', f'payment_{user_id}.csv')
+    data_path = os.path.join('data', f'payment_{user_name}.csv')
     if not os.path.exists(data_path):
         # Fallback to a default file for demonstration
-        data_path = os.path.join('data', 'payment_lee.csv')
-        logger.warning(f"No data file for user '{user_id}'. Using default data from {data_path}")
+        data_path = os.path.join('data', 'payment_lhy.csv')
+        logger.warning(f"No data file for user '{user_name}'. Using default data from {data_path}")
 
     try:
         df = pd.read_csv(data_path)
@@ -647,16 +686,17 @@ def analyze_user_data():
     """
     try:
         req_data = request.get_json()
-        if not req_data or 'user_id' not in req_data or 'username' not in req_data:
-            return jsonify({"error": "Request body must be JSON and contain 'user_id' and 'username'"}), 400
+        if not req_data or 'user_id' not in req_data or 'username' not in req_data or 'budget' not in req_data:
+            return jsonify({"error": "Request body must be JSON and contain 'user_id', 'username', and 'budget'"}), 400
 
         user_id = req_data['user_id']
         username = req_data['username']
+        budget = req_data['budget']
 
         # Register user in the database if they don't exist
         register_user_if_not_exists(user_id, username)
 
-        ae_model_path = os.path.join("./model", user_id, "_autoencoder_model.h5")
+        ae_model_path = os.path.join("./model", user_id, "_autoencoder_model.keras")
         models_exist = os.path.exists(ae_model_path)
 
         analysis_df = pd.DataFrame()
@@ -668,7 +708,7 @@ def analyze_user_data():
             
             end_date = datetime.now()
             start_date = end_date - relativedelta(years=1)
-            train_df = get_user_transactions(user_id, start_date, end_date)
+            train_df = get_user_transactions(user_id, username, start_date, end_date)
 
             if train_df.empty or len(train_df) < 50:
                 return jsonify({"message": "Not enough historical data to create an analysis model. At least 1 year of data with 50+ transactions is recommended."}), 400
@@ -685,7 +725,7 @@ def analyze_user_data():
 
             logger.info("Analyzing current month's data with newly trained models.")
             start_of_month = end_date.replace(day=1, hour=0, minute=0, second=0)
-            analysis_df = get_user_transactions(user_id, start_of_month, end_date)
+            analysis_df = get_user_transactions(user_id, username, start_of_month, end_date)
             
             if analysis_df.empty:
                 return jsonify({"message": "No transactions found for the current month to analyze."})
@@ -709,7 +749,7 @@ def analyze_user_data():
             today = datetime.now()
             end_of_last_month = today.replace(day=1) - timedelta(days=1)
             start_of_last_month = end_of_last_month.replace(day=1)
-            analysis_df = get_user_transactions(user_id, start_of_last_month, end_of_last_month)
+            analysis_df = get_user_transactions(user_id=user_id, user_name=username, start_date=start_of_last_month, end_date=end_of_last_month)
 
             if analysis_df.empty:
                 return jsonify({"message": "No transactions found for the previous month to analyze."})
@@ -755,6 +795,41 @@ def analyze_user_data():
         if filtered_df.empty:
             logger.info("No expense anomalies detected after filtering.")
             summary = "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
+
+            # Calculate spending even if no anomalies
+            expense_df = analysis_df[analysis_df['타입'] == '지출'].copy()
+            spending_by_cat = expense_df.groupby('대분류')['금액'].sum().to_dict()
+            total_spending = int(sum(spending_by_cat.values()))
+
+            summary_prompt = (
+                f"'{username}'님의 소비 데이터를 분석한 결과, 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요. "
+                f"현재 지출 현황을 알려드릴게요.\n\n"
+            )
+
+            if budget:
+                budget_total = budget.get('total', 0)
+                summary_prompt += f"총 예산 {budget_total}원 중 {total_spending}원을 지출하셨습니다.\n"
+                
+                overspent_categories = []
+                for category_en, budget_amount in budget.items():
+                    if category_en == 'total' or not budget_amount:
+                        continue
+                    
+                    category_kr = BUDGET_CATEGORY_MAPPING.get(category_en)
+                    if not category_kr:
+                        continue # Skip if no mapping exists for the budget category
+
+                    actual_spending = int(spending_by_cat.get(category_kr, 0))
+                    if actual_spending > budget_amount:
+                        overspent_categories.append(f"{category_kr}({actual_spending - budget_amount}원 초과)")
+                
+                if overspent_categories:
+                    summary_prompt += f"다만, {', '.join(overspent_categories)} 카테고리에서는 예산을 초과했습니다. 이 점 참고해주세요."
+                else:
+                    summary_prompt += "모든 카테고리에서 예산을 잘 지키고 계십니다!"
+
+            summary = generate_llm_response(summary_prompt) or "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
+
             return jsonify({
                 "overall_summary": summary,
                 "anomalies": [],
@@ -769,13 +844,34 @@ def analyze_user_data():
         anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
         anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
 
+        # Calculate total spending for prompt context
+        expense_df = analysis_df[analysis_df['타입'] == '지출'].copy()
+        spending_by_cat = expense_df.groupby('대분류')['금액'].sum().to_dict()
+        total_spending = int(sum(spending_by_cat.values()))
+
         summary_prompt = (
             f"'{username}'님의 소비 데이터를 분석한 결과입니다. 이 정보를 바탕으로 사용자에게 현재 소비 상태에 대한 전반적인 요약(overall_summary)을 한국어로 생성해주세요.\n\n"
-            f"- 총 거래 건수: {total_transactions}건\n"
+            f"- 총 지출 거래 건수: {total_transactions}건\n"
             f"- 발견된 이상 소비 건수: {anomaly_count}건\n"
             f"- 이상 소비가 가장 많은 상위 카테고리: {list(anomaly_categories.keys())[:3]}\n\n"
-            "요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 어떤 분야에 주의해야 하는지 언급해주세요."
         )
+        if budget:
+            summary_prompt += "사용자의 예산 및 실제 지출 현황은 다음과 같습니다:\n"
+            budget_total = budget.get('total', '미설정')
+            summary_prompt += f"- 총 예산: {budget_total}원 / 총 지출: {total_spending}원\n"
+            
+            summary_prompt += "\n카테고리별 예산 대비 지출 현황 (상위 5개 지출 카테고리):\n"
+            sorted_spending = sorted(spending_by_cat.items(), key=lambda item: item[1], reverse=True)
+            for i, (category_kr, actual_spending) in enumerate(sorted_spending):
+                if i >= 5: break
+                category_en = KOREAN_TO_ENGLISH_MAPPING.get(category_kr)
+                budget_amount = budget.get(category_en) if category_en else None
+                if budget_amount:
+                    summary_prompt += f"  - {category_kr}: 예산 {budget_amount}원 / 지출 {int(actual_spending)}원\n"
+                else:
+                    summary_prompt += f"  - {category_kr}: 예산 미설정 / 지출 {int(actual_spending)}원\n"
+
+        summary_prompt += "\n위 정보를 바탕으로, 요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 예산 초과 여부와 어떤 분야에 주의해야 하는지 언급해주세요."
         overall_summary = generate_llm_response(summary_prompt) or "이상 소비 내역이 발견되었습니다. 지출 내역을 검토하여 예산을 관리하는 것을 추천합니다."
 
         anomalies_list_df = filtered_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
@@ -784,16 +880,26 @@ def analyze_user_data():
         anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시각'])
         anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
 
-        recommend_category = anomaly_amount_by_cat.index[0]
+        recommend_category_kr = anomaly_amount_by_cat.index[0]
         savings = int(anomaly_amount_by_cat.iloc[0])
         
         adjustment_prompt = (
-            f"'{username}'님의 이상 소비 분석 결과, '{recommend_category}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
-            f"- 조정 추천 카테고리: '{recommend_category}'\n"
-            f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n\n"
-            "JSON 형식은 다음과 같아야 합니다:\n"
+            f"'{username}'님의 이상 소비 분석 결과, '{recommend_category_kr}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
+            f"- 조정 추천 카테고리: '{recommend_category_kr}'\n"
+            f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n"
+        )
+        if budget:
+            recommend_category_en = KOREAN_TO_ENGLISH_MAPPING.get(recommend_category_kr)
+            budget_amount = budget.get(recommend_category_en) if recommend_category_en else None
+            if budget_amount:
+                actual_spending = spending_by_cat.get(recommend_category_kr, 0)
+                adjustment_prompt += f"- 해당 카테고리 예산: {budget_amount}원\n"
+                adjustment_prompt += f"- 해당 카테고리 총 지출: {int(actual_spending)}원\n"
+        
+        adjustment_prompt += (
+            "\nJSON 형식은 다음과 같아야 합니다:\n"
             "{\n"
-            "  \"recommendation\": \"'{category}' 분야의 지출을 줄이는 것을 추천하는 문장\",\n"
+            "  \"recommendation\": \"'{category}' 분야의 지출을 줄이는 것을 추천하는 문장. 예산과 실제 지출을 비교하여 언급해주세요.\",\n"
             "  \"budget_change_impact\": \"지출을 줄였을 때의 긍정적 효과에 대한 설명\",\n"
             "  \"predicted_savings\": {amount_integer}\n"
             "}\n\n"
@@ -803,15 +909,25 @@ def analyze_user_data():
         adjustment = None
         if llm_adjustment_str:
             try:
-                adjustment = json.loads(llm_adjustment_str)
+                # The model sometimes returns extra text after the JSON object.
+                # We use raw_decode to parse only the first valid JSON object from the string.
+                json_decoder = json.JSONDecoder()
+                start_index = llm_adjustment_str.find('{')
+                if start_index == -1:
+                    raise json.JSONDecodeError("No JSON object found in response", llm_adjustment_str, 0)
+                
+                adjustment, _ = json_decoder.raw_decode(llm_adjustment_str[start_index:])
+
+                # Ensure predicted_savings is an integer and exists
                 adjustment['predicted_savings'] = int(adjustment.get('predicted_savings', savings))
-            except (json.JSONDecodeError, TypeError):
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Failed to parse LLM adjustment response: {e}. Response was: {llm_adjustment_str}")
                 adjustment = None
         
         if not adjustment:
             adjustment = {
-                "recommendation": f"'{recommend_category}' 분야의 지출을 줄이는 것을 고려해보세요.",
-                "budget_change_impact": f"'{recommend_category}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
+                "recommendation": f"'{recommend_category_kr}' 분야의 지출을 줄이는 것을 고려해보세요.",
+                "budget_change_impact": f"'{recommend_category_kr}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
                 "predicted_savings": savings
             }
 
@@ -828,6 +944,66 @@ def analyze_user_data():
         error_msg = f"Error during analysis for user '{user_id}': {str(e)}"
         logger.error(error_msg, exc_info=True)
         return jsonify({"error": error_msg}), 500
+
+@app.route('/ai/transaction/anomaly', methods=['POST'])
+def transaction_anomaly():
+    """
+    This endpoint receives a transaction and checks if it's an expense or income.
+    It returns a JSON with the following structure:
+    {
+        "is_expense": bool  # True if the transaction is an expense, False otherwise
+    }
+    """
+
+    data = request.get_json()
+    if not data:
+        logger.error('[transaction_anomaly] Request body is empty')
+        return jsonify({'error': 'Request body is empty'}), 400
+
+    user_id = data.get('user_id')
+    username = data.get('username')
+    transaction = data.get('transaction')
+
+    transaction_date = transaction.get('date')
+    transaction_time = transaction.get('time')
+    transaction_amount = transaction.get('amount')
+    transaction_category = transaction.get('category')
+    transaction_content = transaction.get('content')
+
+    if not transaction:
+        logger.error('[transaction_anomaly] Transaction is missing')
+        return jsonify({'error': 'Transaction is missing'}), 400
+
+    ae_model = model.find_autoencoder_model(user_id)
+    if_model = model.find_isolation_forest_model(user_id)
+    ae_scaler = model.find_preprocessor(user_id, "ae_scaler")
+    ae_cols = model.find_preprocessor(user_id, "ae_train_cols")
+    if_encoder = model.find_preprocessor(user_id, "if_encoder")
+
+    
+    # Check if the transaction is anomaly using the autoencoder model
+    if ae_model and ae_scaler and ae_cols:
+        transaction_data = {col: transaction.get(col) for col in ae_cols}
+        transaction_data = ae_scaler.transform(pd.DataFrame(transaction_data, index=[0]))
+        transaction_data = pd.DataFrame(transaction_data, columns=ae_cols)
+        prediction = ae_model.predict(transaction_data)
+        is_anomaly = prediction.max() > 0.5
+        logger.info(f"[transaction_anomaly][autoencoder] Transaction by user '{user_id}' is {'anomaly' if is_anomaly else 'not anomaly'}")
+    
+    # Check if the transaction is anomaly using the isolation forest model
+    if if_model and if_encoder:
+        transaction_data = {col: transaction.get(col) for col in if_encoder.get_feature_names_out()}
+        transaction_data = pd.DataFrame(transaction_data, index=[0])
+        prediction = if_model.predict(if_encoder.transform(transaction_data))
+        is_anomaly |= prediction == -1
+        logger.info(f"[transaction_anomaly][isolation_forest] Transaction by user '{user_id}' is {'anomaly' if is_anomaly else 'not anomaly'}")
+    
+    is_expense = is_anomaly
+
+    response_data = {'is_expense': is_expense}
+    return jsonify(response_data)
+
+
 
 if __name__ == "__main__":
     # Create necessary directories
