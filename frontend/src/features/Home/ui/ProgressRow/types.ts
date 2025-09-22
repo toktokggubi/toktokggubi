@@ -14,4 +14,7 @@ export interface ProgressRowProps {
   showUsageDetails?: boolean;
   isExpanded?: boolean;
   onUsageDetailsPress?: () => void;
+  
+  // 편집 버튼 props
+  onEditPress?: () => void;
 }
