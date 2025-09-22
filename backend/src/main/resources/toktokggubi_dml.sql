@@ -4,16 +4,18 @@
 
 -- ========== category ==========
 INSERT INTO `category` (`name`, `description`, `sort_order`) VALUES
-                                                                 ('식비',        NULL, 1),
-                                                                 ('카페/간식',    NULL, 2),
-                                                                 ('술/유흥',      NULL, 3),
-                                                                 ('생활',        NULL, 4),
-                                                                 ('쇼핑',        NULL, 5),
-                                                                 ('뷰티/미용',    NULL, 6),
-                                                                 ('교통',        NULL, 7),
-                                                                 ('자동차',       NULL, 8),
-                                                                 ('의료/건강',    NULL, 9),
-                                                                 ('문화',        NULL,10);
+                                                                 ('식비',       NULL, 1),
+                                                                 ('카페/간식',   NULL, 2),
+                                                                 ('술/유흥',     NULL, 3),
+                                                                 ('생활',       NULL, 4),
+                                                                 ('쇼핑',       NULL, 5),
+                                                                 ('뷰티/미용',   NULL, 6),
+                                                                 ('교통',       NULL, 7),
+                                                                 ('자동차',      NULL, 8),
+                                                                 ('의료/건강',   NULL, 9),
+                                                                 ('문화',       NULL, 10),
+                                                                 ('기타',       NULL, 11);
+
 
 -- ========== franchise ==========
 INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('스타벅스', '/images/franchise/starbucks.png');
