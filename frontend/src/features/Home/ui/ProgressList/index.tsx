@@ -1,16 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { ProgressRow } from "../ProgressRow";
 import { TransactionList } from "../TransactionList";
 import { ProgressListProps, CategoryBudget, Transaction } from "./types";
 import { colors } from "@/shared/constants/colors";
 import { Category } from "@/shared/constants/categories";
+import { Ionicons } from "@expo/vector-icons";
 
 export const ProgressList: React.FC<ProgressListProps> = ({
   categoryBudgets,
   onCategoryPress,
   title,
   transactions = {},
+  onEditPress,
 }) => {
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
 
@@ -28,10 +30,19 @@ export const ProgressList: React.FC<ProgressListProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 제목 - title이 있을 때만 표시 */}
+      {/* 제목과 연필 버튼 */}
       {title && (
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{title}</Text>
+          {onEditPress && (
+            <TouchableOpacity 
+              style={styles.editButton} 
+              onPress={onEditPress}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="pencil" size={20} color={colors.BLUE_NORMAL} />
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -98,12 +109,21 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   titleContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   title: {
     fontSize: 18,
     fontWeight: "700",
     color: colors.GRAY_DARKER,
+    flex: 1,
+  },
+  editButton: {
+    padding: 4,
+    borderRadius: 6,
+    backgroundColor: colors.BLUE_LIGHT,
   },
   listContent: {
     paddingBottom: 8,

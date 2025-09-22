@@ -104,12 +104,9 @@ services:
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_sa_json
-      - FCM_ENABLED=true
-      - FCM_CREDENTIALS_LOCATION=file:/run/secrets/fcm_credentials_json
       # Other common environment variables for backend
     secrets:
       - gcp_sa_json
-      - fcm_credentials_json
     volumes:
       - ./backend/uploads:/data/uploads
       
@@ -149,17 +146,12 @@ services:
       - ./jenkins/jenkins_home:/var/jenkins_home
       # Mount Docker socket to allow Jenkins to build/run other Docker containers
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
-      - /home/ubuntu/S13P21B207:/home/ubuntu/S13P21B207
       # Mount Docker client binary from host if docker-compose isn't in Jenkins image
       # - /usr/local/bin/docker:/usr/local/bin/docker
-    group_add:
-      - "122"  
+    # group_add:
+    #   - "122"  
     restart: always
 
 secrets:
   gcp_sa_json:
     file: ./secrets/toktokggubi-sa.json
-  fcm_credentials_json:
-    file: ./secrets/firebase-service-account.json
