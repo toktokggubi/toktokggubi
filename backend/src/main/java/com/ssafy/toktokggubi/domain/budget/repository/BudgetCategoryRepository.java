@@ -3,12 +3,32 @@ package com.ssafy.toktokggubi.domain.budget.repository;
 import com.ssafy.toktokggubi.domain.budget.entity.BudgetCategory;
 import com.ssafy.toktokggubi.domain.budget.entity.UserMonthlyBudget;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
 public interface BudgetCategoryRepository extends JpaRepository<BudgetCategory, Long> {
+
+
+    // ✅ 엔티티 연관만 사용하는 JPQL
+    @Query("""
+        SELECT COALESCE(bc.finalAmount, 0)
+          FROM BudgetCategory bc
+          JOIN bc.userMonthlyBudget umb
+          JOIN bc.userSelectedCategory usc
+          JOIN usc.category c
+         WHERE umb.user.userId = :userId
+           AND umb.budgetYm = :budgetYm
+           AND c.categoryId = :categoryId
+    """)
+    Long findFinalAmountByUserYmAndCategory(
+            @Param("userId") long userId,
+            @Param("budgetYm") String budgetYm,    // "YYYYMM"
+            @Param("categoryId") long categoryId
+    );
 
     void deleteByUserMonthlyBudget(UserMonthlyBudget umb);
 

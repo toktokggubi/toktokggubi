@@ -8,20 +8,18 @@
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    user_id VARCHAR(50) NOT NULL UNIQUE
 );
 
--- Insert some initial data into the users table
-INSERT INTO users (username, email, password_hash) VALUES
-    ('admin', 'admin@example.com', 'hashed_admin_password_123'), -- Replace with actual hashed passwords in production
-    ('john.doe', 'john.doe@example.com', 'hashed_john_password_456')
-ON CONFLICT (username) DO NOTHING; -- Avoid inserting duplicates on subsequent runs
+-- Create an index on the user_id column for faster lookups
+CREATE INDEX IF NOT EXISTS idx_users_user_id ON users (user_id);
 
--- Create an index on the email column for faster lookups
-CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
-
+-- Insert initial user data based on available CSV files for testing
+INSERT INTO users (username, user_id) VALUES
+   ('kwonjaheun', 'kwonjaheun'),
+   ('yang', 'yang'),
+   ('lee', 'lee')
+ON CONFLICT (user_id) DO NOTHING;
 -- Optional: Create a table for products (as an example of another entity)
 -- CREATE TABLE IF NOT EXISTS products (
 --    product_id SERIAL PRIMARY KEY,

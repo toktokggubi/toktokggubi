@@ -1,5 +1,6 @@
-package com.ssafy.toktokggubi.domain.notification.entity;
+package com.ssafy.toktokggubi.domain.push.entity;
 
+import com.ssafy.toktokggubi.domain.notification.entity.DevicePlatform;
 import com.ssafy.toktokggubi.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
         name = "device_push_token",
         uniqueConstraints = @UniqueConstraint(name = "uq_user_token", columnNames = {"user_id", "token"})
 )
-public class DevicePushToken {
+public class PushToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "device_push_token_id", nullable = false)
@@ -44,4 +45,21 @@ public class DevicePushToken {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    /* ========= 도메인 메서드 ========= */
+
+    /** 토큰 활성화 */
+    public void activate() {
+        this.isActive = true;
+    }
+
+    /** 토큰 비활성화 */
+    public void deactivate() {
+        this.isActive = false;
+    }
+
+    /** 소유자 교체 */
+    public void changeOwner(User newUser) {
+        this.user = newUser;
+    }
 }

@@ -1,15 +1,15 @@
-import React, { memo, useMemo, useState, useCallback } from "react";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { Feather } from "@expo/vector-icons";
+import React, { memo, useCallback, useMemo, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
   LayoutChangeEvent,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import type { SaleCalendarProps } from "./types";
-import { colors } from "@/shared/constants/colors";
-import { Feather } from "@expo/vector-icons";
-import { font } from "@/shared/typography/font";
 
 const CELL_H = 64; // 날짜 셀 높이
 const CELL_PAD_X = 6; // 셀 좌우 패딩(s.cell.padding과 일치)
@@ -320,10 +320,11 @@ const s = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   // ▼ 월 전환
   navRow: {

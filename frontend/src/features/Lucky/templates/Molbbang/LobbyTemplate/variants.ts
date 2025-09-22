@@ -1,7 +1,7 @@
 // src/features/Lucky/templates/Molbbang/LobbyTemplate/variants.ts
-import { StyleSheet } from "react-native";
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
+import { StyleSheet } from "react-native";
 
 export const s = StyleSheet.create({
   container: {
@@ -70,11 +70,11 @@ export const s = StyleSheet.create({
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: colors.GRAY_LIGHT,
-    shadowColor: colors.BLUE_DARK,
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
     shadowOffset: { width: 0, height: 0 },
-    elevation: 7,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   memberItem: {
     paddingVertical: 10,

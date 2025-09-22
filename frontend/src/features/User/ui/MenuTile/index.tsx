@@ -1,3 +1,4 @@
+import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import React, { memo } from "react";
 import { Image, Pressable, StyleSheet, Text } from "react-native";
@@ -34,8 +35,15 @@ const s = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-    // Android 그림자
-    elevation: 2,
+    // 마이페이지 다른 요소들과 통일된 그림자 스타일
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
   },
   pressed: { opacity: 0.92 },
   disabled: { opacity: 0.5 },

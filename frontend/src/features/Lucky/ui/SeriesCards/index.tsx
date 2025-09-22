@@ -1,9 +1,9 @@
-import React, { memo } from "react";
-import { View, Text, StyleSheet, Pressable, Image } from "react-native";
-import type { SeriesCardsProps } from "./types";
 import { colors } from "@/shared/constants/colors";
-import { Ionicons } from "@expo/vector-icons";
 import { font } from "@/shared/typography/font";
+import { Ionicons } from "@expo/vector-icons";
+import React, { memo } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import type { SeriesCardsProps } from "./types";
 
 function SeriesCardsImpl({
   onPressNbbang,
@@ -90,10 +90,10 @@ const s = StyleSheet.create({
     flex: 1,
     backgroundColor: "#fff",
     borderRadius: RADIUS,
-    shadowColor: "#929292ff",
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowColor: colors.BLUE_LIGHT_ACTIVE,
     shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
     elevation: 5,
   },
   head: {

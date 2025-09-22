@@ -107,7 +107,7 @@ const s = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 50,
     // paddingBottom은 runtime에서 추가됨
   },
   header: {
