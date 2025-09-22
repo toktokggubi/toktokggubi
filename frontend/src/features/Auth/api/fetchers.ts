@@ -71,6 +71,17 @@ export async function fetchProfile() {
   };
 }
 
+// UM-12 프로필 수정
+export async function updateProfile(payload: {
+  nickname: string;
+  ageGroup: string;
+  jobTitle: string;
+  monthlyIncome: number;
+}) {
+  const { data } = await http.put(AUTH_ENDPOINTS.profile, payload);
+  return data as { message: string };
+}
+
 // UM-7 로그아웃
 export async function logout() {
   const { data } = await http.post(AUTH_ENDPOINTS.logout);

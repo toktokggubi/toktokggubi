@@ -35,8 +35,9 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/ai/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment", "/images/**").permitAll()
                         .requestMatchers("/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
                                 "/auth/token/refresh", "/auth/kakao/login").permitAll()
                         .requestMatchers("/push/**", "/dev/**").permitAll()
@@ -46,7 +47,6 @@ public class SecurityConfig {
                         .authenticationEntryPoint((req, res, e) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                         .accessDeniedHandler((req, res, e) -> res.sendError(HttpServletResponse.SC_FORBIDDEN))
                 )
-                // JWT 필터는 인증이 필요한 엔드포인트에서만 적용
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

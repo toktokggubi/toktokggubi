@@ -50,7 +50,7 @@ function BenefitsListImpl({ benefits }: BenefitsListProps) {
           key={`${b.franchiseId}-${b.franchiseName}`}
           name={b.franchiseName}
           percent={b.discountRate}
-          category={b.representativeCategory.categoryName}
+          category={b.representativeCategory?.categoryName || "기타"}
         />
       ))}
     </View>
@@ -65,9 +65,10 @@ const s = StyleSheet.create({
     paddingHorizontal: 14,
     marginHorizontal: 16,
     marginTop: 16,
-    marginBottom: 16,
+    marginBottom: 32, // 하단 여백 증가 (SafeArea 고려)
     shadowColor: colors.GRAY_DARK,
     elevation: 5,
+    flex: 1, // 스크롤 뷰 내에서 공간을 모두 사용
   },
   title: {
     fontSize: 16,

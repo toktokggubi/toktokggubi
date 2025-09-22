@@ -93,14 +93,15 @@ export default function PersonalInfoScreen() {
     // 간단 검증
     if (!data.nickname) return Alert.alert("알림", "닉네임을 입력해 주세요.");
     if (!data.ageGroup) return Alert.alert("알림", "연령대를 선택해 주세요.");
-    if (!data.jobTitle) return Alert.alert("알림", "직무를 선택해 주세요.");
+    if (!data.jobTitle) return Alert.alert("알림", "직업을 선택해 주세요.");
     if (!data.monthlyIncome || isNaN(data.monthlyIncome))
       return Alert.alert("알림", "월 소득을 숫자로 입력해 주세요.");
 
     try {
       await signupCompleteMutation.mutateAsync(data);
-      // 성공 시 환영 화면으로 이동
-      router.push("/auth/welcome");
+      
+      // 회원가입 완료 후 무조건 예산 소개 화면으로 이동
+      router.replace("/budget");
     } catch (error: any) {
       console.error("회원가입 완료 실패:", error);
       Alert.alert(
@@ -203,7 +204,7 @@ export default function PersonalInfoScreen() {
           </ScrollView>
         </SafeAreaViewContext>
       </AppBottomSheet>
-      {/* 직무 시트 */}
+      {/* 직업 시트 */}
       <AppBottomSheet ref={jobSheetRef} snapPoints={["90%"]} initialIndex={-1}>
         <SafeAreaViewContext style={{ flex: 1 }} edges={['bottom']}>
           <View style={{ flex: 1, paddingVertical: 8, paddingBottom: 100 }}>

@@ -96,3 +96,5 @@ database/postgres/
 
 # Ignore Jenkins CI/CD files
 jenkins/
+
+secrets/

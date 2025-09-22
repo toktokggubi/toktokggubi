@@ -24,3 +24,4 @@ public interface TransactionSummaryRepository extends JpaRepository<CardTransact
 
 
 }
+

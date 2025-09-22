@@ -9,6 +9,8 @@ import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import FCMService from "@/shared/services/fcmService";
+import NotificationHandler from "@/shared/components/NotificationHandler";
 
 export default function RootLayout() {
   const [loaded] = useFonts({
@@ -33,6 +35,20 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!loaded) return;
+
+    // FCM 서비스 초기화
+    const initializeFCM = async () => {
+      try {
+        const fcmService = FCMService.getInstance();
+        await fcmService.initialize();
+        fcmService.setupTokenRefreshListener();
+        console.log('FCM 서비스가 성공적으로 초기화되었습니다.');
+      } catch (error) {
+        console.error('FCM 초기화 실패:', error);
+      }
+    };
+
+    initializeFCM();
 
     // 전역 기본값 (필요시 숫자만 조절)
     const BASE_FONT_SIZE = 16;
@@ -96,13 +112,15 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <BottomSheetModalProvider>
           <SafeAreaProvider>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-              <Stack.Screen name="pay" options={{ headerShown: false }} />
-              <Stack.Screen name="budget" options={{ headerShown: false }} />
-              <Stack.Screen name="+not-found" />
-            </Stack>
+            <NotificationHandler>
+              <Stack>
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="auth" options={{ headerShown: false }} />
+                <Stack.Screen name="pay" options={{ headerShown: false }} />
+                <Stack.Screen name="budget" options={{ headerShown: false }} />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+            </NotificationHandler>
           </SafeAreaProvider>
         </BottomSheetModalProvider>
       </QueryClientProvider>

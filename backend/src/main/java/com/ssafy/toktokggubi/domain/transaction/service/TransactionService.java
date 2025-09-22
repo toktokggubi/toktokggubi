@@ -1,13 +1,11 @@
 package com.ssafy.toktokggubi.domain.transaction.service;
 
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategoryListResponseDto;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryItemDto;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxCategorySummaryResponseDto;
-import com.ssafy.toktokggubi.domain.transaction.dto.TxSummaryResponseDto;
+import com.ssafy.toktokggubi.domain.transaction.dto.*;
 import com.ssafy.toktokggubi.domain.transaction.repository.TransactionCategoryRepository;
 import com.ssafy.toktokggubi.domain.transaction.repository.TransactionSummaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -15,6 +13,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -122,6 +125,56 @@ public class TransactionService {
         if (o instanceof Number n) return n.longValue();
         try { return Long.parseLong(o.toString()); } catch (Exception e) { return 0L; }
     }
+    // TransactionService.java (추가/수정)
+    public TxFlatListResponseDto getTransactionListForAi(long userId, String ym) {
+        if (ym == null || ym.isBlank()) {
+            // ✅ 전체: 기간 계산 없이 전부 반환
+            var rows = categoryRepo.findAllTransactionsRaw(userId);
+            var items = rows.stream().map(r -> new TxFlatListResponseDto.Item(
+                    toLong(r[0]),  // categoryId
+                    str(r[1]),     // categoryName
+                    str(r[2]),     // txNo
+                    toIsoDateTime(str(r[3]), str(r[4])), // ymd+hms -> ISO
+                    toLong(r[5]),  // amount
+                    str(r[6]),     // cardStatus
+                    toLong(r[7]),  // merchantId
+                    str(r[8]),     // merchantName
+                    toLong(r[9]),  // userCardId
+                    str(r[10])     // cardName
+            )).toList();
+
+            return new TxFlatListResponseDto(userId, null, items); // period=null
+        }
+
+        // yyyyMM 형식 검증 후 해당 월 범위 조회
+        String v = ym.trim();
+        if (!v.matches("\\d{6}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "month는 yyyyMM 형식이어야 합니다.");
+        }
+        int y = Integer.parseInt(v.substring(0, 4));
+        int m = Integer.parseInt(v.substring(4, 6));
+        YearMonth yearMonth = YearMonth.of(y, m);
+        LocalDate from = yearMonth.atDay(1);
+        LocalDate to   = yearMonth.atEndOfMonth();
+        String fromYmd = from.format(YMD);
+        String toYmd   = to.format(YMD);
+
+        var rows = categoryRepo.findCategoryAllTransactionsRaw(userId, fromYmd, toYmd);
+        var items = rows.stream().map(r -> new TxFlatListResponseDto.Item(
+                toLong(r[0]), str(r[1]), str(r[2]),
+                toIsoDateTime(str(r[3]), str(r[4])),
+                toLong(r[5]), str(r[6]),
+                toLong(r[7]), str(r[8]),
+                toLong(r[9]), str(r[10])
+        )).toList();
+
+        return new TxFlatListResponseDto(
+                userId,
+                new TxFlatListResponseDto.PeriodRange(fromYmd, toYmd),
+                items
+        );
+    }
+
 
     private static String str(Object o) { return o == null ? "" : o.toString(); }
 
@@ -161,3 +214,4 @@ public class TransactionService {
     }
 
 }
+

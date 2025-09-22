@@ -24,6 +24,7 @@ export interface PersonalInfoTemplateProps {
   onChangeMonthlyIncome: (v: string) => void;
 
   onSubmit: () => void;
+  isSubmitting?: boolean;
 
   // helper labels (선택)
   nicknameHelperText?: string;

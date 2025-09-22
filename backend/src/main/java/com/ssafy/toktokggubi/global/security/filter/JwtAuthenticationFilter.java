@@ -28,9 +28,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest req, @NotNull HttpServletResponse res, @NotNull FilterChain chain)
             throws ServletException, IOException {
-
-
-
+        String uri = req.getRequestURI();
+        if ("OPTIONS".equalsIgnoreCase(req.getMethod())
+                || uri.startsWith("/ai/")
+                || uri.startsWith("/swagger-ui")
+                || uri.startsWith("/v3/api-docs")
+                || uri.startsWith("/actuator/health")
+                || uri.startsWith("/actuator/info")) {
+            chain.doFilter(req, res);
+            return;
+        }
         String auth = req.getHeader(HttpHeaders.AUTHORIZATION);
 
         if (auth != null && auth.startsWith("Bearer ")) {
@@ -49,6 +56,4 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         chain.doFilter(req, res);
     }
-
-
 }

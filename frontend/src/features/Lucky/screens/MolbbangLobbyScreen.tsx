@@ -84,7 +84,12 @@ export default function MolbbangLobbyScreen() {
           if (r.status === "playing") {
             router.replace({
               pathname: "/molbbang/room/[code]/game",
-              params: { code, nick: nickname, amount },
+              params: {
+                code,
+                nick: nickname,
+                amount,
+                host: hostFlagFromParams ? "1" : "0",
+              },
             });
           }
         }
@@ -157,7 +162,7 @@ export default function MolbbangLobbyScreen() {
     }
     router.replace({
       pathname: "/molbbang/room/[code]/game",
-      params: { code, nick: nickname, amount },
+      params: { code, nick: nickname, amount, host: isHost ? "1" : "0" },
     });
   }, [code, nickname, amount, router]);
 

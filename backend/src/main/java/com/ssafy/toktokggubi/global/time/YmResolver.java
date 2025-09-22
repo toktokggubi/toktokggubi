@@ -1,4 +1,3 @@
-// src/main/java/com/ssafy/toktokggubi/global/time/BudgetYmResolver.java
 package com.ssafy.toktokggubi.global.time;
 
 import org.springframework.stereotype.Component;

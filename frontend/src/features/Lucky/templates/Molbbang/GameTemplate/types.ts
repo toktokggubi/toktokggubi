@@ -16,4 +16,6 @@ export interface GameTemplateProps {
   isFinalRound: boolean;
   onNextRound: () => void;
   onViewFinal: () => void;
+
+  remainingSeconds: number;
 }

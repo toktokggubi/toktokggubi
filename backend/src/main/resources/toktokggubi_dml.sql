@@ -13,8 +13,7 @@ INSERT INTO `category` (`name`, `description`, `sort_order`) VALUES
                                                                  ('교통',        NULL, 7),
                                                                  ('자동차',       NULL, 8),
                                                                  ('의료/건강',    NULL, 9),
-                                                                 ('문화',        NULL,10),
-                                                                 ('기타',        NULL,11);
+                                                                 ('문화',        NULL,10);
 
 -- ========== franchise ==========
 INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('스타벅스', '/images/franchise/starbucks.png');
