@@ -17,13 +17,26 @@ export const CharacterBackground: React.FC<CharacterBackgroundProps> = ({
   progressPercentage = 0,
   size = 120,
 }) => {
+  // 예산 사용률에 따라 다른 물 애니메이션 선택
+  const getWaterImage = () => {
+    if (progressPercentage <= 25) {
+      return require("@/assets/images/illustration/water1.gif");
+    } else if (progressPercentage <= 50) {
+      return require("@/assets/images/illustration/water2.gif");
+    } else if (progressPercentage <= 75) {
+      return require("@/assets/images/illustration/water3.gif");
+    } else {
+      return require("@/assets/images/illustration/water4.gif");
+    }
+  };
+
   return (
     <View style={styles.container}>
-      {/* Bowl 이미지 - 화면 상단에 위치 */}
-      <Image 
-        source={require("@/assets/images/illustration/bowl.png")} 
+      {/* Bowl 이미지 - 화면 상단에 위치 (예산 사용률에 따라 다른 물 애니메이션) */}
+      <ExpoImage 
+        source={getWaterImage()} 
         style={styles.bowlImage}
-        resizeMode="contain"
+        contentFit="contain"
       />
       
       {/* Water 이미지 - bowl 아래에 위치, 화면 전체 가로폭 */}
