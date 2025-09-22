@@ -61,7 +61,6 @@ export default function ProfileEditScreen() {
   // 프로필 데이터가 로드되면 폼에 채우기
   useEffect(() => {
     if (profileData) {
-      console.log("Profile data loaded:", profileData);
       setNickname(profileData.nickname || "");
       setGender(profileData.gender as "M" | "F");
       setAgeGroup(profileData.ageGroup as any || "");
@@ -99,7 +98,6 @@ export default function ProfileEditScreen() {
   const handleSubmit = async () => {
     const inputIncome = Number((monthlyIncome || "0").replace(/[^0-9]/g, ""));
     
-    console.log("Input income (만원):", inputIncome);
     
     const data = {
       nickname: (nickname ?? "").trim(),
@@ -121,7 +119,6 @@ export default function ProfileEditScreen() {
         { text: "확인", onPress: () => router.back() }
       ]);
     } catch (error: any) {
-      console.error("프로필 수정 실패:", error);
       Alert.alert(
         "프로필 수정 실패",
         error?.response?.data?.message || "프로필 수정 중 오류가 발생했습니다."

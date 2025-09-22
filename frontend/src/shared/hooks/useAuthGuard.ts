@@ -20,7 +20,6 @@ export const useAuthGuard = () => {
           router.replace('/auth/login');
         }
       } catch (error) {
-        console.error('토큰 확인 실패:', error);
         setHasToken(false);
         router.replace('/auth/login');
       }

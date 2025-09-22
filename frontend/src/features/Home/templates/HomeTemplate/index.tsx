@@ -29,7 +29,7 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   onCategoryPress,
   onBudgetSetup,
   month = "12월",
-  listTitle = "카테고리별 사용현황",
+  listTitle,
   hasBudget = true,
   loading = false,
   error = null,

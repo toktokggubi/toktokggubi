@@ -15,7 +15,6 @@ const MypageScreen = () => {
   const { data: profileData, isLoading: isProfileLoading } = useProfileQuery();
 
   // 디버깅용 로그
-  console.log("Profile data in MyPage:", profileData);
 
   const handleLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃하시겠습니까?", [

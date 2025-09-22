@@ -30,7 +30,6 @@ export default function TotalBudgetInputScreen() {
       await saveTotal(totalAmount);
       router.push("/budget/fixed-expense");
     } catch (error) {
-      console.error('총예산 저장 실패:', error);
       // 에러 처리 (토스트 메시지 등)
     }
   };

@@ -62,13 +62,6 @@ export default function SignUpScreen() {
       // 회원가입 성공 시 개인정보 입력 화면으로 이동
       router.push("/auth/personalinfo");
     } catch (error: any) {
-      console.error("회원가입 실패:", error);
-      console.error("에러 상세:", {
-        message: error.message,
-        code: error.code,
-        config: error.config,
-        response: error.response,
-      });
       
       let errorMessage = "회원가입 중 오류가 발생했습니다.";
       

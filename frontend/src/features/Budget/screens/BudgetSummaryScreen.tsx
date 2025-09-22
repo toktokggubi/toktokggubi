@@ -45,12 +45,6 @@ export default function BudgetSummaryScreen() {
   useEffect(() => {
     loadDraftData();
 
-    console.log("=== BudgetSummaryScreen Context 데이터 ===");
-    console.log("totalAmount:", totalAmount);
-    console.log("fixedExpenses:", fixedExpenses);
-    console.log("categoryAllocations:", categoryAllocations);
-    console.log("isCommitting:", isCommitting);
-    console.log("commitError:", commitError);
   }, [
     totalAmount,
     fixedExpenses,
@@ -139,25 +133,13 @@ export default function BudgetSummaryScreen() {
   }, []);
 
   const handleConfirmBudget = useCallback(async () => {
-    console.log("=== 예산 확정 시작 ===");
-    console.log("총예산:", totalAmount);
-    console.log("고정지출:", fixedExpenses);
-    console.log("카테고리 예산:", categoryAllocations);
-    console.log(
-      "AT(before commit) =",
-      await SecureStore.getItemAsync("access_token")
-    );
 
     try {
       const result = await commit();
-      console.log("=== 예산 확정 성공 ===");
-      console.log("확정 결과:", result);
 
       setShowConfirmModal(false);
       router.push("/(tabs)/home");
     } catch (error) {
-      console.error("=== 예산 확정 실패 ===");
-      console.error("에러:", error);
       // 에러 처리 (토스트 메시지 등)
       setShowConfirmModal(false); // 모달은 닫고 에러 메시지 표시
     }

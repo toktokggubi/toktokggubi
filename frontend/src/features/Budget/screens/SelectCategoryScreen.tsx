@@ -74,8 +74,6 @@ export default function SelectCategoryScreen() {
         .filter(Boolean) as CategoryName[];
       
       setSelected(categoryNames);
-      console.log('=== 이전 카테고리 선택 데이터 로딩 ===');
-      console.log('불러온 카테고리:', categoryNames);
     }
   }, [selectedCategories, loadDraftData]);
 
@@ -106,9 +104,6 @@ export default function SelectCategoryScreen() {
   const goPrev = useCallback(() => router.back(), []);
   
   const goNext = useCallback(async () => {
-    console.log('=== 카테고리 선택 저장 시작 ===');
-    console.log('선택된 카테고리:', selected);
-    console.log('현재 버전:', version);
     
     try {
       const categoryIds = selected.map(name => getCategoryId(name));
@@ -117,22 +112,13 @@ export default function SelectCategoryScreen() {
         finalAmount: 0, // 초기값은 0, 다음 단계에서 설정
       }));
 
-      console.log('=== 변환된 데이터 ===');
-      console.log('categoryIds:', categoryIds);
-      console.log('allocations:', allocations);
 
       const result = await saveCategories(categoryIds, allocations);
-      console.log('=== 카테고리 선택 저장 성공 ===');
-      console.log('저장 결과:', result);
       if (result) {
-        console.log('새로운 버전:', result.version);
-        console.log('새로운 draftId:', result.draftId);
       }
       
       router.push("/budget/category-budget");
     } catch (error) {
-      console.error('=== 카테고리 선택 저장 실패 ===');
-      console.error('에러:', error);
       // 에러 처리 (토스트 메시지 등)
     }
   }, [selected, saveCategories, version]);
