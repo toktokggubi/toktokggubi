@@ -1,3 +1,6 @@
+extends:
+  - compose.ai.yml
+
 services:
   # frontend:
   #   # Use the 'production' stage from the multi-stage Dockerfile
@@ -23,10 +26,6 @@ services:
       - .env
     volumes:
       - ./backend/logs:/app/logs
-
-  ai:
-    ports:
-      - "5000:5000" # Expose AI service port
 
   nginx:
     ports:
