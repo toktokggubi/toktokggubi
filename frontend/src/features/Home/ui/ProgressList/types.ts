@@ -20,4 +20,5 @@ export interface ProgressListProps {
   onCategoryPress?: (category: Category) => void;
   title?: string;
   transactions?: Partial<Record<Category, Transaction[]>>;
+  onEditPress?: () => void;
 }

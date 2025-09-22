@@ -110,7 +110,7 @@ export const HomeScreen: React.FC = () => {
           "토큰을 가져올 수 없습니다.\n\n가능한 원인:\n• Expo Go 환경 (Development Build 필요)\n• 네트워크 연결 문제\n• Firebase 설정 문제\n\n자세한 내용은 콘솔을 확인하세요."
         );
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert(
         "❌ 오류 발생", 
         `FCM 토큰 테스트 중 오류가 발생했습니다.\n\n오류: ${error.message}\n\n자세한 내용은 콘솔을 확인하세요.`
@@ -265,8 +265,8 @@ export const HomeScreen: React.FC = () => {
 
       setData(homeData);
       
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.');
+    } catch (error: any) {
+      setError(error instanceof Error ? error.message : '데이터를 불러오는데 실패했습니다.');
     } finally {
       if (isRefresh) {
         setRefreshing(false);
@@ -282,6 +282,10 @@ export const HomeScreen: React.FC = () => {
 
   const handleCategoryPress = (category: string) => {
     // TODO: 카테고리별 거래 내역 화면으로 이동
+  };
+
+  const handleBudgetEditPress = () => {
+    router.push('/budget/edit' as any);
   };
 
   const handleBudgetSetup = () => {
@@ -330,6 +334,7 @@ export const HomeScreen: React.FC = () => {
         onTotalBudgetPress={handleTotalBudgetPress}
         onCategoryPress={handleCategoryPress}
         onBudgetSetup={handleBudgetSetup}
+        onBudgetEditPress={handleBudgetEditPress}
         hasBudget={hasBudget}
         loading={loading}
         error={error}
