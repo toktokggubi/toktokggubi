@@ -48,29 +48,59 @@ public interface TransactionCategoryRepository extends JpaRepository<CardTransac
 
     /* 기간 내 카테고리별 전체 거래 (승인건만, 최신순) */
     @Query(value = """
-        SELECT
-            c.category_id            AS categoryId,
-            c.name                   AS categoryName,
-            ct.transaction_unique_no AS txNo,
-            ct.transaction_ymd       AS ymd,
-            ct.transaction_hms       AS hms,
-            ct.payment_balance       AS amount,
-            ct.card_status           AS cardStatus,
-            m.merchant_id            AS merchantId,
-            m.merchant_name          AS merchantName,
-            uc.user_card_id          AS userCardId,
-            cp.card_name             AS cardName
-        FROM card_transaction ct
-        JOIN merchant     m  ON m.merchant_id     = ct.merchant_id
-        JOIN category     c  ON c.category_id     = m.category_id
-        JOIN user_card    uc ON uc.user_card_id   = ct.user_card_id
-        JOIN card_product cp ON cp.card_unique_no = uc.card_unique_no
-        WHERE ct.user_id = :userId
-          AND ct.card_status = 'APPROVED'
-          AND ct.transaction_ymd BETWEEN :fromYmd AND :toYmd
-        ORDER BY c.category_id, ct.transaction_ymd DESC, ct.transaction_hms DESC
-        """, nativeQuery = true)
+    SELECT
+      COALESCE(m.category_id, 0)                 AS category_id,
+      COALESCE(c.name, '미분류')                 AS category_name,
+      ct.transaction_unique_no                   AS tx_no,
+      ct.transaction_ymd                         AS ymd,
+      ct.transaction_hms                         AS hms,
+      ct.payment_balance                         AS amount,
+      ct.card_status                             AS card_status,
+      ct.merchant_id                             AS merchant_id,
+      COALESCE(m.merchant_name, f.merchant_name) AS merchant_name, -- ✅
+      ct.user_card_id                            AS user_card_id,
+      cp.card_name                               AS card_name
+    FROM card_transaction ct
+    LEFT JOIN merchant   m  ON m.merchant_id      = ct.merchant_id
+    LEFT JOIN franchise  f  ON f.franchise_id     = m.franchise_id
+    LEFT JOIN category   c  ON c.category_id      = m.category_id
+    LEFT JOIN user_card  uc ON uc.user_card_id    = ct.user_card_id
+    LEFT JOIN card_product cp ON cp.card_unique_no = uc.card_unique_no
+    WHERE ct.user_id = :userId
+      AND ct.transaction_ymd BETWEEN :fromYmd AND :toYmd
+    ORDER BY ct.transaction_ymd DESC, ct.transaction_hms DESC
+    """, nativeQuery = true)
     List<Object[]> findCategoryAllTransactionsRaw(@Param("userId") long userId,
                                                   @Param("fromYmd") String fromYmd,
-                                                  @Param("toYmd")   String toYmd);
+                                                  @Param("toYmd") String toYmd);
+
+    // TransactionCategoryRepository.java
+
+    @Query(value = """
+    SELECT
+      COALESCE(m.category_id, 0)                 AS category_id,
+      COALESCE(c.name, '미분류')                 AS category_name,
+      ct.transaction_unique_no                   AS tx_no,
+      ct.transaction_ymd                         AS ymd,
+      ct.transaction_hms                         AS hms,
+      ct.payment_balance                         AS amount,
+      ct.card_status                             AS card_status,
+      ct.merchant_id                             AS merchant_id,
+      COALESCE(m.merchant_name, f.merchant_name) AS merchant_name, -- ✅ 스키마에 맞춤
+      ct.user_card_id                            AS user_card_id,
+      cp.card_name                               AS card_name
+    FROM card_transaction ct
+    LEFT JOIN merchant   m  ON m.merchant_id      = ct.merchant_id
+    LEFT JOIN franchise  f  ON f.franchise_id     = m.franchise_id
+    LEFT JOIN category   c  ON c.category_id      = m.category_id
+    LEFT JOIN user_card  uc ON uc.user_card_id    = ct.user_card_id
+    LEFT JOIN card_product cp ON cp.card_unique_no = uc.card_unique_no
+    WHERE ct.user_id = :userId
+    ORDER BY ct.transaction_ymd DESC, ct.transaction_hms DESC
+    """, nativeQuery = true)
+    List<Object[]> findAllTransactionsRaw(@Param("userId") long userId);
+
+
+
+
 }

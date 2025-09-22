@@ -13,8 +13,8 @@ services:
       # Persist database data to avoid losing it when containers restart
       - ./database/postgres:/var/lib/postgresql/data
       # Initialize database with a script if init.sql exists
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       # - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1"]
@@ -68,9 +68,11 @@ services:
     build:
       context: ./ai # Build from the Dockerfile in the ./ai directory
     restart: always
-    # Environment variables for AI service, if any
-    # environment:
-    #   - AI_MODEL_PATH=/app/model.pt
+    environment:
+      - DB_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
 
   # Backend Service (Spring Boot with Gradle)
   backend:
@@ -106,8 +108,8 @@ services:
     secrets:
       - gcp_sa_json
     volumes:
-      - /opt/toktokggubi/uploads:/app/uploads
-
+      - ./backend/uploads:/data/uploads
+      
   # Frontend Service (React)
   # frontend:
   #   build:
@@ -123,6 +125,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
       - backend
@@ -133,6 +137,7 @@ services:
     image: jenkins/jenkins:lts-jdk21
     privileged: true # Allows Jenkins to run Docker commands
     user: root
+    command: --prefix=/jenkins
     ports:
       - "8081:8080" # Jenkins web UI
       - "50000:50000" # Jenkins agent port (for build agents)
@@ -141,6 +146,15 @@ services:
       - ./jenkins/jenkins_home:/var/jenkins_home
       # Mount Docker socket to allow Jenkins to build/run other Docker containers
       - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker
+      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
+      - /home/ubuntu/S13P21B207:/home/ubuntu/S13P21B207
       # Mount Docker client binary from host if docker-compose isn't in Jenkins image
       # - /usr/local/bin/docker:/usr/local/bin/docker
+    group_add:
+      - "122"  
     restart: always
+
+secrets:
+  gcp_sa_json:
+    file: ./secrets/toktokggubi-sa.json

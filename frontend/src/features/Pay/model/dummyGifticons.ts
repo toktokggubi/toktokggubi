@@ -1,16 +1,16 @@
 import type { Gifticon } from "@/shared/types/gifticon";
 
 // 이미지 import(require) — 경로 alias(@/)는 네 프로젝트에 맞게
-const starbucks1 = require("@/assets/dummy/gifticon_starbucks1.png");
-const starbucks2 = require("@/assets/dummy/gifticon_starbucks2.png");
-const mcd1 = require("@/assets/dummy/gifticon_mcdonald1.png");
-const mcd2 = require("@/assets/dummy/gifticon_mcdonald2.png");
-const mega = require("@/assets/dummy/gifticon_megacoffee.png");
+const starbucks1 = require("@/assets/dummy/starbucks1.jpg");
+const starbucks2 = require("@/assets/dummy/starbucks2.jpg");
+const mcd1 = require("@/assets/dummy/mcdonald1.jpg");
+const mcd2 = require("@/assets/dummy/gifticon_mcdonald2.jpg");
+const mega = require("@/assets/dummy/megacoffee.jpg");
 const cu1 = require("@/assets/dummy/gifticon_cu1.png");
-const cu2 = require("@/assets/dummy/gifticon_cu2.png");
-const gs1 = require("@/assets/dummy/gifticon_gs1.png");
-const bhc1 = require("@/assets/dummy/gifticon_bhc1.png");
-const cgv = require("@/assets/dummy/gifticon_cgv.png");
+const cu2 = require("@/assets/dummy/cu2.jpg");
+const gs1 = require("@/assets/dummy/gs1.jpg");
+const bhc1 = require("@/assets/dummy/bhc1.jpg");
+const cgv = require("@/assets/dummy/gifticon_cgv.jpg");
 
 const dday = (dateStr: string) =>
   Math.max(0, Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000));

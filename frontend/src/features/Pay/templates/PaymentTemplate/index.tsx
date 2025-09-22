@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Carousel from "react-native-snap-carousel";
+import Carousel from "react-native-reanimated-carousel";
 import SegmentedTabs from "~features/Pay/ui/SegmentedTabs";
 import type { PaymentTemplateProps } from "./types";
 
@@ -119,18 +119,10 @@ function PaymentTemplate({
 
     const clamped = Math.max(0, Math.min(activeCardIndex, cards.length - 1));
 
-    // 현재 캐러셀 인덱스 확인
-    const currentIndex = carouselRef.current.currentIndex;
-
-    // 이미 올바른 위치에 있으면 스냅하지 않음
-    if (currentIndex === clamped) {
-      return;
-    }
-
     // 캐러셀이 준비될 때까지 약간의 지연
     setTimeout(() => {
       if (carouselRef.current) {
-        carouselRef.current.snapToItem(clamped, true);
+        carouselRef.current.scrollTo({ index: clamped, animated: true });
       }
     }, 100);
   }, [activeCardIndex]);
@@ -143,7 +135,7 @@ function PaymentTemplate({
       // 약간의 지연 후 스냅
       setTimeout(() => {
         if (carouselRef.current) {
-          carouselRef.current.snapToItem(clamped, true);
+          carouselRef.current.scrollTo({ index: clamped, animated: true });
         }
       }, 200); // 200ms 지연
     }
@@ -167,7 +159,7 @@ function PaymentTemplate({
     setCurrentGiftIndex(index);
   };
 
-  const renderGifticon = ({ item }: { item: Gifticon; index: number }) => (
+  const renderGifticon = ({ item }: { item: Gifticon }) => (
     <GifticonSlide gifticon={item} />
   );
 
@@ -214,23 +206,26 @@ function PaymentTemplate({
                 ref={carouselRef}
                 data={cards}
                 renderItem={renderCard}
-                sliderWidth={SCREEN_W}
-                itemWidth={benefitsSection ? ITEM_W : ITEM_W_LARGE}
-                inactiveSlideScale={0.92}
-                inactiveSlideOpacity={1}
-                activeSlideAlignment="center"
-                vertical={false}
+                width={SCREEN_W}
+                height={ITEM_W * 0.6}
+                mode="parallax"
+                modeConfig={{
+                  parallaxScrollingScale: 0.9,
+                  parallaxScrollingOffset: 50,
+                }}
                 onSnapToItem={handleCardChange}
                 keyExtractor={(item, index) =>
                   item?.userCardId != null
                     ? String(item.userCardId)
                     : String(index)
                 }
-                containerCustomStyle={styles.carouselContainer}
-                style={{
-                  opacity: selectedTab === 0 ? 1 : 0,
-                  height: selectedTab === 0 ? "auto" : 0,
-                }}
+                style={[
+                  styles.carouselContainer,
+                  {
+                    opacity: selectedTab === 0 ? 1 : 0,
+                    height: selectedTab === 0 ? "auto" : 0,
+                  }
+                ]}
               />
               <View
                 style={{
@@ -279,21 +274,21 @@ function PaymentTemplate({
                 <Carousel<Gifticon>
                   ref={giftCarouselRef}
                   data={gifticons}
-                  renderItem={({ item }) => <GifticonSlide gifticon={item} />}
-                  sliderWidth={SCREEN_W}
-                  itemWidth={GIFTICON_ITEM_W}
-                  inactiveSlideScale={0.92}
-                  inactiveSlideOpacity={1}
-                  activeSlideAlignment="center"
-                  vertical={false}
+                  renderItem={renderGifticon}
+                  width={SCREEN_W}
+                  height={GIFTICON_ITEM_W * 0.6}
+                  mode="parallax"
+                  modeConfig={{
+                    parallaxScrollingScale: 0.9,
+                    parallaxScrollingOffset: 50,
+                  }}
                   onSnapToItem={handleGiftChange}
-                  // 타입 에러 나면 keyExtractor는 지워도 OK
                   keyExtractor={(item, idx) =>
                     item?.gifticonId != null
                       ? String(item.gifticonId)
                       : String(idx)
                   }
-                  containerCustomStyle={styles.carouselContainer}
+                  style={styles.carouselContainer}
                 />
                 <PagerDots
                   length={gifticons.length}
