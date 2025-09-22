@@ -1,3 +1,4 @@
+/*
 package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +23,7 @@ import java.util.Map;
 @Slf4j
 public class TotalBudgetService {
 
-    private final LlmMessageService llmMessageService;
+
     private final CardTransactionRepository txRepo;
     private final UserMonthlyBudgetRepository umbRepo;
     private final NotificationRepository notificationRepo;
@@ -103,14 +104,14 @@ public class TotalBudgetService {
         // 3️⃣ LLM 호출 (실패 시 fallback)
         String body;
         try {
-            body = llmMessageService.generateMessage(prompt);
+           // body = llmMessageService.generateMessage(prompt);
         } catch (Exception e) {
             log.warn("[{}] LLM 메시지 생성 실패 → fallback 사용", typeKey, e);
             body = fallback;
         }
 
         String link = "toktokggubi://budget/overview?ym=" + budgetYm;
-        fcmService.sendToUser(userId, title, body, link);
+     //   fcmService.sendToUser(userId, title, body, link);
 
         notificationRepo.insertLog(
                 userId, typeKey, title, body,
@@ -131,3 +132,4 @@ public class TotalBudgetService {
     private String currentYm() { return YearMonth.now(KST).format(YM); }
     private String toJsonSafe(Object o) { try { return objectMapper.writeValueAsString(o); } catch (Exception e) { return null; } }
 }
+*/
