@@ -57,22 +57,4 @@ public class PushController {
         return ResponseEntity.ok(result);
     }
 }
-/*
-public class CardTransactionService {
 
-    private final CardTransactionRepository txRepo;
-    private final BudgetThresholdService thresholdService;
-
-    @Transactional
-    public CardTransaction saveTransaction(CardTransaction tx) {
-        // 1) 거래 저장
-        CardTransaction saved = txRepo.save(tx);
-
-        // 2) 예산 임계/초과 자동 체크 & 알림
-        String txNo = saved.getTransactionUniqueNo();
-        thresholdService.checkAndMaybeNotifyForCurrentMonth(txNo);
-        thresholdService.checkAndNotifyIfExceeded(txNo);
-
-        return saved;
-    }
-}*/
