@@ -48,7 +48,7 @@ export default function BudgetSummaryTemplate({
         <BudgetSummaryHeaderRow title={`${month} 예산`} amount={totalBudget} />
 
         {/* 변동 지출 예산 섹션 */}
-        {variableBudget > 0 && (
+        {categoryBudgets.length > 0 && (
           <View style={styles.section}>
             <BudgetSummaryHeaderRow
               title="변동 지출 예산"

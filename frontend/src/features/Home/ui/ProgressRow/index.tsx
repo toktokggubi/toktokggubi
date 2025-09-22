@@ -15,6 +15,7 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
   showUsageDetails = true,
   isExpanded = false,
   onUsageDetailsPress,
+  onEditPress,
 }) => {
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
   const remainingAmount = totalAmount - currentAmount;
@@ -56,6 +57,14 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
           <Text style={styles.remainingAmount}>
             {remainingAmount.toLocaleString("ko-KR")}원 남음
           </Text>
+          {isTotalType && onEditPress && (
+            <TouchableOpacity 
+              style={styles.editButton}
+              onPress={onEditPress}
+            >
+              <Text style={styles.editButtonText}>✏️</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -117,6 +126,7 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   categoryIcon: {
     width: 24,
@@ -172,5 +182,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#999999", // 라이트 그레이 텍스트
+  },
+  editButton: {
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: "#F0F0F0",
+  },
+  editButtonText: {
+    fontSize: 16,
   },
 });
