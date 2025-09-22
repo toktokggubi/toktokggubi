@@ -19,7 +19,6 @@ export default function FCMTestComponent() {
         const token = await fcmService.getToken();
         setFcmToken(token);
       } catch (error) {
-        console.error('FCM 토큰 가져오기 실패:', error);
       }
     };
 
@@ -50,7 +49,6 @@ export default function FCMTestComponent() {
         Alert.alert('실패', result.message || '토큰 전송에 실패했습니다.');
       }
     } catch (error) {
-      console.error('토큰 전송 실패:', error);
       Alert.alert('오류', '토큰 전송 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
@@ -77,7 +75,6 @@ export default function FCMTestComponent() {
         Alert.alert('실패', result.message || '토큰 삭제에 실패했습니다.');
       }
     } catch (error) {
-      console.error('토큰 삭제 실패:', error);
       Alert.alert('오류', '토큰 삭제 중 오류가 발생했습니다.');
     } finally {
       setIsLoading(false);
@@ -92,7 +89,6 @@ export default function FCMTestComponent() {
       setFcmToken(token);
       Alert.alert('성공', 'FCM 토큰이 새로고침되었습니다.');
     } catch (error) {
-      console.error('토큰 새로고침 실패:', error);
       Alert.alert('오류', '토큰 새로고침 중 오류가 발생했습니다.');
     }
   };

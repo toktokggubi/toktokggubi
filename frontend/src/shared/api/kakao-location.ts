@@ -125,7 +125,6 @@ export async function fetchNearbyPlacesByCategory(
   
   if (!res.ok) {
     const errorText = await res.text();
-    console.error("❌ 카테고리 API 에러 응답:", errorText);
     throw new Error(`카테고리 검색 실패: ${res.status} ${res.statusText}`);
   }
 

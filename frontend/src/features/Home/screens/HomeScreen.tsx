@@ -100,7 +100,7 @@ export const HomeScreen: React.FC = () => {
           "✅ FCM 토큰 획득 성공!", 
           `토큰 길이: ${token.length}\n앞 30자: ${token.substring(0, 30)}...\n\n💡 이 토큰을 백엔드 API에 전송하면 푸시 알림을 받을 수 있습니다.\n\n전체 토큰은 콘솔에서 확인하세요.`,
           [
-            { text: "콘솔에서 확인", onPress: () => console.log("전체 FCM 토큰:", token) },
+            { text: "확인", onPress: () => {} },
             { text: "확인" }
           ]
         );
@@ -115,7 +115,6 @@ export const HomeScreen: React.FC = () => {
         "❌ 오류 발생", 
         `FCM 토큰 테스트 중 오류가 발생했습니다.\n\n오류: ${error.message}\n\n자세한 내용은 콘솔을 확인하세요.`
       );
-      console.error("FCM 토큰 테스트 오류:", error);
     }
   };
 
@@ -143,7 +142,6 @@ export const HomeScreen: React.FC = () => {
       
       // 예산 설정 여부 확인
       if (budgetStatusQuery.error || !budgetStatusQuery.data || budgetStatusQuery.data.totalAmount === 0) {
-        console.log('예산이 설정되지 않음 - 예산 설정 버튼 표시');
         if (isRefresh) {
           setRefreshing(false);
         } else {
@@ -158,14 +156,12 @@ export const HomeScreen: React.FC = () => {
       try {
         budgetTotalResponse = await fetchBudgetTotal();
       } catch (err) {
-        console.error('budgetTotalResponse 실패:', err);
         throw err;
       }
       
       try {
         budgetCategoryResponse = await fetchBudgetCategory();
       } catch (err) {
-        console.error('budgetCategoryResponse 실패:', err);
         throw err;
       }
       
@@ -176,21 +172,18 @@ export const HomeScreen: React.FC = () => {
           to: '20250930'
         });
       } catch (err) {
-        console.error('monthlySummaryResponse 실패:', err);
         throw err;
       }
       
       try {
         monthlySummaryByCategoryResponse = await fetchMonthlySummaryByCategory();
       } catch (err) {
-        console.error('monthlySummaryByCategoryResponse 실패:', err);
         throw err;
       }
       
       try {
         monthlyCategoryListResponse = await fetchMonthlyCategoryList();
       } catch (err) {
-        console.error('monthlyCategoryListResponse 실패:', err);
         throw err;
       }
 
@@ -273,7 +266,6 @@ export const HomeScreen: React.FC = () => {
       setData(homeData);
       
     } catch (err) {
-      console.error('API 호출 실패:', err);
       setError(err instanceof Error ? err.message : '데이터를 불러오는데 실패했습니다.');
     } finally {
       if (isRefresh) {
@@ -285,12 +277,10 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleTotalBudgetPress = () => {
-    console.log("전체 예산 상세 보기");
     // TODO: 전체 예산 상세 화면으로 이동
   };
 
   const handleCategoryPress = (category: string) => {
-    console.log("카테고리 상세 보기:", category);
     // TODO: 카테고리별 거래 내역 화면으로 이동
   };
 

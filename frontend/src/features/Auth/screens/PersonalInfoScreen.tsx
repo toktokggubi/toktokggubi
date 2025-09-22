@@ -103,7 +103,6 @@ export default function PersonalInfoScreen() {
       // 회원가입 완료 후 무조건 예산 소개 화면으로 이동
       router.replace("/budget");
     } catch (error: any) {
-      console.error("회원가입 완료 실패:", error);
       Alert.alert(
         "회원가입 완료 실패",
         error?.response?.data?.message || "회원가입 완료 중 오류가 발생했습니다."

@@ -25,10 +25,8 @@ const sendFCMTokenToServer = async (accessToken: string) => {
     
     if (fcmToken) {
       await fcmService.sendTokenToServer(fcmToken, accessToken);
-      console.log('FCM 토큰이 서버에 성공적으로 전송되었습니다.');
     }
   } catch (error) {
-    console.error('FCM 토큰 전송 실패:', error);
     // FCM 토큰 전송 실패는 로그인을 방해하지 않도록 에러를 무시
   }
 };
@@ -153,7 +151,6 @@ export const useLogout = () => {
           await fcmService.deleteToken(accessToken, true); // 모든 토큰 삭제
         }
       } catch (error) {
-        console.error('FCM 토큰 삭제 실패:', error);
       }
       
       await SecureStore.deleteItemAsync("access_token");

@@ -12,11 +12,7 @@ interface Props {
 export default function GifticonSlide({ gifticon }: Props) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   
-  const src =
-    gifticon.imageSource ??
-    (gifticon.imageUrl ? { uri: gifticon.imageUrl } : undefined);
-
-  const openModal = () => setIsModalVisible(true);
+  const src = gifticon.imageSource ?? "";
   const closeModal = () => setIsModalVisible(false);
 
   return (

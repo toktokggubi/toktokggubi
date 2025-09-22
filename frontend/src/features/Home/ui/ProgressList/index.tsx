@@ -9,7 +9,7 @@ import { Category } from "@/shared/constants/categories";
 export const ProgressList: React.FC<ProgressListProps> = ({
   categoryBudgets,
   onCategoryPress,
-  title = "카테고리별 사용현황",
+  title,
   transactions = {},
 }) => {
   const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
@@ -28,10 +28,12 @@ export const ProgressList: React.FC<ProgressListProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 제목 */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>{title}</Text>
-      </View>
+      {/* 제목 - title이 있을 때만 표시 */}
+      {title && (
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{title}</Text>
+        </View>
+      )}
 
       {/* 카테고리별 예산 리스트 */}
       <View style={styles.listContent}>
@@ -57,7 +59,7 @@ export const ProgressList: React.FC<ProgressListProps> = ({
                   <View style={styles.transactionContainer}>
                     <TransactionList
                       transactions={categoryTransactions}
-                      onTransactionPress={(transaction) => console.log("거래 내역 클릭:", transaction)}
+                      onTransactionPress={(transaction) => {}}
                     />
                   </View>
                 )}
@@ -83,7 +85,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginVertical: 6,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 16,
     paddingBottom: 12,
     shadowColor: "#000",
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
   transactionContainer: {
     marginTop: 4,
     marginBottom: 4,
-    paddingLeft: 16,
+    paddingLeft: 8,
     width: "100%",
   },
   emptyContainer: {
