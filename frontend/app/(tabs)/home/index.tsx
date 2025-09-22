@@ -1,16 +1,10 @@
-import Button from "@/features/Auth/ui/Button";
-import { router } from "expo-router";
 import { StyleSheet, View } from "react-native";
+import { HomeScreen } from "@/features/Home/screens/HomeScreen";
 
-export default function HomeScreen() {
+export default function HomeTabScreen() {
   return (
     <View style={s.container}>
-      <Button
-        value="로그인 화면으로!!"
-        onPress={() => router.push("/auth/login")}
-      />
-
-      <Button value="예산 설정 시작" onPress={() => router.push("/budget")} />
+      <HomeScreen />
     </View>
   );
 }
@@ -18,7 +12,5 @@ export default function HomeScreen() {
 const s = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
 });

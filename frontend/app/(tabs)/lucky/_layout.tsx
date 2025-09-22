@@ -7,10 +7,6 @@ export default function LuckyStackLayout() {
       {/* index, nbbang, molbbang 모두 이 Stack 아래에서 렌더 */}
       <Stack.Screen name="index" />
       <Stack.Screen
-        name="nbbang"
-        options={{ headerShown: true, title: "N빵" }}
-      />
-      <Stack.Screen
         name="molbbang"
         options={{ headerShown: true, title: "몰빵" }}
       />

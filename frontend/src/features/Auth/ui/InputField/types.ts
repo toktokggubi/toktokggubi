@@ -7,7 +7,9 @@ export interface InputFieldProps extends Omit<TextInputProps, "style"> {
   topLabel?: string; // 상단 라벨
   rightLabel?: string; // 우측 라벨 (단위 등)
   passwordToggle?: boolean; // 비밀번호 눈 아이콘
+  onTogglePassword?: () => void; // 비밀번호 토글 핸들러
   variant?: InputFieldVariant; // 스타일
+  error?: string; // 에러 메시지
 }
 
 export type InputFieldRef = TextInput; // TextInput 컴포넌트의 ref 타입

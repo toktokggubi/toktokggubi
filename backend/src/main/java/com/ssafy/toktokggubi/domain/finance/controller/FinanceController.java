@@ -10,12 +10,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/finance")
 @RequiredArgsConstructor
-@Tag(name = "[금융망] 사용자 계좌,카드", description = "[금융망] 사용자 계좌,카드 조회 API")
+@Tag(name = "[금융망] 사용자 계좌&카드", description = "[금융망] 사용자 계좌&카드 조회 후 저장 API")
 public class FinanceController {
 
     private final FinanceCollectService financeCollectService;
 
-    // 외부 API 호출해서 DB에 저장 + 결과 리턴
     @PostMapping("/collect")
     public FinanceSyncResponse collect() {
         Long uid = SecurityUtils.currentUserIdOrNull();

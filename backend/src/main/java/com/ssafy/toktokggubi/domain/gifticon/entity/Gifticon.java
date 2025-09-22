@@ -1,6 +1,6 @@
 package com.ssafy.toktokggubi.domain.gifticon.entity;
 
-import com.ssafy.toktokggubi.domain.merchant.entity.Merchant;
+import com.ssafy.toktokggubi.domain.franchise.entity.Franchise;
 import com.ssafy.toktokggubi.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,9 +16,13 @@ import java.time.LocalDateTime;
 @Entity
 @Table(
         name = "gifticon",
-        indexes = @Index(name = "idx_gi_user_status_exp", columnList = "user_id, status, expires_at")
+        indexes = {
+                @Index(name = "idx_gi_user_status_exp", columnList = "user_id, status, expires_at"),
+                @Index(name = "idx_gi_franchise", columnList = "franchise_id")
+        }
 )
 public class Gifticon {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "gifticon_id", nullable = false)
@@ -29,8 +33,8 @@ public class Gifticon {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "merchant_id")
-    private Merchant merchant;
+    @JoinColumn(name = "franchise_id")
+    private Franchise franchise;
 
     @Column(name = "label", nullable = false, length = 150)
     private String label;

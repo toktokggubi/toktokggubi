@@ -97,7 +97,8 @@ database/postgres/
 # Ignore Jenkins CI/CD files
 jenkins/
 
-# Remove ai data files
 ai/data/
 data/data/
 ai/model/
+secrets/
+

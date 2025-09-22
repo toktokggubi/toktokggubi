@@ -13,6 +13,8 @@ export interface MolbbangMember {
   nickname: string;
   score: number; // 이번 라운드 누적 흔들기 값
   total?: number; // 여러 라운드 합 (옵션)
+  online?: boolean; // (옵션) 접속 여부
+  ready?: boolean; // ✅ (옵션) 대기실 준비 상태
 }
 
 export interface CreateRoomDto {
