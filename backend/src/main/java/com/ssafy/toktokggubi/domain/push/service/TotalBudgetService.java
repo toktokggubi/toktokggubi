@@ -1,11 +1,9 @@
-/*
 package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
 import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
-import com.ssafy.toktokggubi.domain.push.service.FcmService;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
@@ -23,11 +21,10 @@ import java.util.Map;
 @Slf4j
 public class TotalBudgetService {
 
-
     private final CardTransactionRepository txRepo;
     private final UserMonthlyBudgetRepository umbRepo;
     private final NotificationRepository notificationRepo;
-    private final FcmService fcmService;
+    private final FcmService fcmService;        // FCM 사용 안 하면 제거해도 됨
     private final ObjectMapper objectMapper;
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -89,29 +86,15 @@ public class TotalBudgetService {
         double percent = Math.min(rate * 100.0, 999.9);
         long remaining = Math.max(totalBudget - used, 0);
 
-        // 1️⃣ 기본 메시지 (fallback)
-        String fallback = includeRemaining
+        // ✅ LLM 제거: fallback 메시지 그대로 사용
+        String body = includeRemaining
                 ? String.format(bodyFormat, totalBudget, used, percent, remaining)
                 : String.format(bodyFormat, totalBudget, used, percent);
 
-        // 2️⃣ LLM 프롬프트 생성
-        String prompt = String.format("""
-        이번달 전체 예산 %,d원, 총 사용액 %,d원 (%.1f%%).
-        남은 금액: %,d원.
-        사용자가 이해하기 쉽고 재치는 메시지로 바꿔주세요.
-        """, totalBudget, used, percent, remaining);
-
-        // 3️⃣ LLM 호출 (실패 시 fallback)
-        String body;
-        try {
-           // body = llmMessageService.generateMessage(prompt);
-        } catch (Exception e) {
-            log.warn("[{}] LLM 메시지 생성 실패 → fallback 사용", typeKey, e);
-            body = fallback;
-        }
-
         String link = "toktokggubi://budget/overview?ym=" + budgetYm;
-     //   fcmService.sendToUser(userId, title, body, link);
+
+        // 필요 시 푸시 발송(현재 주석)
+        // fcmService.sendToUser(userId, title, body, link);
 
         notificationRepo.insertLog(
                 userId, typeKey, title, body,
@@ -130,6 +113,12 @@ public class TotalBudgetService {
     }
 
     private String currentYm() { return YearMonth.now(KST).format(YM); }
-    private String toJsonSafe(Object o) { try { return objectMapper.writeValueAsString(o); } catch (Exception e) { return null; } }
+
+    private String toJsonSafe(Object o) {
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 }
-*/
