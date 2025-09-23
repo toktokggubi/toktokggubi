@@ -39,6 +39,14 @@ const MypageScreen = () => {
     router.push("/user/profile-edit" as Href);
   };
 
+  const handleBudgetSetup = () => {
+    router.push("/budget" as Href);
+  };
+
+  const handleAIBudgetSetup = () => {
+    router.push("/budget/ai-setup" as Href);
+  };
+
   // 인증 로딩 중이거나 인증되지 않은 경우
   if (authLoading || !isAuthenticated) {
     return null; // useAuthGuard에서 자동으로 리다이렉트됨
@@ -57,6 +65,8 @@ const MypageScreen = () => {
       onPressGifticon={() => router.push("/gifticons" as Href)}
       onPressLogout={handleLogout}
       onPressSettings={handleSettings}
+      onPressBudgetSetup={handleBudgetSetup}
+      onPressAIBudgetSetup={handleAIBudgetSetup}
       isLoggingOut={logoutMutation.isPending}
     />
   );

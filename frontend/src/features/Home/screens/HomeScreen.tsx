@@ -11,6 +11,7 @@ import {
   fetchMonthlySummaryByCategory,
   fetchMonthlyCategoryList
 } from "../api/fetchers";
+import { checkBudgetStatus } from "~features/Budget/api/fetchers";
 import { Category, CATEGORY_VALUES } from "@/shared/constants/categories";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
@@ -288,8 +289,28 @@ export const HomeScreen: React.FC = () => {
     router.push('/budget/edit' as any);
   };
 
-  const handleBudgetSetup = () => {
-    router.push("/budget");
+  const handleBudgetSetup = async () => {
+    try {
+      // 이전 달 예산 설정 여부 확인
+      const budgetStatus = await checkBudgetStatus();
+      
+      if (budgetStatus.totalAmount > 0) {
+        // 이전 달에 예산이 있으면 AI 추천으로 새로운 예산 설정
+        router.push("/budget/ai-setup" as any);
+      } else {
+        // 이전 달에 예산이 없으면 초기 단계별 프로세스
+        router.push("/budget");
+      }
+    } catch (error) {
+      // 예산이 설정되지 않은 경우 (BUDGET_NOT_SET 에러)
+      if (error?.message === 'BUDGET_NOT_SET' || error?.message === 'BUDGET_NOT_FOUND') {
+        // 이전 달에 예산이 없음 → 초기 단계별 프로세스
+        router.push("/budget");
+      } else {
+        // 다른 에러의 경우 AI 추천으로 폴백
+        router.push("/budget/ai-setup" as any);
+      }
+    }
   };
 
   const handleRefresh = () => {
