@@ -1,12 +1,19 @@
 // frontend/src/features/Report/templates/ExpenseReportTemplate/index.tsx
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import NotificationIcon from "@/shared/components/NotificationIcon";
+import { colors } from "@/shared/constants/colors";
+import React from "react";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AnomalyDetectionSection } from "../../ui/AnomalyDetectionSection";
 import { ExpenseDonutChart } from "../../ui/ExpenseDonutChart";
 import { PaymentLineChart } from "../../ui/PaymentLineChart";
-import { AnomalyDetectionSection } from "../../ui/AnomalyDetectionSection";
 import { ExpenseReportTemplateProps } from "./types";
-import { colors } from "@/shared/constants/colors";
 
 export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   year,
@@ -24,14 +31,28 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   onVIPStorePress,
   anomalyData,
   totalAnomalyAmount,
+  onNotificationPress,
 }) => {
   const monthNames = [
-    "1월", "2월", "3월", "4월", "5월", "6월",
-    "7월", "8월", "9월", "10월", "11월", "12월"
+    "1월",
+    "2월",
+    "3월",
+    "4월",
+    "5월",
+    "6월",
+    "7월",
+    "8월",
+    "9월",
+    "10월",
+    "11월",
+    "12월",
   ];
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* 알림 아이콘 */}
+      <NotificationIcon onPress={onNotificationPress} />
+
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* 이상탐지 섹션 */}
         {anomalyData && anomalyData.length > 0 && (
@@ -48,16 +69,13 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
         {/* 헤더 섹션 */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
-            <Text 
-              style={styles.title}
-              numberOfLines={1}
-            >
+            <Text style={styles.title} numberOfLines={1}>
               {year}년 {monthNames[month - 1]} 지출
             </Text>
             <Text style={styles.totalAmount}>
               {totalAmount.toLocaleString()}원
             </Text>
-            <Text 
+            <Text
               style={styles.summaryText}
               numberOfLines={1}
               ellipsizeMode="tail"
@@ -82,12 +100,14 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
               centerText="8월 지출"
             />
           </View>
-          
+
           {/* 차트 범례 */}
           <View style={styles.chartLegend}>
             {chartData.map((item, index) => (
               <View key={index} style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+                <View
+                  style={[styles.legendDot, { backgroundColor: item.color }]}
+                />
                 <Text style={styles.legendText}>{item.label}</Text>
               </View>
             ))}
@@ -100,7 +120,9 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
             <View key={index}>
               <View style={styles.categoryItem}>
                 <View style={styles.leftContent}>
-                  <View style={[styles.colorDot, { backgroundColor: item.color }]} />
+                  <View
+                    style={[styles.colorDot, { backgroundColor: item.color }]}
+                  />
                   <View style={styles.labelContainer}>
                     <Text
                       style={styles.categoryLabel}
@@ -114,9 +136,13 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.amount}>{item.value.toLocaleString()}원</Text>
+                <Text style={styles.amount}>
+                  {item.value.toLocaleString()}원
+                </Text>
               </View>
-              {index < categoryData.length - 1 && <View style={styles.separator} />}
+              {index < categoryData.length - 1 && (
+                <View style={styles.separator} />
+              )}
             </View>
           ))}
         </View>
@@ -127,19 +153,26 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
         {/* 결제 내역 섹션 */}
         <View style={styles.paymentSection}>
           <Text style={styles.sectionTitle}>일별 결제 현황</Text>
-          
+
           {/* 결제 통계 */}
           <View style={styles.paymentStats}>
             <Text style={styles.statsText}>
-              총 <Text style={styles.boldText}>{dailyPaymentData.reduce((sum, item) => sum + item.count, 0)}개</Text>의 결제 내역이 있고, 
-              하루 중 가장 많은 결제 건수는 <Text style={styles.boldText}>{Math.max(...dailyPaymentData.map(item => item.count))}개</Text>입니다.
+              총{" "}
+              <Text style={styles.boldText}>
+                {dailyPaymentData.reduce((sum, item) => sum + item.count, 0)}개
+              </Text>
+              의 결제 내역이 있고, 하루 중 가장 많은 결제 건수는{" "}
+              <Text style={styles.boldText}>
+                {Math.max(...dailyPaymentData.map((item) => item.count))}개
+              </Text>
+              입니다.
             </Text>
           </View>
 
           {/* 라인 차트 */}
-          <PaymentLineChart 
-            data={dailyPaymentData} 
-            maxCount={Math.max(...dailyPaymentData.map(item => item.count))} 
+          <PaymentLineChart
+            data={dailyPaymentData}
+            maxCount={Math.max(...dailyPaymentData.map((item) => item.count))}
           />
 
           {/* 최대 결제일 상세 내역 */}
@@ -161,12 +194,14 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
                       -{detail.amount.toLocaleString()}원
                     </Text>
                   </View>
-                  {index < maxPaymentDayDetails.length - 1 && <View style={styles.separator} />}
+                  {index < maxPaymentDayDetails.length - 1 && (
+                    <View style={styles.separator} />
+                  )}
                 </View>
               ))}
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.moreDetailsButton}
               onPress={onMoreDetailsPress}
             >
@@ -181,11 +216,12 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
         {/* VIP 매장 섹션 */}
         <View style={styles.vipSection}>
           <Text style={styles.sectionTitle}>내가 바로 이곳의 VIP</Text>
-          
+
           {/* VIP 매장 요약 */}
           <View style={styles.vipSummary}>
             <Text style={styles.vipSummaryText}>
-              <Text style={styles.vipStoreName}>{vipStores[0]?.name}</Text>에서 가장 많은 지출을 했어요
+              <Text style={styles.vipStoreName}>{vipStores[0]?.name}</Text>에서
+              가장 많은 지출을 했어요
             </Text>
           </View>
 
@@ -207,7 +243,9 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
                   </Text>
                 </View>
                 <View style={styles.vipVisitCount}>
-                  <Text style={styles.vipVisitCountText}>{store.visitCount}회</Text>
+                  <Text style={styles.vipVisitCountText}>
+                    {store.visitCount}회
+                  </Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -228,8 +266,8 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   titleContainer: {
-    minWidth: 0,          
-    flexShrink: 1,        
+    minWidth: 0,
+    flexShrink: 1,
     flexWrap: "nowrap",
   },
   title: {
@@ -249,8 +287,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6B7280",
     lineHeight: 18,
-    flexShrink: 1,        
-    minWidth: 0,          
+    flexShrink: 1,
+    minWidth: 0,
   },
   chartSection: {
     paddingHorizontal: 20,
@@ -308,22 +346,22 @@ const styles = StyleSheet.create({
   leftContent: {
     flexDirection: "row",
     alignItems: "center",
-    flexShrink: 1,       
-    minWidth: 0,          
+    flexShrink: 1,
+    minWidth: 0,
   },
   labelContainer: {
     flexDirection: "row",
     alignItems: "center",
-    flexShrink: 1,        
-    minWidth: 0,         
-    marginLeft: 12,     
+    flexShrink: 1,
+    minWidth: 0,
+    marginLeft: 12,
   },
   categoryLabel: {
     fontSize: 16,
     fontWeight: "500",
     color: "#374151",
-    flexShrink: 1,       
-    minWidth: 0,          
+    flexShrink: 1,
+    minWidth: 0,
   },
   categoryPercentage: {
     fontSize: 12,

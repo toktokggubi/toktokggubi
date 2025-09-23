@@ -1,18 +1,19 @@
 // src/features/Lucky/templates/LuckyTemplate/index.tsx
-import React from "react";
-import { Text, StyleSheet, View, ScrollView } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import type { LuckyTemplateProps } from "./types";
-import { colors } from "@/shared/constants/colors";
 import { CategoryChips } from "@/features/Lucky/ui/CategoryChips";
 import { SaleCalendar } from "@/features/Lucky/ui/SaleCalendar";
 import { SaleEventList } from "@/features/Lucky/ui/SaleEventList";
 import { SeriesCards } from "@/features/Lucky/ui/SeriesCards";
+import NotificationIcon from "@/shared/components/NotificationIcon";
+import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import React from "react";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import type { LuckyTemplateProps } from "./types";
 
 export default function LuckyTemplate({
   year,
@@ -29,6 +30,7 @@ export default function LuckyTemplate({
   onPressMolbbang,
   nImageSource,
   molImageSource,
+  onNotificationPress,
 }: LuckyTemplateProps) {
   const safeEvents = Array.isArray(events) ? events : [];
   const safeMerchants = Array.isArray(merchants) ? merchants : [];
@@ -40,6 +42,9 @@ export default function LuckyTemplate({
 
   return (
     <SafeAreaView style={s.safeArea} edges={["top", "bottom"]}>
+      {/* 알림 아이콘 */}
+      <NotificationIcon onPress={onNotificationPress} />
+
       {/* HomeTemplate의 overlayContainer 패턴 */}
       <View style={s.overlayContainer}>
         <ScrollView
