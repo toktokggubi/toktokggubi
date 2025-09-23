@@ -24,9 +24,9 @@ services:
     volumes:
       - ./backend/logs:/app/logs
 
-  ai:
-    ports:
-      - "5000:5000" # Expose AI service port
+        # ai:
+        #    ports:
+        #      - "5000:5000" # Expose AI service port
 
   nginx:
     ports:

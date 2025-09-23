@@ -102,3 +102,5 @@ data/data/
 ai/model/
 secrets/
 
+# Backend
+/backend/uploads
