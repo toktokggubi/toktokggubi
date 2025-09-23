@@ -205,16 +205,24 @@ export default function GifticonsScreen() {
       headerTitleStyle: { fontSize: 18, fontWeight: "800" },
       headerLeft: () => (
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            router.back();
+          }}
           style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="뒤로가기"
         >
           <Ionicons name="chevron-back" size={24} color={TXT} />
         </Pressable>
       ),
       headerRight: () => (
         <Pressable
-          onPress={() => router.push("/gifticons/register")}
+          onPress={() => {
+            router.push("/gifticons/register");
+          }}
           style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="기프티콘 추가"
         >

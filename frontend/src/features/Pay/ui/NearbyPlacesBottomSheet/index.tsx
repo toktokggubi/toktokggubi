@@ -7,6 +7,7 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import {
   BottomSheetScrollView,
@@ -18,8 +19,49 @@ import type { BottomSheetRef } from "@/features/Auth/ui/BottomSheetList/types";
 import { colors } from "@/shared/constants/colors";
 import type { KakaoPlace } from "@/shared/types/location.types";
 import { font } from "@/shared/typography/font";
+import { KAKAO_CATEGORY_CODES } from "@/shared/constants/kakao";
+import { CATEGORY_ICON_BY_NAME, CATEGORY_ICON_FALLBACK } from "@/shared/constants/categoryIcons";
 
-import type { NearbyPlacesBottomSheetProps } from "./types";
+import type { NearbyPlacesBottomSheetProps, PlaceWithBenefits } from "./types";
+
+// 카테고리 정보를 가져오는 함수 (이름과 아이콘)
+const getCategoryInfo = (place: KakaoPlace): { name: string; icon: any } => {
+  // category_group_name이 있으면 우선 사용
+  if (place.category_group_name) {
+    const categoryMap: { [key: string]: { name: string; icon: any } } = {
+      "카페": { name: "카페", icon: CATEGORY_ICON_BY_NAME["카페/간식"] },
+      "음식점": { name: "음식점", icon: CATEGORY_ICON_BY_NAME["식비"] },
+      "대형마트": { name: "대형마트", icon: CATEGORY_ICON_BY_NAME["쇼핑"] },
+      "영화관": { name: "영화관", icon: CATEGORY_ICON_BY_NAME["문화"] },
+      "편의점": { name: "편의점", icon: CATEGORY_ICON_BY_NAME["쇼핑"] },
+      "주유소": { name: "주유소", icon: CATEGORY_ICON_BY_NAME["자동차"] },
+      "숙박": { name: "숙박", icon: CATEGORY_ICON_BY_NAME["생활"] },
+      "병원": { name: "병원", icon: CATEGORY_ICON_BY_NAME["의료/건강"] },
+      "약국": { name: "약국", icon: CATEGORY_ICON_BY_NAME["의료/건강"] },
+    };
+    
+    return categoryMap[place.category_group_name] || { name: place.category_group_name, icon: CATEGORY_ICON_FALLBACK };
+  }
+  
+  // category_group_code로 매핑
+  if (place.category_group_code) {
+    const categoryMap: { [key: string]: { name: string; icon: any } } = {
+      [KAKAO_CATEGORY_CODES.CAFE]: { name: "카페", icon: CATEGORY_ICON_BY_NAME["카페/간식"] },
+      [KAKAO_CATEGORY_CODES.FOOD]: { name: "음식점", icon: CATEGORY_ICON_BY_NAME["식비"] },
+      [KAKAO_CATEGORY_CODES.SUPERMARKET]: { name: "대형마트", icon: CATEGORY_ICON_BY_NAME["쇼핑"] },
+      [KAKAO_CATEGORY_CODES.CINEMA]: { name: "영화관", icon: CATEGORY_ICON_BY_NAME["문화"] },
+      [KAKAO_CATEGORY_CODES.CONVENIENCE]: { name: "편의점", icon: CATEGORY_ICON_BY_NAME["쇼핑"] },
+      [KAKAO_CATEGORY_CODES.GAS_STATION]: { name: "주유소", icon: CATEGORY_ICON_BY_NAME["자동차"] },
+      [KAKAO_CATEGORY_CODES.LODGING]: { name: "숙박", icon: CATEGORY_ICON_BY_NAME["생활"] },
+      [KAKAO_CATEGORY_CODES.HOSPITAL]: { name: "병원", icon: CATEGORY_ICON_BY_NAME["의료/건강"] },
+      [KAKAO_CATEGORY_CODES.PHARMACY]: { name: "약국", icon: CATEGORY_ICON_BY_NAME["의료/건강"] },
+    };
+    
+    return categoryMap[place.category_group_code] || { name: "기타", icon: CATEGORY_ICON_FALLBACK };
+  }
+  
+  return { name: "기타", icon: CATEGORY_ICON_FALLBACK };
+};
 
 const NearbyPlacesBottomSheet = React.forwardRef<
   BottomSheetRef,
@@ -51,17 +93,18 @@ const NearbyPlacesBottomSheet = React.forwardRef<
     return R * c; // 미터 단위
   };
 
-  const renderPlaceItem = ({ item }: { item: KakaoPlace }) => {
+  const renderPlaceItem = ({ item }: { item: PlaceWithBenefits }) => {
+    const { place, benefits, gifticons } = item;
     let distance = "거리 정보 없음";
 
-    if (item.distance) {
-      distance = `${Math.round(parseFloat(item.distance))}m`;
-    } else if (item.x && item.y) {
+    if (place.distance) {
+      distance = `${Math.round(parseFloat(place.distance))}m`;
+    } else if (place.x && place.y) {
       // 수동으로 거리 계산 (현재 위치는 대전 유성구로 가정)
       const currentLat = 36.3552813;
       const currentLng = 127.29811;
-      const placeLat = parseFloat(item.y);
-      const placeLng = parseFloat(item.x);
+      const placeLat = parseFloat(place.y);
+      const placeLng = parseFloat(place.x);
 
       const calculatedDistance = calculateDistance(
         currentLat,
@@ -72,18 +115,69 @@ const NearbyPlacesBottomSheet = React.forwardRef<
       distance = `${Math.round(calculatedDistance)}m`;
     }
 
+    const categoryInfo = getCategoryInfo(place);
+    const hasBenefits = benefits && benefits.length > 0;
+    const hasGifticons = gifticons && gifticons.length > 0;
+
     return (
       <TouchableOpacity
         style={styles.placeItem}
-        onPress={() => onPlaceSelect(item)}
+        onPress={() => onPlaceSelect(place)}
       >
-        <View style={styles.placeInfo}>
-          <Text style={styles.placeName}>{item.place_name}</Text>
-          <Text style={styles.placeAddress}>{item.road_address_name}</Text>
+        {/* 상단: 카테고리와 혜택/기프티콘 정보 */}
+        <View style={styles.topRow}>
+          <Text style={styles.categoryText}>{categoryInfo.name}</Text>
+          
+          <View style={styles.benefitSection}>
+            {hasBenefits && hasGifticons ? (
+              // 둘 다 있을 때: 나란히 표시
+              <View style={styles.dualIconContainer}>
+                <View style={styles.benefitBox}>
+                  <Image 
+                    source={require("@/assets/icon/card_icon.png")} 
+                    style={styles.benefitIcon}
+                  />
+                </View>
+                <View style={styles.gifticonBox}>
+                  <Image 
+                    source={require("@/assets/icon/gifticon_icon.png")} 
+                    style={styles.gifticonIcon}
+                  />
+                </View>
+              </View>
+            ) : hasBenefits ? (
+              // 카드만 있을 때
+              <View style={styles.benefitBox}>
+                <Image 
+                  source={require("@/assets/icon/card_icon.png")} 
+                  style={styles.benefitIcon}
+                />
+              </View>
+            ) : hasGifticons ? (
+              // 기프티콘만 있을 때
+              <View style={styles.gifticonBox}>
+                <Image 
+                  source={require("@/assets/icon/gifticon_icon.png")} 
+                  style={styles.gifticonIcon}
+                />
+              </View>
+            ) : null}
+          </View>
         </View>
-        <View style={styles.distanceBadge}>
-          <Text style={styles.distanceText}>{distance}</Text>
+
+        {/* 중간: 장소명과 거리 */}
+        <View style={styles.middleRow}>
+          <Text style={styles.placeName}>{place.place_name}</Text>
+          <View style={styles.distanceBadge}>
+            <Text style={styles.distanceText}>{distance}</Text>
+          </View>
         </View>
+
+
+        {/* 하단: 주소 */}
+        <Text style={styles.placeAddress} numberOfLines={1}>
+          {place.road_address_name}
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -118,11 +212,17 @@ const NearbyPlacesBottomSheet = React.forwardRef<
           showsVerticalScrollIndicator={true}
           nestedScrollEnabled={true}
         >
-          {places.map((item, index) => (
-            <View key={`${item.place_name}-${index}`}>
-              {renderPlaceItem({ item })}
+          {places.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>주변에 가맹점이 없습니다</Text>
             </View>
-          ))}
+          ) : (
+            places.map((item, index) => (
+              <View key={`${item.place.place_name}-${index}`}>
+                {renderPlaceItem({ item })}
+              </View>
+            ))
+          )}
         </BottomSheetScrollView>
 
         {/* 만약 BottomSheetScrollView가 안 되면 이걸로 시도 */}
@@ -193,38 +293,103 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   placeItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     backgroundColor: "#f8fafc",
     borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 6,
+    minHeight: 70,
   },
-  placeInfo: {
-    flex: 1,
-    marginRight: 12,
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: -10,
   },
-  placeName: {
-    fontSize: 16,
+  categoryText: {
+    fontSize: 11,
     ...font.medium,
-    color: "#1e293b",
-    marginBottom: 4,
+    color: "#475569",
+  },
+  bottomRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   placeAddress: {
-    fontSize: 14,
+    fontSize: 12,
     color: "#64748b",
+    marginTop: -18,
+    marginBottom: 10,
+  },
+  benefitSection: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  dualIconContainer: {
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+  },
+  benefitBox: {
+    width: 24,
+    height: 24,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  benefitIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
+  },
+  gifticonBox: {
+    width: 24,
+    height: 24,
+    backgroundColor: "#f1f5f9",
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  gifticonIcon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
+  },
+  middleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  placeName: {
+    fontSize: 15,
+    ...font.bold,
+    color: "#1e293b",
+    flex: 1,
+    
   },
   distanceBadge: {
     backgroundColor: colors.BLUE_DARKER,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 12,
   },
   distanceText: {
-    fontSize: 12,
+    fontSize: 11,
     ...font.medium,
     color: "white",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#64748b",
+    textAlign: "center",
   },
 });
