@@ -27,15 +27,15 @@ const DAY_LINE_H = 18;
 const BAR_BASE_GAP = 2;
 // 색상별 위/아래 오프셋(+는 더 아래, -는 더 위)
 const COLOR_TOP_OFFSET: Record<BarColor, number> = {
-  yellow: 6, // 노란 막대: 숫자에서 더 내려 보이도록
-  blue: -6, // 파란 막대: 숫자에 더 가깝게
-  green: 0, // 초록 막대: 중간
-  purple: -3, // 보라 막대: 조금 위
-  orange: 3, // 주황 막대: 조금 아래
-  pink: -9, // 분홍 막대: 가장 위
+  yellow: 0, // 노란 막대: 숫자에서 더 내려 보이도록
+  blue: 0, // 파란 막대: 노란색과 겹침 방지를 위해 조정
+  green: 0, // 초록 막대: 파란색과 간격 조금 줄임
+  purple: 0, // 보라 막대: 회색과 하늘색 사이 간격 늘림
+  orange: 0, // 주황 막대: 조금 아래
+  pink: 0, // 분홍 막대: 가장 위
 };
-// 같은 날 여러 개 겹칠 때 줄 간격 (여백 완전 제거)
-const LANE_GAP = 0; // 여백 없이 바로 붙이기
+// 같은 날 여러 개 겹칠 때 줄 간격 (BAR_HEIGHT와 동일하게 설정하여 여백 없이)
+const LANE_GAP = 14; // BAR_HEIGHT와 동일하여 여백 없이 바로 붙이기
 
 type NormalizedEvent = {
   startDay: number;
@@ -111,7 +111,7 @@ function buildSegments(params: {
     }
   }
 
-  // 전역 레인 할당 - 시작일이 빠른 이벤트가 항상 위쪽 레인에 (여백 없이)
+  // 전역 레인 할당 - 한 달 안에서 시작일이 빠른 이벤트가 위쪽 레인에
   const eventLanes = new Map<number, number>(); // originalIndex -> lane
   
   // 1. 모든 이벤트를 시작일 기준으로 정렬 (시작일이 빠를수록 앞에)
@@ -123,8 +123,8 @@ function buildSegments(params: {
     }))
     .sort((a, b) => a.startDay - b.startDay);
   
-  // 2. 각 이벤트에 순차적으로 레인 할당
-  // 시작일이 빠른 이벤트가 레인 0(가장 위), 다음이 레인 1, ...
+  // 2. 시작일이 빠른 이벤트부터 순차적으로 레인 할당
+  // 레인 0이 가장 위, 레인 1이 그 아래, 레인 2가 그 아래...
   sortedEvents.forEach((item, index) => {
     eventLanes.set(item.originalIndex, index);
   });
@@ -315,14 +315,13 @@ function SaleCalendarImpl({
               seg.colSpan * CELL_W - (CELL_PAD_X + BAR_INSET_X) * 2
             );
 
-            // 세로 정렬: 숫자 라인 기준 + 색상별 오프셋 + 레인 간격
+            // 세로 정렬: 숫자 라인 기준 + 레인별 고정 위치 + 색상별 오프셋
             const baseTop =
               seg.row * CELL_H + CELL_PAD_Y + DAY_LINE_H + BAR_BASE_GAP;
-            // lane별로 색상 오프셋을 고려한 위치 계산
-            // lane 0이 가장 위, lane 1이 그 아래, 여백 없이 바로 붙어서
-            const colorOffset = COLOR_TOP_OFFSET[seg.color];
+            // 레인별 고정 위치: lane 0이 가장 위, lane 1이 그 아래, 여백 없이 바로 붙어서
             const laneOffset = seg.lane * LANE_GAP; // lane 0=0, lane 1=14, lane 2=28...
-            const top = Math.round(baseTop + colorOffset + laneOffset);
+            const colorOffset = COLOR_TOP_OFFSET[seg.color];
+            const top = Math.round(baseTop + laneOffset + colorOffset);
 
             // 색상별 배경색과 텍스트 색상 매핑
             const getColorConfig = (color: BarColor) => {
