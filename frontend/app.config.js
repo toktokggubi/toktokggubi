@@ -9,29 +9,29 @@ module.exports = {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     developmentClient: {
-      silentLaunch: true
+      silentLaunch: true,
     },
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
     },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/images/favicon.png",
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
       permissions: [
         "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
       ],
       versionCode: 1,
       package: "com.technologia.toktokggubi",
-      googleServicesFile: "./google-services.json"
+      googleServicesFile: "./google-services.json",
     },
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/images/favicon.png",
     },
     plugins: [
       "expo-router",
@@ -42,23 +42,19 @@ module.exports = {
         "@react-native-firebase/app",
         {
           android: {
-            googleServicesFile: "./google-services.json"
+            googleServicesFile: "./google-services.json",
           },
           ios: {
-            googleServicesFile: "./ios/GoogleService-Info.plist"
-          }
-        }
-      ]
+            googleServicesFile: "./ios/GoogleService-Info.plist",
+          },
+        },
+      ],
     ],
     experiments: {
-      typedRoutes: true
+      typedRoutes: true,
     },
     extra: {
       router: {},
-      eas: {
-        projectId: "7d72ba27-6998-452f-9ec7-631b1eda0015"
-      }
     },
-    owner: "lhyeon22"
-  }
+  },
 };
