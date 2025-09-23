@@ -32,10 +32,22 @@ export default function LuckyScreen() {
   const eventsForDay = useMemo((): SaleEventListItem[] => {
     if (!data || selectedDay == null) return [];
     
-    // 달력과 동일한 색상 할당 로직
+    // 달력과 동일한 색상 할당 로직 - 전체 이벤트 기준으로 색상 할당
     const availableColors: ("yellow" | "blue" | "green" | "purple" | "orange" | "pink")[] = 
       ["yellow", "blue", "green", "purple", "orange", "pink"];
     const usedColors = new Set<string>();
+    
+    // 전체 이벤트에 대해 달력과 동일한 순서로 색상 할당
+    const colorMap = new Map<string, "yellow" | "blue" | "green" | "purple" | "orange" | "pink">();
+    data.events.forEach((e, index) => {
+      let colorIndex = index;
+      while (usedColors.has(availableColors[colorIndex % availableColors.length])) {
+        colorIndex++;
+      }
+      const selectedColor = availableColors[colorIndex % availableColors.length];
+      usedColors.add(selectedColor);
+      colorMap.set(e.id, selectedColor);
+    });
     
     const filteredEvents = data.events.filter((e) => {
       const s = Number(e.startDate.slice(8, 10));
@@ -43,15 +55,7 @@ export default function LuckyScreen() {
       return selectedDay >= s && selectedDay <= en;
     });
     
-    return filteredEvents.map((e, index) => {
-      // 이미 사용된 색상 제외하고 순환적으로 할당
-      let colorIndex = index;
-      while (usedColors.has(availableColors[colorIndex % availableColors.length])) {
-        colorIndex++;
-      }
-      const selectedColor = availableColors[colorIndex % availableColors.length];
-      usedColors.add(selectedColor);
-      
+    return filteredEvents.map((e) => {
       const s = new Date(e.startDate);
       const en = new Date(e.endDate);
       const merchant =
@@ -69,7 +73,7 @@ export default function LuckyScreen() {
         title: e.title,
         period,
         note: e.note,
-        color: selectedColor,
+        color: colorMap.get(e.id) || "blue", // 달력에서 할당된 색상 사용
       };
     });
   }, [data, selectedDay]);
