@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { colors } from '@/shared/constants/colors';
 import { font } from '@/shared/typography/font';
 import { spacing, borderRadius, createButtonStyles, createTextStyles } from '@/shared/theme/styles';
+import Feather from '@expo/vector-icons/Feather';
 
 export interface EditableFixedExpenseRowProps {
   item: {
@@ -44,10 +45,10 @@ export default function EditableFixedExpenseRow({
         <Text style={styles.fixedExpenseAmount}>{(item.amount || 0).toLocaleString()}원</Text>
         <View style={styles.fixedExpenseActions}>
           <TouchableOpacity onPress={onEdit} style={styles.editButton}>
-            <Text style={styles.editButtonText}>편집</Text>
+            <Feather name="edit-2" size={16} color={colors.BLUE_NORMAL} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDelete} style={styles.deleteButton}>
-            <Text style={styles.deleteButtonText}>삭제</Text>
+            <Feather name="trash-2" size={16} color={colors.RED_NORMAL} />
           </TouchableOpacity>
         </View>
       </View>
@@ -93,24 +94,22 @@ const styles = StyleSheet.create({
   },
   fixedExpenseActions: {
     flexDirection: "row",
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   editButton: {
-    ...buttonStyles.base,
-    ...buttonStyles.secondary,
-  },
-  editButtonText: {
-    ...textStyles.small,
-    ...font.medium,
-    color: colors.BLUE_NORMAL,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.BLUE_LIGHT,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButton: {
-    ...buttonStyles.base,
-    ...buttonStyles.secondary,
-  },
-  deleteButtonText: {
-    ...textStyles.small,
-    ...font.medium,
-    color: colors.BLUE_DARK,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#FEE2E2",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
