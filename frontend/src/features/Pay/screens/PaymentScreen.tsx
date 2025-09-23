@@ -283,6 +283,31 @@ export default function PaymentScreen() {
     });
   }, [gifticons, hasNearby, nearbyNames, selectedPlace]);
 
+  // 모든 장소에 대한 혜택과 기프티콘 매칭을 미리 계산
+  const placesWithBenefitsAndGifticons = useMemo(() => {
+    if (!nearbyPlaces || nearbyPlaces.length === 0) return [];
+
+    return nearbyPlaces.map(place => {
+      // 해당 장소의 혜택 찾기
+      const matchingBenefits = benefits ? benefits.filter((benefit) =>
+        isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
+      ) : [];
+
+      // 해당 장소의 기프티콘 찾기
+      const matchedGifticons = gifticons.filter(gifticon => {
+        const merchantName = gifticon.merchantName?.toLowerCase() ?? "";
+        const placeName = place.place_name.toLowerCase();
+        return placeName.includes(merchantName) || merchantName.includes(placeName);
+      });
+
+      return {
+        place,
+        benefits: matchingBenefits,
+        gifticons: matchedGifticons,
+      };
+    });
+  }, [nearbyPlaces, benefits, gifticons]);
+
   // 현재 활성 카드의 혜택으로 장소 매칭 확인
   const findBestCardForPlace = useCallback(
     (place: KakaoPlace) => {
@@ -480,7 +505,21 @@ export default function PaymentScreen() {
       {/* 주변 가맹점 BottomSheet - 모든 가맹점 표시 */}
       <NearbyPlacesBottomSheet
         ref={bottomSheetRef}
-        places={nearbyPlaces || []}
+        places={placesWithBenefitsAndGifticons.map(({ place, benefits: placeBenefits, gifticons: placeGifticons }) => {
+          return {
+            place,
+            benefits: placeBenefits.map((benefit, index) => ({
+              franchiseId: index + 1,
+              franchiseName: benefit.franchiseName,
+              discountRate: benefit.discountRate,
+              representativeCategory: {
+                categoryId: 1,
+                categoryName: "기타",
+              },
+            })),
+            gifticons: placeGifticons,
+          };
+        })}
         onPlaceSelect={handlePlaceSelect}
         isFetching={nearbyFetching}
       />
