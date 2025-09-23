@@ -25,9 +25,9 @@ services:
       - rabbitmq
       - redis
 
-  ai:
-    ports:
-      - "5000:5000" # Expose AI service port
+  # ai:
+  #   ports:
+  #     - "5000:5000" # Expose AI service port
 
   nginx:
     ports:
@@ -38,7 +38,7 @@ services:
     depends_on:
       # - frontend # Nginx depends on frontend and backend for proxying
       - backend
-      - ai
+      # - ai
 
   # Jenkins CI/CD Server (only in development/CI environment)
   jenkins:
