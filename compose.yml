@@ -108,7 +108,7 @@ services:
     # secrets:
     #   - gcp_sa_json
     volumes:
-      - ${WORKSPACE}/secrets/toktokggubi-sa.json
+      - ./secrets/toktokggubi-sa.json:/opt/creds/gcp-sa.json:ro
       - ./backend/uploads:/data/uploads
 
     # Frontend Service (React)
