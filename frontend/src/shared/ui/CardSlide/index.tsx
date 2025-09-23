@@ -3,6 +3,7 @@ import { font } from "@/shared/typography/font";
 import React, { memo } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 import type { CardSlideProps } from "./types";
+import { normalizeImageUrl } from "@/features/User/utils/imageUtils";
 
 // 레거시 매핑(폴백) — 기존 위치 유지
 import {
@@ -11,13 +12,12 @@ import {
 } from "@/features/User/screens/MyPageScreen/types";
 
 function CardSlideImpl({ card }: CardSlideProps) {
-  // 1) 서버 image 우선 → 2) 과거 issuerCode 매핑 → 3) 기본 이미지
-  const source =
-    card.image ??
-    (card.cardIssuerCode && CARD_IMAGE_BY_ISSUER[card.cardIssuerCode]
-      ? CARD_IMAGE_BY_ISSUER[card.cardIssuerCode]
-      : undefined) ??
-    DEFAULT_CARD_IMAGE;
+  // 1) 서버 imageUrl 우선 → 2) 과거 issuerCode 매핑 → 3) 기본 이미지
+  const source = card.imageUrl
+    ? { uri: normalizeImageUrl(card.imageUrl) }
+    : (card.cardIssuerCode && CARD_IMAGE_BY_ISSUER[card.cardIssuerCode]
+        ? CARD_IMAGE_BY_ISSUER[card.cardIssuerCode]
+        : undefined) ?? DEFAULT_CARD_IMAGE;
 
   return (
     <View style={s.wrap}>
