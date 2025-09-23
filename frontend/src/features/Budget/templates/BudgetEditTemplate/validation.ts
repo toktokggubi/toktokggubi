@@ -34,7 +34,7 @@ export const validateBudgetSums = (data: BudgetData): ValidationResult => {
     });
   }
 
-  // 2. 카테고리별 예산 합계가 변동 지출 예산을 초과하는지 검증
+  // 2. 카테고리별 예산 합계가 변동 지출 예산을 초과하는지만 검증 (0원 허용)
   const categoryTotal = data.categoryBudgets.reduce((sum, cat) => sum + cat.amount, 0);
   if (categoryTotal > data.variableBudget) {
     const excessAmount = categoryTotal - data.variableBudget;
@@ -42,13 +42,8 @@ export const validateBudgetSums = (data: BudgetData): ValidationResult => {
       field: 'categoryBudgets',
       message: `⚠️ 카테고리 예산이 변동 지출 예산보다 ${excessAmount.toLocaleString()}원 많아요!`
     });
-  } else if (categoryTotal < data.variableBudget && data.variableBudget > 0) {
-    const shortageAmount = data.variableBudget - categoryTotal;
-    errors.push({
-      field: 'categoryBudgets',
-      message: `💡 카테고리 예산이 변동 지출 예산보다 ${shortageAmount.toLocaleString()}원 적어요!`
-    });
   }
+  // 카테고리 예산이 변동 지출 예산보다 적어도 허용 (0원 카테고리 가능)
 
 
   return {

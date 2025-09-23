@@ -44,6 +44,14 @@ const MypageScreen = () => {
     router.push("/user/profile-edit" as Href);
   };
 
+  const handleBudgetSetup = () => {
+    router.push("/budget" as Href);
+  };
+
+  const handleAIBudgetSetup = () => {
+    router.push("/budget/ai-setup" as Href);
+  };
+
   // FCM 토큰 테스트 함수
   const testFCMToken = async () => {
     try {
@@ -83,21 +91,19 @@ const MypageScreen = () => {
   return (
     <View style={styles.container}>
       <MyPageTemplate
-        userInfo={
-          profileData
-            ? {
-                nickname: profileData.nickname,
-                monthlyIncome: (profileData.monthlyIncome || 0) * 10000, // 만원 단위를 원 단위로 변환
-                jobTitle: profileData.jobTitle,
-              }
-            : undefined
-        }
+        userInfo={profileData ? {
+          nickname: profileData.nickname,
+          monthlyIncome: (profileData.monthlyIncome || 0) * 10000, // 만원 단위를 원 단위로 변환
+          jobTitle: profileData.jobTitle,
+        } : undefined}
         cardImage={cardImg}
         gifticonImage={giftImg}
         onPressCard={() => router.push("/cards" as Href)}
         onPressGifticon={() => router.push("/gifticons" as Href)}
         onPressLogout={handleLogout}
         onPressSettings={handleSettings}
+        onPressBudgetSetup={handleBudgetSetup}
+        onPressAIBudgetSetup={handleAIBudgetSetup}
         isLoggingOut={logoutMutation.isPending}
       />
 
