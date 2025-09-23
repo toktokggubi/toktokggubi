@@ -41,7 +41,7 @@ const MypageScreen = () => {
   };
 
   const handleSettings = () => {
-    router.push("/user/profile-edit" as Href);
+    router.push("/user/settings" as Href);
   };
 
   // FCM 토큰 테스트 함수
