@@ -1,8 +1,13 @@
-import { Alert } from "react-native";
-import { router, type Href } from "expo-router";
+import {
+  useLogout,
+  useProfileQuery,
+} from "@/features/Auth/model/useAuthQueries";
 import MyPageTemplate from "@/features/User/templates/MyPageTemplate";
-import { useLogout, useProfileQuery } from "@/features/Auth/model/useAuthQueries";
+import { colors } from "@/shared/constants/colors";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import FCMService from "@/shared/services/fcmService";
+import { router, type Href } from "expo-router";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const cardImg = require("@/assets/images/illustration/my_card.png");
 const giftImg = require("@/assets/images/illustration/my_gifticon.png");
@@ -10,7 +15,7 @@ const giftImg = require("@/assets/images/illustration/my_gifticon.png");
 const MypageScreen = () => {
   // 인증 가드
   const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
-  
+
   const logoutMutation = useLogout();
   const { data: profileData, isLoading: isProfileLoading } = useProfileQuery();
 
@@ -73,3 +78,24 @@ const MypageScreen = () => {
 };
 
 export default MypageScreen;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  testButton: {
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    backgroundColor: colors.BLUE_NORMAL,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    zIndex: 1000,
+  },
+  testButtonText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+});

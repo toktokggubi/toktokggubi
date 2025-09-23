@@ -103,18 +103,19 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_sa_json
+      - GOOGLE_APPLICATION_CREDENTIALS=/opt/creds/gcp-sa.json
       # Other common environment variables for backend
-    secrets:
-      - gcp_sa_json
+    # secrets:
+    #   - gcp_sa_json
     volumes:
+      - ./secrets/toktokggubi-sa.json:/opt/creds/gcp-sa.json:ro
       - ./backend/uploads:/data/uploads
-      
-  # Frontend Service (React)
-  # frontend:
-  #   build:
-  #     context: ./frontend # Build from the Dockerfile in the ./frontend directory
-  #   restart: always
+
+    # Frontend Service (React)
+    # frontend:
+    #   build:
+    #     context: ./frontend # Build from the Dockerfile in the ./frontend directory
+    #   restart: always
     # Frontend will be configured with specific build targets/ports in override files
 
   # Nginx Reverse Proxy
@@ -125,7 +126,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
+#    volumes:
       #- ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
@@ -152,6 +153,6 @@ services:
     #   - "122"  
     restart: always
 
-secrets:
-  gcp_sa_json:
-    file: ./secrets/toktokggubi-sa.json
+# secrets:
+#   gcp_sa_json:
+#     file: ./secrets/toktokggubi-sa.json

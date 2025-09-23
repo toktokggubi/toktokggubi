@@ -1,12 +1,16 @@
 // frontend/src/features/Report/screens/ReportScreen.tsx
-import React, { useState, useCallback } from "react";
-import { Alert } from "react-native";
-import { useRouter } from "expo-router";
-import { ExpenseReportTemplate } from "../templates/ExpenseReportTemplate";
-import type { DonutChartData } from "../ui/ExpenseDonutChart/types";
-import type { DailyPaymentData, PaymentDetail, VIPStore } from "../templates/ExpenseReportTemplate/types";
-import type { AnomalyData } from "../ui/AnomalyMap/types";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
+import { Alert } from "react-native";
+import { ExpenseReportTemplate } from "../templates/ExpenseReportTemplate";
+import type {
+  DailyPaymentData,
+  PaymentDetail,
+  VIPStore,
+} from "../templates/ExpenseReportTemplate/types";
+import type { AnomalyData } from "../ui/AnomalyMap/types";
+import type { DonutChartData } from "../ui/ExpenseDonutChart/types";
 
 // 샘플 데이터 (실제로는 API에서 가져올 데이터)
 const sampleData: DonutChartData[] = [
@@ -154,7 +158,7 @@ const sampleAnomalyData: AnomalyData[] = [
     amount: 25000,
     date: "09.08",
     latitude: 36.357115, // 뼈먹자
-    longitude: 127.346160,
+    longitude: 127.34616,
     category: "식비",
     paymentMethod: "네이버페이 카드",
   },
@@ -163,27 +167,32 @@ const sampleAnomalyData: AnomalyData[] = [
 export default function ReportScreen() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
-  
+
   const [currentYear, setCurrentYear] = useState(2025);
   const [currentMonth, setCurrentMonth] = useState(8); // 9월 - 1 = 8월
   const [expenseData, setExpenseData] = useState<DonutChartData[]>(sampleData);
 
   // 총 지출 금액 계산
   const totalAmount = expenseData.reduce((sum, item) => sum + item.value, 0);
-  
+
   // 총 이상탐지 금액 계산
-  const totalAnomalyAmount = sampleAnomalyData.reduce((sum, item) => sum + item.amount, 0);
-  
+  const totalAnomalyAmount = sampleAnomalyData.reduce(
+    (sum, item) => sum + item.amount,
+    0
+  );
+
   // 퍼센트 계산된 데이터 생성
-  const expenseDataWithPercentage = expenseData.map(item => ({
+  const expenseDataWithPercentage = expenseData.map((item) => ({
     ...item,
     percentage: totalAmount > 0 ? (item.value / totalAmount) * 100 : 0,
   }));
 
-
   // 카테고리 클릭 핸들러
   const handleCategoryPress = useCallback((category: string) => {
-    Alert.alert("카테고리 상세", `${category} 카테고리 상세 정보를 보여줍니다.`);
+    Alert.alert(
+      "카테고리 상세",
+      `${category} 카테고리 상세 정보를 보여줍니다.`
+    );
     // 실제로는 상세 화면으로 이동
     // router.push(`/report/category-detail?category=${category}`);
   }, []);
@@ -205,6 +214,10 @@ export default function ReportScreen() {
     // router.push(`/report/store-detail?store=${storeName}`);
   }, []);
 
+  // 알림 아이콘 클릭 핸들러
+  const handleNotificationPress = useCallback(() => {
+    router.push("/notification");
+  }, [router]);
 
   // 인증 로딩 중이거나 인증되지 않은 경우
   if (authLoading || !isAuthenticated) {
@@ -228,7 +241,7 @@ export default function ReportScreen() {
       onVIPStorePress={handleVIPStorePress}
       anomalyData={sampleAnomalyData}
       totalAnomalyAmount={totalAnomalyAmount}
+      onNotificationPress={handleNotificationPress}
     />
   );
 }
-

@@ -1,7 +1,7 @@
 import type {
   Category,
-  SaleEvent,
   Merchant,
+  SaleEvent,
 } from "@/features/Lucky/model/types";
 import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types";
 import type { ImageSourcePropType } from "react-native";
@@ -27,4 +27,7 @@ export interface LuckyTemplateProps {
   onPressMolbbang?: () => void;
   nImageSource: ImageSourcePropType;
   molImageSource: ImageSourcePropType;
+
+  // 알림 아이콘
+  onNotificationPress?: () => void;
 }
