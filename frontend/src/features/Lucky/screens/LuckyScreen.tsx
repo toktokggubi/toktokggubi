@@ -29,36 +29,49 @@ export default function LuckyScreen() {
   // 디버깅용 로그
   console.log('LuckyScreen - API 상태:', { isLoading, error, data: data ? '데이터 있음' : '데이터 없음' });
 
-  const eventsForDay: SaleEventListItem[] = useMemo(() => {
+  const eventsForDay = useMemo((): SaleEventListItem[] => {
     if (!data || selectedDay == null) return [];
-    return data.events
-      .filter((e) => {
-        const s = Number(e.startDate.slice(8, 10));
-        const en = Number(e.endDate.slice(8, 10));
-        return selectedDay >= s && selectedDay <= en;
-      })
-      .map((e) => {
-        const s = new Date(e.startDate);
-        const en = new Date(e.endDate);
-        const merchant =
-          data.merchants.find((m) => m.id === e.merchantId)?.name ?? "가맹점";
-        const period =
-          s.getDate() === en.getDate()
-            ? `${s.getMonth() + 1}/${s.getDate()}`
-            : `${s.getMonth() + 1}/${s.getDate()} ~ ${
-                en.getMonth() + 1
-              }/${en.getDate()}`;
-        const color: "yellow" | "blue" =
-          e.startDate === e.endDate ? "blue" : "yellow";
-        return {
-          id: e.id,
-          merchant,
-          title: e.title,
-          period,
-          note: e.note,
-          color,
-        };
-      });
+    
+    // 달력과 동일한 색상 할당 로직
+    const availableColors: ("yellow" | "blue" | "green" | "purple" | "orange" | "pink")[] = 
+      ["yellow", "blue", "green", "purple", "orange", "pink"];
+    const usedColors = new Set<string>();
+    
+    const filteredEvents = data.events.filter((e) => {
+      const s = Number(e.startDate.slice(8, 10));
+      const en = Number(e.endDate.slice(8, 10));
+      return selectedDay >= s && selectedDay <= en;
+    });
+    
+    return filteredEvents.map((e, index) => {
+      // 이미 사용된 색상 제외하고 순환적으로 할당
+      let colorIndex = index;
+      while (usedColors.has(availableColors[colorIndex % availableColors.length])) {
+        colorIndex++;
+      }
+      const selectedColor = availableColors[colorIndex % availableColors.length];
+      usedColors.add(selectedColor);
+      
+      const s = new Date(e.startDate);
+      const en = new Date(e.endDate);
+      const merchant =
+        data.merchants.find((m) => m.id === e.merchantId)?.name ?? "가맹점";
+      const period =
+        s.getDate() === en.getDate()
+          ? `${s.getMonth() + 1}/${s.getDate()}`
+          : `${s.getMonth() + 1}/${s.getDate()} ~ ${
+              en.getMonth() + 1
+            }/${en.getDate()}`;
+      
+      return {
+        id: e.id,
+        merchant,
+        title: e.title,
+        period,
+        note: e.note,
+        color: selectedColor,
+      };
+    });
   }, [data, selectedDay]);
 
   // ✅ 이동 핸들러 (useCallback으로 메모이즈)
