@@ -34,7 +34,7 @@ COPY requirements.txt .
 # Install PyTorch with CUDA 12.1 support separately, as it requires a specific package index.
 # The requested versions in requirements.txt (e.g., torch 2.8.0) are not available for this CUDA/Python combination.
 # We are installing the latest available compatible versions instead.
-RUN pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
+# RUN pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
 RUN pip install --no-cache-dir --ignore-installed -r requirements.txt
 
 # Copy the rest of the application's code

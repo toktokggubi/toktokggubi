@@ -1,6 +1,3 @@
-extends:
-  - compose.ai.yml
-
 services:
   mysql:
     image: mysql:8.0
@@ -43,6 +40,14 @@ services:
       timeout: 5s
       retries: 10
 
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./database/mongodb:/data/db
+    restart: always
+
   # Backend Service (Spring Boot with Gradle)
   backend:
     build:
@@ -67,6 +72,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      mongo:
+        condition: service_started
     environment:
       # Spring Boot database connection properties (using environment variables from .env)
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}

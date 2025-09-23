@@ -144,10 +144,11 @@ try:
     import psycopg2
     from psycopg2 import sql
     PSYCOPG2_AVAILABLE = True
-    DB_HOST = os.environ.get("DB_HOST", "postgres")
+    DB_HOST = os.environ.get("DB_HOST")
     DB_NAME = os.environ.get("POSTGRES_DB")
     DB_USER = os.environ.get("POSTGRES_USER")
     DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD")
+    DB_PORT = os.environ.get("POSTGRES_PORT")
 except ImportError:
     PSYCOPG2_AVAILABLE = False
     win_msg = " For Windows, it is recommended to install 'psycopg2-binary' via pip."
@@ -165,11 +166,13 @@ def get_db_connection():
         logger.error("Database connection details are not fully configured. Please set DB_HOST, POSTGRES_DB, POSTGRES_USER, and POSTGRES_PASSWORD environment variables.")
         return None
     try:
+        # Explicitly tell psycopg2 not to look for pgpass.conf to avoid UnicodeDecodeError on Windows
         conn = psycopg2.connect(
             host=DB_HOST,
             dbname=DB_NAME,
             user=DB_USER,
             password=DB_PASSWORD,
+            port=DB_PORT,  # Explicitly set the port to 5432
             client_encoding='utf8'
         )
         return conn
@@ -521,7 +524,7 @@ def combined_anomaly_detection():
         
         # Combine results
         combined_df = pd.concat([ae_df, if_df], ignore_index=True)
-        
+
         # Handle duplicates (detected by both methods)
         if not combined_df.empty and all(col in combined_df.columns for col in ['날짜', '시간', '내용', '금액']):
             # Create a temporary column with absolute amount for comparison
@@ -1186,7 +1189,7 @@ def send_monthly_report():
 
             # import model using user_id
             try:
-                model = model.find_autoencoder_model(user_id)
+                ae_model = model.find_autoencoder_model(user_id)
                 if_model = model.find_isolation_forest_model(user_id)
                 ae_scaler = model.find_preprocessor(user_id, "ae_scaler")
                 ae_cols = model.find_preprocessor(user_id, "ae_train_cols")
@@ -1353,7 +1356,7 @@ if __name__ == "__main__":
     # Schedule the monthly report job
     scheduler.add_job(
         func=send_monthly_report,
-        trigger=CronTrigger(day=22, hour=17, minute=50), # Run on the first day of every month at midnight
+        trigger=CronTrigger(day=23, hour=10, minute=49), # Run on the first day of every month at midnight
         id='monthly_report_job',
         name='Monthly Report Generator',
         replace_existing=True

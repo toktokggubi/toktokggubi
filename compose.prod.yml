@@ -1,6 +1,3 @@
-extends:
-  - compose.ai.yml
-
 services:
   # frontend:
   #   # Use the 'production' stage from the multi-stage Dockerfile
@@ -38,4 +35,3 @@ services:
     depends_on:
       # - frontend # Nginx proxies to the production frontend and backend
       - backend
-      - ai
