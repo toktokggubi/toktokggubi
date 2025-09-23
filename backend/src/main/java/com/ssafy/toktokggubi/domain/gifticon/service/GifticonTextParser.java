@@ -5,38 +5,26 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * OCR 텍스트에서 브랜드/라벨/유효기간을 추출한다.
- * - 브랜드: 정규화/동의어/오인식 교정 + "교환처" 라인(다음 줄 포함) 우선
- *          → 사전 매핑 실패 시 원문을 그대로 브랜드로 폴백
- *          → 추가로 본문에서 짧고(≤15) 반복(≥2)되는 토큰을 브랜드로 폴백
- * - 라벨: 브랜드 이후 ~ 섹션 경계 전까지, 브랜드명/로고/바코드 제거, 상품권/교환권 가중치
- * - 유효기간: YYYY.MM.DD / YYYY-MM-DD / YYYY년 MM월 DD일 등
- */
 public class GifticonTextParser {
 
-    /* ========================= 유틸/정규식 ========================= */
+    /* ============ 공통 유틸/정규식 ============ */
 
-    private static String normTight(String s) {
+    private static String tight(String s) {
         return s == null ? "" : s.toLowerCase().replaceAll("\\s+", "");
     }
 
-    /** 화면용으로 과한 기호/공백을 정리하고 너무 긴 문장은 잘라준다 */
     private static String cleanDisplay(String raw) {
         if (raw == null) return null;
         String s = raw.replaceAll("^[^A-Za-z0-9가-힣]+|[^A-Za-z0-9가-힣]+$", "");
         s = s.replaceAll("\\s+", " ").trim();
-        if (s.length() > 30) s = s.substring(0, 30);
+        if (s.length() > 60) s = s.substring(0, 60);
         return s.isBlank() ? null : s;
     }
 
-    /** 브랜드 매칭을 위해 사전 정규화(소문자+특수문자 제거+오인식 보정) */
-    private static String normalizeBrandToken(String s) {
+    private static String normBrandKey(String s) {
         if (s == null) return "";
-        String t = s.toLowerCase();
-        t = t.replaceAll("[^a-z0-9가-힣]", "");
-        // 흔한 OCR 오인식 보정
-        t = t.replace("gs2s", "gs25"); // 2↔5
+        String t = s.toLowerCase().replaceAll("[^a-z0-9가-힣]", "");
+        t = t.replace("gs2s", "gs25");
         t = t.replace("g525", "gs25");
         t = t.replace("g5s", "gs");
         t = t.replace("c u", "cu");
@@ -46,161 +34,70 @@ public class GifticonTextParser {
     private static final Pattern KOREAN = Pattern.compile("[가-힣]");
     private static final Pattern BARCODE_LIKE = Pattern.compile("\\d{10,}");
     private static final Pattern DATE_PATTERN = Pattern.compile("(20\\d{2})[./년\\- ]\\s*(\\d{1,2})[./월\\- ]\\s*(\\d{1,2})");
+    private static final Pattern EXCHANGE_BRAND = Pattern.compile("교환처\\s*[:：]?\\s*([A-Za-z0-9가-힣 ()\\-]{2,})");
 
-    // "교환처: XXX"
-    private static final Pattern EXCHANGE_BRAND = Pattern.compile("교환처\\s*[:：]?\\s*([A-Za-z0-9가-힣 ]{2,})");
+    private static final List<String> SECTION_KEYS = List.of(
+            "유효기간", "교환처", "주문번호", "교환권", "바코드", "쿠폰번호", "발행일", "사용기간", "유효", "만료"
+    );
 
-    // 섹션 경계 키워드(이 전까지만 제품명 후보)
-    private static final String[] SECTION_BOUNDARY_KEYS = {
-            "유효기간", "교환처", "주문번호", "교환권", "교환만료", "바코드", "쿠폰번호", "발행일", "사용기간"
-    };
+    /* ============ 금지/로고/노이즈 ============ */
 
-    /* ========================= 브랜드 캐노니컬/동의어 ========================= */
+    private static final Set<String> FORBIDDEN_BRAND = new HashSet<>(List.of(
+            "유효기간","교환처","주문번호","교환권","상품권","쿠폰","쿠폰번호","kakaotalk","선물하기",
+            "barcode","바코드","thegoldenexperience"
+    ));
 
-    // 캐노니컬 키 → 표시 이름(merchant_name과 동일)
+    private static final Set<String> LOGO_TOKENS = new HashSet<>(List.of(
+            "cocacola","coca","cola","pepsi","sprite","fanta",
+            "gongcha","gong", "cha",
+            "ferrerorocher","rocher","ferrero","mgc","paiks","bbg"
+    ));
+
+    /* ============ 브랜드 사전 ============ */
+
     private static final Map<String, String> CANONICAL = new HashMap<>() {{
-        put("스타벅스", "스타벅스");
-        put("메가박스", "메가박스");
-        put("파리바게뜨", "파리바게뜨");
-        put("이디야커피", "이디야커피");
-        put("cgv", "CGV");
-        put("롯데시네마", "롯데시네마");
-        put("맥도날드", "맥도날드");
-        put("롯데리아", "롯데리아");
-        put("교촌치킨", "교촌치킨");
-        put("올리브영", "올리브영");
-        put("메가mgc커피", "메가MGC커피"); // 정규화 키(소문자/공백제거)
-        put("크리스피크림", "크리스피크림");
-        put("배스킨라빈스", "배스킨라빈스");
-        put("버거킹", "버거킹");
-        put("세븐일레븐", "세븐일레븐");
-        put("gs25", "GS25");
-        put("cu", "CU");
-        put("이마트24", "이마트24");
-        put("투썸플레이스", "투썸플레이스");
-        put("컴포즈커피", "컴포즈커피");
-        put("맘스터치", "맘스터치");
-        put("굽네치킨", "굽네치킨");
-        put("파스쿠찌", "파스쿠찌");
-        put("엔제리너스", "엔제리너스");
-        put("kfc", "KFC");
-        put("한솥도시락", "한솥도시락");
-        put("bhc", "BHC");
-        put("bbq", "BBQ");
-        put("쿠팡", "쿠팡");
-        put("배달의민족", "배달의민족");   // 브랜드명 그대로 프랜차이즈
-        put("우아한형제들", "우아한형제들");
-        put("할리스", "할리스");
-        put("공차", "공차");
-        put("탐앤탐스", "탐앤탐스");
-        put("성심당", "성심당");
-        put("아웃백", "아웃백");
-        put("본죽", "본죽");
-        put("이케아", "이케아");
-        put("nc백화점", "NC백화점");
-        put("티머니", "티머니");
-        put("마이비", "마이비");
-        put("이비", "이비");
-        put("한국철도공사", "한국철도공사");
-        put("코레일유통", "코레일유통");
-        put("srt", "SRT");
-
-        // 영어 인식 대비
-        put("starbucks", "스타벅스");
-        put("megabox", "메가박스");
-        put("baemin", "배달의민족");
+        put("스타벅스","스타벅스");
+        put("megabox","메가박스"); put("메가박스","메가박스");
+        put("파리바게뜨","파리바게뜨");
+        put("이디야커피","이디야커피");
+        put("cgv","CGV"); put("롯데시네마","롯데시네마");
+        put("맥도날드","맥도날드"); put("롯데리아","롯데리아");
+        put("교촌치킨","교촌치킨"); put("올리브영","올리브영");
+        put("메가mgc커피","메가MGC커피"); put("크리스피크림","크리스피크림");
+        put("배스킨라빈스","배스킨라빈스"); put("버거킹","버거킹");
+        put("세븐일레븐","세븐일레븐"); put("gs25","GS25"); put("cu","CU");
+        put("이마트24","이마트24"); put("투썸플레이스","투썸플레이스");
+        put("컴포즈커피","컴포즈커피"); put("맘스터치","맘스터치");
+        put("굽네치킨","굽네치킨"); put("파스쿠찌","파스쿠찌");
+        put("엔제리너스","엔제리너스"); put("kfc","KFC");
+        put("한솥도시락","한솥도시락"); put("bhc","BHC"); put("bbq","BBQ");
+        put("쿠팡","쿠팡"); put("배달의민족","배달의민족"); put("baemin","배달의민족");
+        put("우아한형제들","우아한형제들"); put("할리스","할리스");
+        put("공차","공차"); put("탐앤탐스","탐앤탐스"); put("성심당","성심당");
+        put("아웃백","아웃백"); put("본죽","본죽"); put("이케아","이케아");
+        put("nc백화점","NC백화점"); put("티머니","티머니");
+        put("마이비","마이비"); put("이비","이비");
+        put("한국철도공사","한국철도공사"); put("코레일유통","코레일유통");
+        put("srt","SRT");
+        put("starbucks","스타벅스");
     }};
 
-    // 다양한 입력(동의어/오인식/한글표기) → 캐노니컬 키
-    private static final Map<String, String> BRAND_ALIASES = new HashMap<>() {{
-        // 짧은 영문/숫자(오인식多)
-        put("cu", "cu");
-        put("씨유", "cu");
-        put("c u", "cu");
-        put("gs25", "gs25");
-        put("gs 25", "gs25");
-        put("지에스25", "gs25");
-        put("gs2s", "gs25");
-        put("g525", "gs25");
-        put("cgv", "cgv");
-        put("kfc", "kfc");
-        put("bhc", "bhc");
-        put("bbq", "bbq");
-        put("srt", "srt");
-
-        // 배달의민족(브랜드)
-        put("배달의민족", "배달의민족");
-        put("배민", "배달의민족");
-        put("baemin", "배달의민족");
-
-        // 우아한형제들(기업명은 별도 프랜차이즈)
-        put("우아한형제들", "우아한형제들");
-
-        // 한/영 혼용
-        put("starbucks", "스타벅스");
-        put("스타벅스", "스타벅스");
-        put("megabox", "메가박스");
-        put("메가박스", "메가박스");
-
-        // 한글 브랜드
-        put("파리바게뜨", "파리바게뜨");
-        put("이디야커피", "이디야커피");
-        put("롯데시네마", "롯데시네마");
-        put("맥도날드", "맥도날드");
-        put("롯데리아", "롯데리아");
-        put("교촌치킨", "교촌치킨");
-        put("올리브영", "올리브영");
-        put("크리스피크림", "크리스피크림");
-        put("배스킨라빈스", "배스킨라빈스");
-        put("버거킹", "버거킹");
-        put("세븐일레븐", "세븐일레븐");
-        put("이마트24", "이마트24");
-        put("투썸플레이스", "투썸플레이스");
-        put("컴포즈커피", "컴포즈커피");
-        put("맘스터치", "맘스터치");
-        put("굽네치킨", "굽네치킨");
-        put("파스쿠찌", "파스쿠찌");
-        put("엔제리너스", "엔제리너스");
-        put("한솥도시락", "한솥도시락");
-        put("쿠팡", "쿠팡");
-        put("할리스", "할리스");
-        put("공차", "공차");
-        put("탐앤탐스", "탐앤탐스");
-        put("성심당", "성심당");
-        put("아웃백", "아웃백");
-        put("본죽", "본죽");
-        put("이케아", "이케아");
-        put("nc백화점", "nc백화점");
-        put("티머니", "티머니");
-        put("마이비", "마이비");
-        put("이비", "이비");
-        put("한국철도공사", "한국철도공사");
-        put("코레일유통", "코레일유통");
-
-        // 메가MGC 커피 변형
-        put("메가mgc커피", "메가mgc커피");
-        put("메가 mgc 커피", "메가mgc커피");
-        put("mega mgc coffee", "메가mgc커피");
-        put("megamingccoffee", "메가mgc커피");
+    private static final Map<String, String> ALIASES = new HashMap<>() {{
+        put("씨유","cu"); put("c u","cu");
+        put("gs 25","gs25"); put("지에스25","gs25"); put("gs2s","gs25"); put("g525","gs25");
+        put("메가 mgc 커피","메가mgc커피"); put("mega mgc coffee","메가mgc커피"); put("megamingccoffee","메가mgc커피");
+        put("배민","배달의민족"); put("baemin","baemin");
     }};
 
-    // 라벨 노이즈 토큰(브랜드명은 모두 자동 포함)
-    private static final Set<String> NOISE_TOKENS = new HashSet<>();
+    /** 라벨에서 전역으로 제외할 “브랜드명 자체”(표시 이름)의 tight 집합 */
+    private static final Set<String> BRAND_NAME_TIGHT = new HashSet<>();
     static {
-        NOISE_TOKENS.addAll(List.of("br","baskin","robbins","coupon","kakaotalk","선물하기","bbg"));
-        for (String display : CANONICAL.values()) {
-            NOISE_TOKENS.add(normTight(display));
-        }
-        NOISE_TOKENS.addAll(List.of("cu","gs25","cgv"));
-        NOISE_TOKENS.add(normTight("mgc"));
-        NOISE_TOKENS.add(normTight("paiks"));
-        NOISE_TOKENS.add("cocacola");
-        NOISE_TOKENS.add("pepsi");
-        NOISE_TOKENS.add("sprite");
-        NOISE_TOKENS.add("fanta");
+        for (String display : CANONICAL.values()) BRAND_NAME_TIGHT.add(tight(display));
+        // 흔한 영문 표기(로고)
+        BRAND_NAME_TIGHT.add("gongcha");
     }
 
-    /* ========================= 공개 API ========================= */
+    /* ============ 공개 API ============ */
 
     public record Result(String brand, String label, LocalDate expiresAt) {}
 
@@ -217,95 +114,87 @@ public class GifticonTextParser {
         return new Result(brand, label, exp);
     }
 
-    /* ========================= 브랜드 추출 ========================= */
+    /* ============ 브랜드 ============ */
 
-    /** 캐노니컬/별칭으로 정규화 시도 */
-    private static String canonicalize(String normalizedKey) {
-        String k = normalizedKey;
-        if (BRAND_ALIASES.containsKey(k)) k = BRAND_ALIASES.get(k);
+    private static String canonicalize(String keyNorm) {
+        String k = keyNorm;
+        if (ALIASES.containsKey(k)) k = ALIASES.get(k);
         return CANONICAL.getOrDefault(k, null);
     }
 
-    /** "교환처" 라인에서 브랜드 추출: 매핑 실패 시 원문으로 폴백 */
-    private static String tryFromExchangeLine(String[] lines) {
+    private static String brandFromExchangeSection(String[] lines) {
         for (int i = 0; i < lines.length; i++) {
             String cur = lines[i].replaceAll("\\s+", " ").trim();
 
-            // 같은 줄: "교환처: XXX"
-            var m = EXCHANGE_BRAND.matcher(cur);
+            Matcher m = EXCHANGE_BRAND.matcher(cur);
             if (m.find()) {
                 String raw = cleanDisplay(m.group(1));
-                String nk  = normalizeBrandToken(raw);
-                String canon = canonicalize(nk);
-                return canon != null ? canon : raw; // ★ 폴백
+                if (raw == null) continue;
+                String key = normBrandKey(raw);
+                if (FORBIDDEN_BRAND.contains(raw) || FORBIDDEN_BRAND.contains(key)) continue;
+                String canon = canonicalize(key);
+                return (canon != null) ? canon : raw;
             }
 
-            // 다음 줄: "교환처" \n "XXX"
-            if (cur.equals("교환처") && i + 1 < lines.length) {
-                String raw = cleanDisplay(lines[i + 1]);
-                String nk  = normalizeBrandToken(raw);
-                String canon = canonicalize(nk);
-                return canon != null ? canon : raw; // ★ 폴백
+            if (cur.equals("교환처")) {
+                for (int j = 1; j <= 2 && i + j < lines.length; j++) {
+                    String raw = cleanDisplay(lines[i + j]);
+                    if (raw == null) continue;
+                    String key = normBrandKey(raw);
+                    if (FORBIDDEN_BRAND.contains(raw) || FORBIDDEN_BRAND.contains(key)) continue;
+                    String canon = canonicalize(key);
+                    return (canon != null) ? canon : raw;
+                }
             }
         }
         return null;
     }
 
-    /** 본문 스캔: 매핑 → 실패 시 반복 토큰 폴백 */
-    private static String tryFromWholeText(String[] lines) {
-        // 1) 사전 매핑 우선
-        for (String ln : lines) {
-            String nk = normalizeBrandToken(ln);
-            for (String alias : BRAND_ALIASES.keySet()) {
-                String ak = normalizeBrandToken(alias);
-                if (!ak.isEmpty() && nk.contains(ak)) {
-                    String canon = canonicalize(ak);
-                    if (canon != null) return canon;
+    private static String brandFromHeaderOrFrequency(String[] lines) {
+        int header = Math.min(6, lines.length);
+        for (int pass = 0; pass < 2; pass++) {
+            int to = (pass == 0 ? header : lines.length);
+            for (int i = 0; i < to; i++) {
+                String nk = normBrandKey(lines[i]);
+                for (String alias : ALIASES.keySet()) {
+                    String ak = normBrandKey(alias);
+                    if (!ak.isEmpty() && nk.contains(ak)) {
+                        String canon = canonicalize(ak);
+                        if (canon != null) return canon;
+                    }
                 }
-            }
-            for (String key : CANONICAL.keySet()) {
-                if (!key.isEmpty() && nk.contains(key)) {
-                    return CANONICAL.get(key);
+                for (String key : CANONICAL.keySet()) {
+                    if (!key.isEmpty() && nk.contains(key)) {
+                        return CANONICAL.get(key);
+                    }
                 }
             }
         }
-
-        // 2) 폴백: 짧고(≤15), 노이즈/바코드 아님, 2회 이상 등장하는 토큰
-        Map<String, Integer> count = new LinkedHashMap<>();
+        Map<String, Integer> counter = new LinkedHashMap<>();
         for (String ln : lines) {
             String disp = cleanDisplay(ln);
             if (disp == null) continue;
-            String tight = normTight(disp);
-            if (tight.length() < 2 || tight.length() > 15) continue;
-            if (NOISE_TOKENS.contains(tight)) continue;
-            if (BARCODE_LIKE.matcher(tight).find()) continue;
-            if (!tight.matches("[a-z0-9가-힣]+")) continue; // 알파뉴메릭/한글만
-            count.put(disp, count.getOrDefault(disp, 0) + 1);
+            String tk = tight(disp);
+            if (tk.length() < 2 || tk.length() > 15) continue;
+            if (!tk.matches("[a-z0-9가-힣]+")) continue;
+            if (FORBIDDEN_BRAND.contains(disp) || FORBIDDEN_BRAND.contains(tk)) continue;
+            if (LOGO_TOKENS.contains(tk)) continue;
+            if (BARCODE_LIKE.matcher(tk).find()) continue;
+            counter.put(disp, counter.getOrDefault(disp, 0) + 1);
         }
-        for (var e : count.entrySet()) {
-            if (e.getValue() >= 2) return e.getKey(); // ★ 폴백 브랜드
+        for (var e : counter.entrySet()) {
+            if (e.getValue() >= 2) return e.getKey();
         }
         return null;
     }
 
     private static String findBrand(String[] lines) {
-        String byExchange = tryFromExchangeLine(lines);
-        if (byExchange != null) return byExchange;
-
-        String byScan = tryFromWholeText(lines);
-        if (byScan != null) return byScan;
-
-        // 마지막 안전장치(매우 느슨)
-        for (String ln : lines) {
-            String nk = normalizeBrandToken(ln);
-            for (String entry : CANONICAL.keySet()) {
-                if (nk.contains(entry)) return CANONICAL.get(entry);
-            }
-        }
-        return null;
+        String b = brandFromExchangeSection(lines);
+        if (b != null) return b;
+        return brandFromHeaderOrFrequency(lines);
     }
 
-    /* ========================= 유효기간/라벨 ========================= */
+    /* ============ 만료일 ============ */
 
     private static LocalDate findExpiry(String text) {
         Matcher m = DATE_PATTERN.matcher(text.replaceAll("\\s+", ""));
@@ -318,36 +207,27 @@ public class GifticonTextParser {
         return null;
     }
 
-    private static boolean isBoundaryLine(String s) {
-        for (String key : SECTION_BOUNDARY_KEYS) {
-            if (s.contains(key)) return true;
-        }
+    /* ============ 라벨 ============ */
+
+    private static boolean isSectionLine(String s) {
+        for (String k : SECTION_KEYS) if (s.contains(k)) return true;
         return false;
     }
-
-    private static boolean isBarcodeLike(String tight) {
-        return BARCODE_LIKE.matcher(tight).find();
+    private static boolean isBarcodeLike(String tk) { return BARCODE_LIKE.matcher(tk).find(); }
+    private static boolean isLogoOrNoise(String tk) {
+        return LOGO_TOKENS.contains(tk) || FORBIDDEN_BRAND.contains(tk);
+    }
+    private static boolean isBrandNameLine(String s) {
+        return BRAND_NAME_TIGHT.contains(tight(s));
     }
 
-    private static boolean isNoise(String tight) {
-        return NOISE_TOKENS.contains(tight);
-    }
-
-    /** 다음 줄과 이어서 붙여야 할지 휴리스틱 */
     private static boolean shouldJoin(String curr, String next) {
         if (next == null || next.isBlank()) return false;
-
-        // 1) 현재 줄이 이어짐 기호로 끝남
         String c = curr.trim();
-        if (c.endsWith("+") || c.endsWith(",") || c.endsWith("·") || c.endsWith("/") || c.endsWith("("))
-            return true;
-
-        // 2) 괄호가 아직 안 닫힘
+        if (c.endsWith("+") || c.endsWith(",") || c.endsWith("·") || c.endsWith("/") || c.endsWith("(")) return true;
         long open = c.chars().filter(ch -> ch=='(').count();
-        long close = c.chars().filter(ch -> ch==')').count();
+        long close= c.chars().filter(ch -> ch==')').count();
         if (open > close) return true;
-
-        // 3) 다음 줄이 괄호로 시작하거나 소문자/한글로 자연스럽게 이어짐
         String n = next.trim();
         if (n.startsWith("(")) return true;
         if (!n.isEmpty()) {
@@ -357,77 +237,71 @@ public class GifticonTextParser {
         return false;
     }
 
-    /** 라벨 추출(최대 3줄까지 이어붙임) */
     private static String findLabel(String[] lines, String brand) {
-        int startIdx = 0;
+        // 1) 첫 섹션 경계 위치
+        int firstBoundary = lines.length;
+        for (int i = 0; i < lines.length; i++) {
+            if (isSectionLine(lines[i])) { firstBoundary = i; break; }
+        }
+
+        // 2) 라벨 탐색 시작: “경계 이전”에 나타난 첫 브랜드 다음 줄
+        int start = 0;
         if (brand != null) {
-            for (int i = 0; i < lines.length; i++) {
-                if (lines[i].contains(brand)) { startIdx = i + 1; break; }
+            for (int i = 0; i < Math.min(firstBoundary, lines.length); i++) {
+                if (lines[i].contains(brand)) { start = i + 1; break; }
             }
         }
 
-        int endIdx = lines.length;
-        outer:
-        for (int i = startIdx; i < lines.length; i++) {
-            for (String key : SECTION_BOUNDARY_KEYS) {
-                if (lines[i].contains(key)) { endIdx = i; break outer; }
-            }
-        }
+        // 3) 라벨 탐색 종료: 첫 섹션 경계
+        int end = firstBoundary;
 
-        final Set<String> labelHints = Set.of("상품권", "교환권", "세트", "세트메뉴", "쿠폰", "기프트");
+        // 4) 스코어링
+        final Set<String> hints = Set.of("상품권", "교환권", "세트", "세트메뉴", "쿠폰", "기프트", "ml", "ML", "L", "개", "oz");
+
         String best = null;
         int bestScore = Integer.MIN_VALUE;
 
-        for (int i = startIdx; i < endIdx; i++) {
-            String ln = lines[i];
-            if (ln.length() < 2) continue;
+        for (int i = start; i < end; i++) {
+            String line = lines[i];
+            if (line.length() < 2) continue;
 
-            String tight = normTight(ln);
-            if (isBoundaryLine(ln) || isNoise(tight) || isBarcodeLike(tight)) continue;
+            String tk = tight(line);
+            if (isBrandNameLine(line)) continue;          // ★ 브랜드명 자체 배제
+            if (isSectionLine(line) || isBarcodeLike(tk) || isLogoOrNoise(tk)) continue;
 
-            boolean hasKoreanCurr = KOREAN.matcher(ln).find();
-
-            // 현재 줄에 한글이 없고, 다음 줄에는 한글이 있으면 현재 줄은 로고/장식으로 간주하여 스킵
-            if (!hasKoreanCurr && i + 1 < endIdx) {
-                String next = lines[i + 1];
-                String nextTight = normTight(next);
-                if (next.length() >= 2 && !isBoundaryLine(next) && !isNoise(nextTight) && !isBarcodeLike(nextTight)
-                        && KOREAN.matcher(next).find()) {
-                    continue; // Coca-Cola 같은 로고 라인은 건너뛴다
+            boolean hasKoCurr = KOREAN.matcher(line).find();
+            if (!hasKoCurr && i + 1 < end) {
+                String nxt = lines[i + 1];
+                String nxtTk = tight(nxt);
+                if (nxt.length() >= 2 && !isSectionLine(nxt) && !isBrandNameLine(nxt)
+                        && !isLogoOrNoise(nxtTk) && !isBarcodeLike(nxtTk)
+                        && KOREAN.matcher(nxt).find()) {
+                    continue; // 영문 로고 라인 스킵
                 }
             }
 
-            // ----- 이어붙이기: 최대 2줄을 추가(총 3줄) -----
-            String merged = ln.trim();
+            String merged = line.trim();
             int j = i;
-            for (int joinCount = 0; joinCount < 2; joinCount++) {
-                int nextIdx = j + 1;
-                if (nextIdx >= endIdx) break;
-                String next = lines[nextIdx];
-                String nextTight = normTight(next);
+            for (int join = 0; join < 2; join++) {
+                int ni = j + 1; if (ni >= end) break;
+                String next = lines[ni];
+                String nextTk = tight(next);
                 if (next.length() < 2) break;
-                if (isBoundaryLine(next) || isNoise(nextTight) || isBarcodeLike(nextTight)) break;
-
+                if (isSectionLine(next) || isBrandNameLine(next) || isLogoOrNoise(nextTk) || isBarcodeLike(nextTk)) break;
                 if (!shouldJoin(merged, next)) break;
-
                 merged = (merged + " " + next).replaceAll("\\s+", " ").trim();
-                j = nextIdx;
+                j = ni;
             }
 
-            // ----- 점수 계산 -----
-            boolean hasKorean = KOREAN.matcher(merged).find();
             int score = 0;
-            if (hasKorean) score += 2;
-            for (String h : labelHints) {
-                if (merged.contains(h)) { score += 3; break; }
-            }
-            score += Math.min(merged.length(), 60) / 4; // 길이 가중(조금 상향)
+            if (KOREAN.matcher(merged).find()) score += 2;
+            for (String h : hints) { if (merged.contains(h)) { score += 3; break; } }
+            if (merged.matches(".*\\d+\\s?(?:ml|ML|L|개|oz).*")) score += 2;
+            score += Math.min(merged.length(), 60) / 4;
 
-            if (score > bestScore) {
-                bestScore = score;
-                best = merged;
-            }
+            if (score > bestScore) { bestScore = score; best = merged; }
         }
-        return best;
+
+        return cleanDisplay(best);
     }
 }
