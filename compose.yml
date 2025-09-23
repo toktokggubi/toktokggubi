@@ -103,12 +103,15 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - GOOGLE_APPLICATION_CREDENTIALS=/opt/creds/gcp-sa.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_sa.json
       # Other common environment variables for backend
-    # secrets:
-    #   - gcp_sa_json
+    secrets:
+      - source: gcp_sa_json
+        target: gcp_sa.json
+        uid: '0'
+        gid: '0'
+        mode: 0400
     volumes:
-      - ./secrets/toktokggubi-sa.json:/opt/creds/gcp-sa.json:ro
       - ./backend/uploads:/data/uploads
 
     # Frontend Service (React)
@@ -153,6 +156,6 @@ services:
     #   - "122"  
     restart: always
 
-# secrets:
-#   gcp_sa_json:
-#     file: ./secrets/toktokggubi-sa.json
+secrets:
+  gcp_sa_json:
+    file: ./secrets/toktokggubi-sa.json
