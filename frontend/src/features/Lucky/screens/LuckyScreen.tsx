@@ -1,18 +1,18 @@
 // src/features/Lucky/screens/Lucky/index.tsx
-import React, { useMemo, useState, useCallback } from "react";
-import { View, ActivityIndicator } from "react-native";
-import LuckyTemplate from "@/features/Lucky/templates/LuckyTemplate";
 import { useSalesByMonth } from "@/features/Lucky/model/hooks";
 import type { Category } from "@/features/Lucky/model/types";
+import LuckyTemplate from "@/features/Lucky/templates/LuckyTemplate";
 import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types";
-import { useRouter } from "expo-router"; // ✅ 변경: 훅 사용
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { useRouter } from "expo-router"; // ✅ 변경: 훅 사용
+import React, { useCallback, useMemo, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 
 const now = new Date();
 
 export default function LuckyScreen() {
   const router = useRouter(); // ✅ 훅으로 라우터 가져오기
-  
+
   // 인증 가드
   const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
 
@@ -67,6 +67,10 @@ export default function LuckyScreen() {
     router.push("/molbbang");
   }, [router]);
 
+  const handleNotificationPress = useCallback(() => {
+    router.push("/notification");
+  }, [router]);
+
   // 인증 로딩 중이거나 인증되지 않은 경우
   if (authLoading || !isAuthenticated) {
     return null; // useAuthGuard에서 자동으로 리다이렉트됨
@@ -103,6 +107,7 @@ export default function LuckyScreen() {
       molImageSource={require("@/assets/images/illustration/mol_bbang.png")}
       onPressNbbang={handlePressNbbang}
       onPressMolbbang={handlePressMolbbang}
+      onNotificationPress={handleNotificationPress}
     />
   );
 }
