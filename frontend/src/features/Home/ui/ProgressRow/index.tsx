@@ -1,10 +1,9 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
-import { ProgressRowProps } from "./types";
 import { CATEGORY_LABELS } from "@/shared/constants/categories";
 import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
-import { krw } from "@/shared/utils/currency";
 import { colors } from "@/shared/constants/colors";
+import React from "react";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ProgressRowProps } from "./types";
 
 export const ProgressRow: React.FC<ProgressRowProps> = ({
   type,
@@ -15,18 +14,25 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
   showUsageDetails = true,
   isExpanded = false,
   onUsageDetailsPress,
+  onEditPress,
 }) => {
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
   const remainingAmount = totalAmount - currentAmount;
-  
+
   const isTotalType = type === "total";
-  const label = isTotalType ? "나의 전체예산" : (category ? CATEGORY_LABELS[category] : "");
-  
+  const label = isTotalType
+    ? "나의 전체예산"
+    : category
+    ? CATEGORY_LABELS[category]
+    : "";
+
   // 카테고리 아이콘
-  const categoryIcon = !isTotalType && category ? CATEGORY_ICON_BY_NAME[label] : null;
-  
+  const categoryIcon =
+    !isTotalType && category ? CATEGORY_ICON_BY_NAME[label] : null;
+
   // 80% 이상 사용 시 빨간색, 미만 시 파란색
-  const progressBarColor = progressPercentage >= 80 ? "#FF4444" : colors.BLUE_NORMAL;
+  const progressBarColor =
+    progressPercentage >= 80 ? "#FF4444" : colors.BLUE_NORMAL;
 
   return (
     <TouchableOpacity
@@ -47,15 +53,27 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
               resizeMode="contain"
             />
           )}
-          <Text style={[styles.label, isTotalType ? styles.totalLabel : styles.categoryLabel]}>
+          <Text
+            style={[
+              styles.label,
+              isTotalType ? styles.totalLabel : styles.categoryLabel,
+            ]}
+          >
             {label}
           </Text>
-          <Text style={styles.percentage}>{Math.round(progressPercentage)}%</Text>
+          <Text style={styles.percentage}>
+            {Math.round(progressPercentage)}%
+          </Text>
         </View>
         <View style={styles.rightSection}>
           <Text style={styles.remainingAmount}>
             {remainingAmount.toLocaleString("ko-KR")}원 남음
           </Text>
+          {isTotalType && onEditPress && (
+            <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
+              <Text style={styles.editButtonText}>✏️</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
@@ -117,6 +135,7 @@ const styles = StyleSheet.create({
   rightSection: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 8,
   },
   categoryIcon: {
     width: 24,
@@ -126,14 +145,14 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333333", // 다크 그레이 텍스트
+    color: colors.BLUE_DARKER,
     marginRight: 8,
   },
   totalLabel: {
-    color: "#333333",
+    color: colors.BLUE_DARKER,
   },
   categoryLabel: {
-    color: "#333333",
+    color: colors.BLUE_DARKER,
   },
   percentage: {
     fontSize: 14,
@@ -143,7 +162,7 @@ const styles = StyleSheet.create({
   remainingAmount: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333333", // 다크 그레이 텍스트
+    color: colors.BLUE_DARKER,
   },
   progressBarContainer: {
     marginBottom: 12,
@@ -166,11 +185,19 @@ const styles = StyleSheet.create({
   spentAmount: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333333", // 다크 그레이 텍스트
+    color: colors.BLUE_DARKER,
   },
   budgetAmount: {
     fontSize: 14,
     fontWeight: "500",
     color: "#999999", // 라이트 그레이 텍스트
+  },
+  editButton: {
+    padding: 4,
+    borderRadius: 4,
+    backgroundColor: "#F0F0F0",
+  },
+  editButtonText: {
+    fontSize: 16,
   },
 });

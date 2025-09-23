@@ -1,7 +1,8 @@
 // src/features/User/ui/GifticonCard/index.tsx
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
-import { Image } from "expo-image";
+import { Image as ExpoImage } from "expo-image";
+import { Image } from "react-native";
 import React, { memo } from "react";
 import {
   Platform,
@@ -12,6 +13,8 @@ import {
   type TextStyle,
 } from "react-native";
 import type { GifticonCardProps } from "./types";
+import { normalizeImageUrl, handleImageError, handleImageLoad } from "@/features/User/utils/imageUtils";
+import { isGifticonExpired, calculateDDay } from "@/features/User/utils/gifticonUtils";
 
 const androidTight: TextStyle = Platform.select({
   android: { includeFontPadding: false },
@@ -19,24 +22,38 @@ const androidTight: TextStyle = Platform.select({
 })!;
 
 function GifticonCardImpl({
-  imageSource,
+  imageUrl,
   title,
   brand,
+  expiresAt,
   onPress,
-  dDay,
 }: GifticonCardProps) {
+  // 서버 이미지 URL을 절대 URL로 변환
+  const normalizedImageUrl = normalizeImageUrl(imageUrl);
+  
+  // 만료 상태 및 D-Day 계산
+  const isExpired = isGifticonExpired(expiresAt);
+  const dDay = calculateDDay(expiresAt);
+
+
   return (
     <Pressable
       onPress={onPress}
-      style={s.card}
+      style={[s.card, isExpired && s.expiredCard]}
       android_ripple={{ borderless: false }}
       accessibilityLabel={`${brand} ${title}${
-        typeof dDay === "number" ? `, D-${Math.max(0, dDay)}` : ""
+        isExpired ? ", 기간만료" : dDay !== null ? `, D-${dDay}` : ""
       }`}
     >
-      <View style={s.thumbWrap}>
-        {/* D-Day Badge */}
-        {typeof dDay === "number" && (
+      <View style={[s.thumbWrap, isExpired && s.expiredThumbWrap]}>
+        {/* D-Day Badge 또는 만료 Badge */}
+        {isExpired ? (
+          <View style={[s.badge, s.expiredBadge]}>
+            <Text style={[s.badgeTxt, s.expiredBadgeTxt, androidTight]}>
+              기간만료
+            </Text>
+          </View>
+        ) : dDay !== null && (
           <View style={s.badge}>
             <Text style={[s.badgeTxt, androidTight]}>
               {dDay > 0
@@ -48,18 +65,44 @@ function GifticonCardImpl({
           </View>
         )}
 
+        {/* React Native 기본 Image 테스트 */}
         <Image
-          source={imageSource}
+          source={{ uri: normalizedImageUrl }}
+          style={[s.thumb, isExpired && s.expiredThumb]}
+          resizeMode="cover"
+          onError={(e) => handleImageError(normalizedImageUrl, e)}
+          onLoad={() => handleImageLoad(normalizedImageUrl)}
+        />
+        
+        {/* Expo Image도 테스트용으로 주석 처리 */}
+        {/*
+        <ExpoImage
+          source={normalizedImageUrl}
           style={s.thumb}
           contentFit="cover"
           contentPosition="top center"
+          cachePolicy="disk"
+          placeholder={require("@/assets/images/character/character-01.png")}
+          onError={(e) => {
+            console.log("❌ Expo Image Error:", {
+              url: normalizedImageUrl,
+              error: e.nativeEvent?.error,
+              event: e
+            });
+            handleImageError(normalizedImageUrl, e);
+          }}
+          onLoad={() => {
+            console.log("✅ Expo Image Success:", normalizedImageUrl);
+            handleImageLoad(normalizedImageUrl);
+          }}
         />
+        */}
       </View>
 
-      <Text style={[s.brand, androidTight]} numberOfLines={1}>
+      <Text style={[s.brand, isExpired && s.expiredText, androidTight]} numberOfLines={1}>
         {brand}
       </Text>
-      <Text style={[s.title, androidTight]} numberOfLines={2}>
+      <Text style={[s.title, isExpired && s.expiredText, androidTight]} numberOfLines={2}>
         {title}
       </Text>
     </Pressable>
@@ -114,5 +157,27 @@ const s = StyleSheet.create({
     textAlignVertical: "center",
     paddingVertical: 0,
     marginBottom: 5,
+  },
+
+  // ⬇ 만료된 기프티콘 스타일
+  expiredCard: {
+    // 전체 카드 투명도 제거 - 배지가 회색빛이 되는 것을 방지
+  },
+  expiredThumbWrap: {
+    backgroundColor: colors.GRAY_LIGHT,
+  },
+  expiredThumb: {
+    opacity: 0.5, // 이미지 회색빛
+  },
+  expiredBadge: {
+    backgroundColor: "#e74c3c", // 더 선명한 빨간색 배지
+    opacity: 1, // 완전 불투명
+  },
+  expiredBadgeTxt: {
+    color: "#fff",
+    fontWeight: "bold", // 더 굵게
+  },
+  expiredText: {
+    color: colors.GRAY_NORMAL, // 텍스트 회색
   },
 });

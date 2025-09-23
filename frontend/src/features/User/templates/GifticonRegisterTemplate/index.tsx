@@ -1,48 +1,54 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Pressable, Text } from "react-native";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import type { GifticonRegisterTemplateProps } from "./types";
 import { GifticonImageUpload } from "@/features/User/ui/GifticonImageUpload";
-import { GifticonForm } from "@/features/User/ui/GifticonForm";
 
 export default function GifticonRegisterTemplate(
   props: GifticonRegisterTemplateProps
 ) {
-  const {
-    imageUri,
-    onPickImage,
-    loadingPreview,
-    merchant,
-    onMerchantChange,
-    label,
-    onLabelChange,
-    expiresAt,
-    onExpiresAtChange,
-    onSubmit,
-    saving,
-  } = props;
+  const { imageUri, onPickImage, loading, onSubmit } = props;
 
   return (
     <View style={s.wrap}>
       <GifticonImageUpload
         value={imageUri}
         onChange={onPickImage}
-        loading={loadingPreview}
+        loading={false}
       />
-      <GifticonForm
-        merchant={merchant}
-        onMerchantChange={onMerchantChange}
-        label={label}
-        onLabelChange={onLabelChange}
-        expiresAt={expiresAt}
-        onExpiresAtChange={onExpiresAtChange}
-        onSubmit={onSubmit}
-        disabled={saving}
-      />
+      <Pressable
+        style={[s.button, !imageUri && s.buttonDisabled]}
+        onPress={onSubmit}
+        disabled={!imageUri || loading}
+      >
+        <Text style={[s.buttonText, !imageUri && s.buttonTextDisabled]}>
+          {loading ? "OCR 처리 중..." : "등록하기"}
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: colors.BACKGROUND_PRIMARY, padding: 16 },
+  button: {
+    backgroundColor: colors.BLUE_NORMAL,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  buttonDisabled: {
+    backgroundColor: colors.GRAY_LIGHT,
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    ...font.bold,
+    fontSize: 16,
+  },
+  buttonTextDisabled: {
+    color: colors.GRAY_DARK,
+  },
 });

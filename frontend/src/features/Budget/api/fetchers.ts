@@ -18,10 +18,18 @@ export interface FixedIncludedTotalResponse {
   fixedIncludedTotal: number;
 }
 
-// 카테고리별 예산 응답 타입
-export interface CategoryAllocation {
-  categoryId: number;
-  finalAmount: number;
+// 고정지출 상세 목록 응답 타입
+export interface FixedExpenseDto {
+  title: string;
+  amount: number;
+  payDay?: number;
+  includeInBudget: boolean;
+}
+
+// 고정지출 상세 목록 조회
+export async function fetchFixedExpenseList(): Promise<FixedExpenseDto[]> {
+  const { data } = await http.get("/budget/fixed/list");
+  return data;
 }
 
 // BD-1 총예산 입력(redis)

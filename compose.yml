@@ -15,6 +15,30 @@ services:
       retries: 10
     restart: always
 
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      MONGO_INITDB_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_PORT: ${MONGO_PORT}
+      MONGO_HOST: ${MONGO_HOST}
+    volumes:
+      - ./database/mongodb:/data/mongodb
+      - ./database/mongodb:/docker-entrypoint-initdb.d
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand({ping: 1})' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   rabbitmq:
     image: 'rabbitmq:management'
     ports:
@@ -47,6 +71,16 @@ services:
     volumes:
       - ./database/mongodb:/data/db
     restart: always
+  # AI Service (Flask)
+  # ai:
+  #   build:
+  #     context: ./ai # Build from the Dockerfile in the ./ai directory
+  #   restart: always
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB}
 
   # Backend Service (Spring Boot with Gradle)
   backend:
@@ -72,20 +106,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mongo:
-        condition: service_started
+      mongodb:
+        condition: service_healthy
     environment:
       # Spring Boot database connection properties (using environment variables from .env)
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
-      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp_sa_json
-      - FCM_ENABLED=true
-      - FCM_CREDENTIALS_LOCATION=file:/run/secrets/fcm_credentials_json
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp-sa.json
       # Other common environment variables for backend
     secrets:
-      - gcp_sa_json
-      - fcm_credentials_json
+      - source: gcp_sa_json
+        target: gcp-sa.json
     volumes:
       - ./backend/uploads:/data/uploads
 
@@ -104,11 +136,12 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+#    volumes:
+      #- ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
       - backend
+      # - ai # Nginx might proxy to AI service directly too
 
   # Jenkins CI/CD Server (only in development/CI environment)
   jenkins:
@@ -124,17 +157,12 @@ services:
       - ./jenkins/jenkins_home:/var/jenkins_home
       # Mount Docker socket to allow Jenkins to build/run other Docker containers
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
-      - /home/ubuntu/S13P21B207:/home/ubuntu/S13P21B207
       # Mount Docker client binary from host if docker-compose isn't in Jenkins image
       # - /usr/local/bin/docker:/usr/local/bin/docker
-    group_add:
-      - "122"  
+    # group_add:
+    #   - "122"  
     restart: always
 
 secrets:
   gcp_sa_json:
     file: ./secrets/toktokggubi-sa.json
-  fcm_credentials_json:
-    file: ./secrets/firebase-service-account.json

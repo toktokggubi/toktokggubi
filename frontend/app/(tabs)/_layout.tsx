@@ -12,9 +12,7 @@ import PaymentScreen from "../pay/payment";
 import HomeScreen from "./home/index";
 import LuckyScreen from "./lucky/index";
 import MyPageScreen from "./mypage/index";
-
-// 더미 컴포넌트들 (라우터가 없는 탭들용)
-const ReportScreen = () => null;
+import ReportScreen from "@/features/Report/screens/ReportScreen";
 
 const Tab = createBottomTabNavigator();
 

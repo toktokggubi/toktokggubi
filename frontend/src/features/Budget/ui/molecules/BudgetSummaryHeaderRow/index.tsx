@@ -7,16 +7,18 @@ import { StyleSheet, Text, View } from "react-native";
 interface BudgetSummaryHeaderRowProps {
   title: string;
   amount: number;
+  mode?: 'edit' | 'ai-setup';
 }
 
 export default function BudgetSummaryHeaderRow({
   title,
   amount,
+  mode = 'edit',
 }: BudgetSummaryHeaderRowProps) {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.amount}>{krw(amount)}</Text>
+    <View style={[styles.container, mode === 'ai-setup' && styles.aiModeContainer]}>
+      <Text style={[styles.title, mode === 'ai-setup' && styles.aiModeTitle]}>{title}</Text>
+      <Text style={[styles.amount, mode === 'ai-setup' && styles.aiModeAmount]}>{krw(amount)}</Text>
     </View>
   );
 }
@@ -41,5 +43,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     ...font.bold,
     color: colors.BLUE_NORMAL,
+  },
+  aiModeContainer: {
+    backgroundColor: colors.BLUE_NORMAL,
+  },
+  aiModeTitle: {
+    color: "#ffffff",
+  },
+  aiModeAmount: {
+    color: "#ffffff",
   },
 });

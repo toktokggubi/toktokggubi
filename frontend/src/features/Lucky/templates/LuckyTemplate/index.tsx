@@ -1,18 +1,17 @@
 // src/features/Lucky/templates/LuckyTemplate/index.tsx
+import { SaleCalendar } from "@/features/Lucky/ui/SaleCalendar";
+import { SaleEventList } from "@/features/Lucky/ui/SaleEventList";
+import { SeriesCards } from "@/features/Lucky/ui/SeriesCards";
+import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import React from "react";
-import { Text, StyleSheet, View, ScrollView } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import type { LuckyTemplateProps } from "./types";
-import { colors } from "@/shared/constants/colors";
-import { CategoryChips } from "@/features/Lucky/ui/CategoryChips";
-import { SaleCalendar } from "@/features/Lucky/ui/SaleCalendar";
-import { SaleEventList } from "@/features/Lucky/ui/SaleEventList";
-import { SeriesCards } from "@/features/Lucky/ui/SeriesCards";
-import { font } from "@/shared/typography/font";
 
 export default function LuckyTemplate({
   year,
@@ -56,7 +55,6 @@ export default function LuckyTemplate({
         >
           <Text style={s.header}>세일</Text>
 
-          <CategoryChips value={category} onChange={onChangeCategory} />
 
           <SaleCalendar
             year={year}

@@ -9,6 +9,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserMonthlyBudgetRepository extends JpaRepository<UserMonthlyBudget, Long> {
+    Optional<UserMonthlyBudget> findByUser_UserIdAndBudgetYmAndIsActiveTrue(Long userId, String budgetYm);
 
     // user.userId + budgetYm 조합 존재 여부 (중복 커밋 방지 체크)
     boolean existsByUser_UserIdAndBudgetYm(Long userId, String budgetYm);

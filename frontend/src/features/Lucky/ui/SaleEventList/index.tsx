@@ -8,11 +8,27 @@ function SaleEventListImpl({ items }: SaleEventListProps) {
   return (
     <View style={s.wrap}>
       {items.map((it) => {
-        const bg =
-          it.color === "yellow"
-            ? colors.YELLOW_LIGHT_ACTIVE
-            : colors.BLUE_NORMAL;
-        const fg = it.color === "yellow" ? colors.BLUE_DARKER : "#fff";
+        // 색상별 배경색과 텍스트 색상 매핑
+        const getColorConfig = (color: string) => {
+          switch (color) {
+            case "yellow":
+              return { bg: colors.YELLOW_LIGHT, text: colors.BLUE_DARKER };
+            case "blue":
+              return { bg: colors.BLUE_NORMAL, text: "#fff" };
+            case "green":
+              return { bg: colors.GRAY_LIGHT, text: colors.BLUE_DARKER };
+            case "purple":
+              return { bg: colors.BLUE_LIGHT, text: colors.BLUE_DARKER };
+            case "orange":
+              return { bg: colors.YELLOW_NORMAL, text: colors.BLUE_DARKER };
+            case "pink":
+              return { bg: colors.GRAY_NORMAL, text: "#fff" };
+            default:
+              return { bg: colors.BLUE_NORMAL, text: "#fff" };
+          }
+        };
+        
+        const { bg, text: fg } = getColorConfig(it.color);
         return (
           <View key={it.id} style={s.card}>
             <View style={[s.badge, { backgroundColor: bg }]}>

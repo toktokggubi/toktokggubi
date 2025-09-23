@@ -5,14 +5,15 @@ import PagerDots from "@/features/User/ui/PagerDots";
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import CardSlide from "@/shared/ui/CardSlide";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useCallback } from "react";
 import { Dimensions, StyleSheet, Text, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSharedValue } from "react-native-reanimated";
 import Carousel from "react-native-reanimated-carousel";
 import type { CardCarouselTemplateProps, UserCard } from "./types";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-const ITEM_W = Math.round(SCREEN_W * 0.68);
+const ITEM_W = Math.round(SCREEN_W * 0.80);
 
 export default function CardCarouselTemplate({
   cards,
@@ -20,11 +21,12 @@ export default function CardCarouselTemplate({
   onActiveChange,
 }: CardCarouselTemplateProps) {
   const carouselRef = useRef<any>(null);
+  const progress = useSharedValue<number>(0);
 
   const activeCard = cards?.[activeIndex];
-  const activeUserCardId = activeCard?.userCardId ?? -1;
+  const activeUserCardId = activeCard?.userCardId;
 
-  const { data, isLoading, isError } = useCardBenefits(activeUserCardId);
+  const { data, isLoading, isError } = useCardBenefits(activeUserCardId || 0);
 
   useEffect(() => {
     if (!carouselRef.current || !cards || cards.length === 0) return;
@@ -41,9 +43,9 @@ export default function CardCarouselTemplate({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cards?.length]);
 
-  const renderCard = ({ item }: { item: UserCard }) => {
+  const renderCard = useCallback(({ item }: { item: UserCard }) => {
     return <CardSlide card={item} />;
-  };
+  }, []);
 
   if (!cards || cards.length === 0) {
     return (
@@ -62,13 +64,28 @@ export default function CardCarouselTemplate({
           data={cards || []}
           renderItem={renderCard}
           width={ITEM_W}
-          height={240}
+          height={250}
           loop={false}
           autoPlay={false}
+          pagingEnabled={true}
           scrollAnimationDuration={300}
           onSnapToItem={onActiveChange}
+          onProgressChange={progress}
+          mode="parallax"
+          modeConfig={{
+            parallaxScrollingScale: 0.92,
+            parallaxScrollingOffset: 80,
+          }}
           style={styles.carouselContainer}
         />
+
+        {/* 카드 정보 영역 - 고정 위치 */}
+        {activeCard && (
+          <View style={styles.cardInfoSection}>
+            <Text style={styles.cardName}>{activeCard.cardName || "카드명 없음"}</Text>
+            <Text style={styles.cardNumber}>**** **** **** {activeCard.last4 || "0000"}</Text>
+          </View>
+        )}
 
         <View style={styles.dotsWrapper}>
           <PagerDots length={cards?.length || 0} activeIndex={activeIndex} top={20} />
@@ -117,15 +134,35 @@ const styles = StyleSheet.create({
 
   // 카드 캐러셀 섹션 - 고정 높이
   carouselSection: {
-    height: 400, // 카드 높이(240) + 카드 이름 + 카드번호 + 도트 + 여백을 고정
+    height: 440, // 카드 높이(250) + 카드 이름 + 카드번호 + 도트 + 여백을 고정
   },
   carouselContainer: { 
     flex: 0, 
     flexGrow: 0, 
-    alignSelf: "stretch" 
+    alignSelf: "center",
+    alignItems: "center",
+    overflow: "visible",
   },
   dotsWrapper: { 
-    marginBottom: 16 
+    marginBottom: 8 
+  },
+  cardInfoSection: {
+    alignItems: "center",
+    marginTop: -2,
+    marginBottom: -10,
+    paddingHorizontal: 16,
+  },
+  cardName: {
+    fontSize: 18,
+    ...font.bold,
+    color: colors.GRAY_DARKER,
+    textAlign: "center",
+    marginBottom: -8,
+  },
+  cardNumber: {
+    fontSize: 14,
+    color: colors.GRAY_NORMAL,
+    textAlign: "center",
   },
 
   // 혜택 안내 섹션 - 남은 공간을 모두 사용하고 스크롤 가능

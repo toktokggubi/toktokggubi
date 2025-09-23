@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -47,6 +48,26 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
             @Param("status") CardStatus status
     );
 
+    // 승인 건만 카테고리ID별 합계
+    @Query("""
+        select ct.merchant.category.categoryId, sum(ct.paymentBalance)
+        from CardTransaction ct
+        where ct.user.userId = :userId
+          and ct.cardStatus = com.ssafy.toktokggubi.domain.transaction.entity.CardStatus.APPROVED
+          and ct.transactionYmd between :fromYmd and :toYmd
+        group by ct.merchant.category.categoryId
+    """)
+    List<Object[]> sumApprovedByCategoryId(Long userId, String fromYmd, String toYmd);
+
+    // 승인 건 전체 합계
+    @Query("""
+        select coalesce(sum(ct.paymentBalance), 0)
+        from CardTransaction ct
+        where ct.user.userId = :userId
+          and ct.cardStatus = com.ssafy.toktokggubi.domain.transaction.entity.CardStatus.APPROVED
+          and ct.transactionYmd between :fromYmd and :toYmd
+    """)
+    Long sumApprovedTotal(Long userId, String fromYmd, String toYmd);
 
 
 }
