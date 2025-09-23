@@ -25,9 +25,10 @@ export function useCardBenefits(userCardId: number) {
     queryKey: cardQueryKeys.benefits(userCardId),
     queryFn: () => fetchCardBenefits(userCardId),
     enabled: Number.isFinite(userCardId) && userCardId > 0,
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 5 * 60_000, // 5분간 캐시 유지 (더 길게)
+    refetchOnMount: false, // 마운트 시 자동 refetch 비활성화
     refetchOnWindowFocus: false,
+    refetchOnReconnect: false, // 네트워크 재연결 시에도 refetch 비활성화
   });
 }
 

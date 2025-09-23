@@ -129,22 +129,39 @@ const NearbyPlacesBottomSheet = React.forwardRef<
           <Text style={styles.categoryText}>{categoryInfo.name}</Text>
           
           <View style={styles.benefitSection}>
-            {hasBenefits && (
+            {hasBenefits && hasGifticons ? (
+              // 둘 다 있을 때: 나란히 표시
+              <View style={styles.dualIconContainer}>
+                <View style={styles.benefitBox}>
+                  <Image 
+                    source={require("@/assets/icon/card_icon.png")} 
+                    style={styles.benefitIcon}
+                  />
+                </View>
+                <View style={styles.gifticonBox}>
+                  <Image 
+                    source={require("@/assets/icon/gifticon_icon.png")} 
+                    style={styles.gifticonIcon}
+                  />
+                </View>
+              </View>
+            ) : hasBenefits ? (
+              // 카드만 있을 때
               <View style={styles.benefitBox}>
                 <Image 
                   source={require("@/assets/icon/card_icon.png")} 
                   style={styles.benefitIcon}
                 />
               </View>
-            )}
-            {hasGifticons && (
+            ) : hasGifticons ? (
+              // 기프티콘만 있을 때
               <View style={styles.gifticonBox}>
                 <Image 
                   source={require("@/assets/icon/gifticon_icon.png")} 
                   style={styles.gifticonIcon}
                 />
               </View>
-            )}
+            ) : null}
           </View>
         </View>
 
@@ -155,6 +172,7 @@ const NearbyPlacesBottomSheet = React.forwardRef<
             <Text style={styles.distanceText}>{distance}</Text>
           </View>
         </View>
+
 
         {/* 하단: 주소 */}
         <Text style={styles.placeAddress} numberOfLines={1}>
@@ -308,17 +326,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
   },
+  dualIconContainer: {
+    flexDirection: "row",
+    gap: 4,
+    alignItems: "center",
+  },
   benefitBox: {
-    width: 60,
-    height: 60,
+    width: 24,
+    height: 24,
     backgroundColor: "#f1f5f9",
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
   benefitIcon: {
-    width: 48,
-    height: 48,
+    width: 20,
+    height: 20,
     resizeMode: "contain",
   },
   gifticonBox: {

@@ -11,19 +11,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Image,
 } from "react-native";
 import PaymentTemplate from "../templates/PaymentTemplate";
 import { useUserCards } from "@/features/User/model/card/hooks";
 import type { UserCardVM } from "@/features/User/model/card/types";
 
 import { useCardBenefits } from "@/features/User/model/benefit/hooks";
+import { useQuery } from "@tanstack/react-query";
+import { fetchCardBenefits } from "@/features/User/api/wallet.fetchers";
 import BenefitsList from "@/features/User/ui/BenefitsList";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { useGifticonsQuery } from "@/features/User/model/gifticon/queries";
 
 import { colors } from "@/shared/constants/colors";
 
-import { DUMMY_GIFTICONS } from "@/features/Pay/model/dummyGifticons";
-import type { Gifticon } from "@/shared/types/gifticon";
+import type { Gifticon as SharedGifticon } from "@/shared/types/gifticon";
+import type { Gifticon as UserGifticon } from "@/features/User/model/gifticon/types";
 
 // real과 mock 교체 - useNearbyPlaces.ts 파일에서 export 부분만 바꾸면 됩니다
 import { useNearbyPlacesQuery } from "@/shared/hooks/useNearbyPlacesQuery";
@@ -37,6 +41,30 @@ import {
 } from "@/shared/constants/kakao";
 
 const KAKAO_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
+
+// UserGifticon을 SharedGifticon으로 변환하는 함수
+const convertToSharedGifticon = (userGifticon: UserGifticon): SharedGifticon => {
+  // 이미지 URL 정규화 (상대 경로인 경우 도메인 추가)
+  const normalizeImageUrl = (imageKey: string): string => {
+    if (!imageKey) return '';
+    if (imageKey.startsWith('http')) return imageKey;
+    return `https://j13b207.p.ssafy.io${imageKey}`;
+  };
+
+  return {
+    gifticonId: userGifticon.gifticonId,
+    label: userGifticon.label,
+    merchantId: 0, // 임시값 (서버에서 제공하지 않음)
+    merchantName: userGifticon.merchantName,
+    categoryId: 0, // 임시값 (서버에서 제공하지 않음)
+    categoryName: userGifticon.categoryName,
+    imageUrl: normalizeImageUrl(userGifticon.imageKey), // imageKey를 정규화된 imageUrl로 매핑
+    expiresAt: userGifticon.expiresAt,
+    remainingDays: userGifticon.remainingDays,
+    status: userGifticon.status,
+    createdAt: userGifticon.createdAt || new Date().toISOString(),
+  };
+};
 
 // 주변에서 검색할 카테고리 코드들 (카드 혜택과 관련된 모든 카테고리)
 const SEARCH_CATEGORIES: KakaoCategoryCode[] = [
@@ -117,23 +145,67 @@ export default function PaymentScreen() {
 
   const [selectedPlace, setSelectedPlace] = useState<KakaoPlace | null>(null);
   const { data: cards = [], isLoading: cardsLoading, isError: cardsError } = useUserCards();
-  const [gifticons, setGifticons] = useState<Gifticon[]>([]);
+  const { data: userGifticons = [], isLoading: gifticonsLoading, isError: gifticonsError } = useGifticonsQuery();
   const bottomSheetRef = useRef<BottomSheetRef>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // UserGifticon을 SharedGifticon으로 변환
+  const gifticons: SharedGifticon[] = useMemo(() => {
+    const converted = userGifticons.map(convertToSharedGifticon);
+    console.log('Converted gifticons:', converted.map(g => ({ 
+      gifticonId: g.gifticonId, 
+      label: g.label, 
+      imageUrl: g.imageUrl 
+    })));
+    return converted;
+  }, [userGifticons]);
+
   const userCardId = cards[activeCardIndex]?.userCardId ?? 0;
   
-  // 실제 API에서 카드 혜택 정보 가져오기
+  // 모든 카드의 혜택을 미리 가져오기
+  const allCardBenefitsQuery = useQuery({
+    queryKey: ['allCardBenefits', cards.map(card => card.userCardId)],
+    queryFn: async () => {
+      if (!cards || cards.length === 0) return [];
+      
+      console.log('Fetching benefits for all cards:', cards.map(c => c.cardName));
+      
+      const benefitsPromises = cards.map(card => 
+        fetchCardBenefits(card.userCardId).catch(error => {
+          return { benefits: [] };
+        })
+      );
+      
+      const allBenefits = await Promise.all(benefitsPromises);
+      
+      // 각 카드의 혜택을 카드 ID와 함께 저장
+      const result = cards.map((card, index) => ({
+        cardId: card.userCardId,
+        cardName: card.cardName,
+        cardIndex: index,
+        benefits: allBenefits[index]?.benefits || []
+      }));
+      return result;
+    },
+    enabled: cards && cards.length > 0,
+    staleTime: 5 * 60_000, // 5분간 캐시
+  });
+
+  // 현재 활성 카드의 혜택 (기존 로직 유지)
   const { data: cardBenefitsData, isLoading: benefitsLoading, isError: benefitsError } = useCardBenefits(userCardId);
   
   // 카드 혜택 정보를 간단한 형태로 변환
   const benefits = useMemo(() => {
-    if (!cardBenefitsData?.benefits) return [];
+    if (!cardBenefitsData?.benefits) {
+      console.log('No benefits data available');
+      return [];
+    }
     
-    return cardBenefitsData.benefits.map(benefit => ({
+    const mappedBenefits = cardBenefitsData.benefits.map(benefit => ({
       franchiseName: benefit.franchiseName,
       discountRate: benefit.discountRate,
     }));
+    return mappedBenefits;
   }, [cardBenefitsData]);
   
   const benefitNames = benefits.map((b) => b.franchiseName).filter(Boolean);
@@ -222,10 +294,6 @@ export default function PaymentScreen() {
     return nearbyPlaces ? nearbyPlaces.map((p) => p.place_name) : [];
   }, [nearbyPlaces]);
 
-  useEffect(() => {
-    // API 대신 더미 세팅
-    setGifticons(DUMMY_GIFTICONS); // Gifticon & {imageSource}?[] -> Gifticon[]으로 할당 OK
-  }, []);
   // 주변 가맹점이 로드되면 첫 번째 가맹점을 자동으로 선택 (혜택이 가장 많은 가맹점)
   useEffect(() => {
     if (
@@ -288,10 +356,18 @@ export default function PaymentScreen() {
     if (!nearbyPlaces || nearbyPlaces.length === 0) return [];
 
     return nearbyPlaces.map(place => {
-      // 해당 장소의 혜택 찾기
-      const matchingBenefits = benefits ? benefits.filter((benefit) =>
-        isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
-      ) : [];
+      // 모든 카드의 혜택에서 해당 장소와 매칭되는 혜택 찾기
+      let allMatchingBenefits: any[] = [];
+      
+      if (allCardBenefitsQuery.data) {
+        for (const cardData of allCardBenefitsQuery.data) {
+          const cardBenefits = cardData.benefits.filter(benefit => 
+            benefit.franchiseName && 
+            isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
+          );
+          allMatchingBenefits = [...allMatchingBenefits, ...cardBenefits];
+        }
+      }
 
       // 해당 장소의 기프티콘 찾기
       const matchedGifticons = gifticons.filter(gifticon => {
@@ -300,28 +376,147 @@ export default function PaymentScreen() {
         return placeName.includes(merchantName) || merchantName.includes(placeName);
       });
 
+      // 현재 장소의 최고 혜택률 찾기
+      const currentPlaceMaxDiscount = allMatchingBenefits.length > 0 
+        ? Math.max(...allMatchingBenefits.map(b => b.discountRate || 0))
+        : 0;
+
+      // 같은 카테고리에서 더 높은 혜택률을 가진 다른 가게 찾기
+      let betterBenefitInfo = null;
+      if (currentPlaceMaxDiscount > 0 && allCardBenefitsQuery.data) {
+        // 현재 장소의 카테고리 정보 가져오기
+        const getCategoryFromPlace = (place: KakaoPlace): string => {
+          if (place.category_group_name) {
+            const categoryMap: { [key: string]: string } = {
+              "카페": "카페",
+              "음식점": "음식점", 
+              "대형마트": "대형마트",
+              "영화관": "영화관",
+              "편의점": "편의점",
+              "주유소": "주유소",
+              "숙박": "숙박",
+              "병원": "병원",
+              "약국": "약국",
+            };
+            return categoryMap[place.category_group_name] || "기타";
+          }
+          
+          if (place.category_group_code) {
+            const categoryMap: { [key: string]: string } = {
+              [KAKAO_CATEGORY_CODES.CAFE]: "카페",
+              [KAKAO_CATEGORY_CODES.FOOD]: "음식점",
+              [KAKAO_CATEGORY_CODES.SUPERMARKET]: "대형마트",
+              [KAKAO_CATEGORY_CODES.CINEMA]: "영화관",
+              [KAKAO_CATEGORY_CODES.CONVENIENCE]: "편의점",
+              [KAKAO_CATEGORY_CODES.GAS_STATION]: "주유소",
+              [KAKAO_CATEGORY_CODES.LODGING]: "숙박",
+              [KAKAO_CATEGORY_CODES.HOSPITAL]: "병원",
+              [KAKAO_CATEGORY_CODES.PHARMACY]: "약국",
+            };
+            return categoryMap[place.category_group_code] || "기타";
+          }
+          
+          return "기타";
+        };
+
+        const currentCategory = getCategoryFromPlace(place);
+        
+        // 같은 카테고리의 다른 장소들 중에서 더 높은 혜택률을 가진 곳 찾기
+        for (const otherPlace of nearbyPlaces) {
+          if (otherPlace.place_name === place.place_name) continue;
+          
+          const otherCategory = getCategoryFromPlace(otherPlace);
+          if (otherCategory !== currentCategory) continue;
+          
+          // 다른 장소의 혜택 찾기
+          let otherPlaceBenefits: any[] = [];
+          if (allCardBenefitsQuery.data) {
+            for (const cardData of allCardBenefitsQuery.data) {
+              const cardBenefits = cardData.benefits.filter(benefit => 
+                benefit.franchiseName && 
+                isPlaceMatchingBenefit(otherPlace.place_name, benefit.franchiseName)
+              );
+              otherPlaceBenefits = [...otherPlaceBenefits, ...cardBenefits];
+            }
+          }
+          
+          const otherPlaceMaxDiscount = otherPlaceBenefits.length > 0 
+            ? Math.max(...otherPlaceBenefits.map(b => b.discountRate || 0))
+            : 0;
+          
+          if (otherPlaceMaxDiscount > currentPlaceMaxDiscount) {
+            betterBenefitInfo = {
+              placeName: otherPlace.place_name,
+              discountRate: otherPlaceMaxDiscount,
+              currentDiscountRate: currentPlaceMaxDiscount,
+            };
+            break; // 첫 번째로 찾은 더 나은 혜택만 표시
+          }
+        }
+      }
+
       return {
         place,
-        benefits: matchingBenefits,
+        benefits: allMatchingBenefits,
         gifticons: matchedGifticons,
+        betterBenefitInfo,
       };
     });
-  }, [nearbyPlaces, benefits, gifticons]);
+  }, [nearbyPlaces, allCardBenefitsQuery.data, gifticons]);
 
-  // 현재 활성 카드의 혜택으로 장소 매칭 확인
+  // 현재 선택된 장소에 대한 더 나은 혜택 정보 찾기
+  const currentPlaceBetterBenefit = useMemo(() => {
+    if (!selectedPlace || !hasNearby) {
+      return null;
+    }
+
+    // 현재 선택된 장소의 정보 찾기
+    const currentPlaceData = placesWithBenefitsAndGifticons.find(
+      (item) => item.place.place_name === selectedPlace.place_name
+    );
+
+    return currentPlaceData?.betterBenefitInfo || null;
+  }, [selectedPlace, hasNearby, placesWithBenefitsAndGifticons]);
+
+  // 해당 장소에서 혜택이 가장 큰 카드 찾기
   const findBestCardForPlace = useCallback(
     (place: KakaoPlace) => {
-      if (!benefits || benefits.length === 0) return -1;
+      
 
-      // 현재 활성 카드의 혜택으로 해당 장소와 매칭되는지 확인
-      const matchingBenefits = benefits.filter((benefit) =>
-        isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
-      );
+      if (!allCardBenefitsQuery.data || allCardBenefitsQuery.data.length === 0) {
+        console.log('No card benefits data available');
+        return -1;
+      }
 
-      // 매칭되는 혜택이 있으면 현재 카드 유지, 없으면 -1 반환
-      return matchingBenefits.length > 0 ? activeCardIndex : -1;
+      let bestCardIndex = -1;
+      let maxDiscountRate = 0;
+
+      // 모든 카드의 혜택을 확인하여 가장 높은 할인율을 가진 카드 찾기
+      for (const cardData of allCardBenefitsQuery.data) {
+        console.log(`Checking card: ${cardData.cardName}`);
+
+        // 해당 장소와 매칭되는 혜택 찾기
+        const matchingBenefits = cardData.benefits.filter(benefit => 
+          benefit.franchiseName && 
+          isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
+        );
+
+        console.log(`Card ${cardData.cardName} matching benefits:`, matchingBenefits);
+
+        // 가장 높은 할인율 찾기
+        for (const benefit of matchingBenefits) {
+          if (benefit.discountRate > maxDiscountRate) {
+            maxDiscountRate = benefit.discountRate;
+            bestCardIndex = cardData.cardIndex;
+          
+          }
+        }
+      }
+
+      console.log('Best card index:', bestCardIndex, 'Max discount rate:', maxDiscountRate);
+      return bestCardIndex;
     },
-    [benefits, activeCardIndex]
+    [allCardBenefitsQuery.data]
   );
 
   // Pull-to-Refresh 핸들러
@@ -339,13 +534,28 @@ export default function PaymentScreen() {
 
   // 위치 선택 핸들러 - 해당 장소에서 혜택이 가장 큰 카드로 자동 전환
   const handlePlaceSelect = (place: KakaoPlace) => {
+    console.log('handlePlaceSelect called with place:', place.place_name);
+    console.log('All card benefits loading state:', allCardBenefitsQuery.isLoading);
+    console.log('All card benefits data:', allCardBenefitsQuery.data);
+    
     setSelectedPlace(place);
     bottomSheetRef.current?.close();
 
+    // 모든 카드의 혜택 데이터가 로드되지 않았으면 현재 카드 유지
+    if (allCardBenefitsQuery.isLoading || !allCardBenefitsQuery.data) {
+      console.log('All card benefits not loaded yet, keeping current card');
+      return;
+    }
+
     // 해당 장소에서 혜택이 가장 큰 카드 찾기
-    const bestCardForPlace = findBestCardForPlace(place);
-    if (bestCardForPlace !== -1) {
-      setActiveCardIndex(bestCardForPlace);
+    const bestCardIndex = findBestCardForPlace(place);
+    
+    
+    if (bestCardIndex !== -1) {
+    
+      setActiveCardIndex(bestCardIndex);
+    } else {
+      console.log('No matching card found, keeping current index:', activeCardIndex);
     }
   };
 
@@ -357,7 +567,7 @@ export default function PaymentScreen() {
   // 템플릿 슬롯 조립
   const cardTopSection =
     tab === 0 && hasNearby ? (
-      <View>
+      <View style={{ position: "relative" }}>
         <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
         <Text
           style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
@@ -371,6 +581,64 @@ export default function PaymentScreen() {
             이 위치가 아닌가요?
           </Text>
         </TouchableOpacity>
+        
+        {/* 더 나은 혜택 안내 메시지 - 캐릭터와 말풍선 */}
+        {currentPlaceBetterBenefit && (
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 8,
+          }}>
+            {/* 캐릭터 이미지 */}
+            <Image 
+              source={require("@/assets/images/character/stupid.png")}
+              style={{
+                width: 50,
+                height: 50,
+                resizeMode: "contain",
+              }}
+            />
+            {/* 동그란 말풍선 - 터치 가능 */}
+            <TouchableOpacity 
+              style={{
+                backgroundColor: colors.BLUE_LIGHT,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.BLUE_NORMAL,
+                alignSelf: "flex-start",
+                marginTop: 8,
+              }}
+              onPress={() => {
+                // 더 나은 혜택을 가진 가맹점 찾기
+                const betterPlace = nearbyPlaces.find(place => 
+                  place.place_name === currentPlaceBetterBenefit.placeName
+                );
+                if (betterPlace) {
+                  handlePlaceSelect(betterPlace);
+                }
+              }}
+            >
+              <Text style={{
+                fontSize: 12,
+                color: colors.BLUE_DARKER,
+                fontWeight: "400",
+                lineHeight: 16,
+              }}>
+                <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                  {currentPlaceBetterBenefit.placeName}
+                </Text>
+                에서{" "}
+                <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                  {currentPlaceBetterBenefit.discountRate - currentPlaceBetterBenefit.currentDiscountRate}%
+                </Text>
+                {" "}더 많은 혜택!
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     ) : null;
 
@@ -423,12 +691,14 @@ export default function PaymentScreen() {
     return null; // useAuthGuard에서 자동으로 리다이렉트됨
   }
 
-  // 카드 로딩 중인 경우
-  if (cardsLoading) {
+  // 카드 또는 기프티콘 로딩 중인 경우
+  if (cardsLoading || gifticonsLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color={colors.BLUE_NORMAL} />
-        <Text style={{ marginTop: 16, color: colors.GRAY_DARK }}>카드 정보를 불러오는 중...</Text>
+        <Text style={{ marginTop: 16, color: colors.GRAY_DARK }}>
+          {cardsLoading ? "카드 정보를 불러오는 중..." : "기프티콘 정보를 불러오는 중..."}
+        </Text>
       </View>
     );
   }
@@ -444,19 +714,24 @@ export default function PaymentScreen() {
     );
   }
 
+  // 기프티콘 에러가 있는 경우 (카드는 있지만 기프티콘만 에러)
+  if (gifticonsError) {
+    console.warn("기프티콘 로딩 실패:", gifticonsError);
+  }
+
   return (
     <>
       <PaymentTemplate
         selectedTab={tab}
         onChangeTab={setTab}
-        cards={cards}
+        cards={cards as UserCardVM[]}
         activeCardIndex={activeCardIndex}
         onActiveCardChange={handleActiveCardChange}
         cardTopSection={cardTopSection}
         cardBottomSection={cardBottomSection}
         benefitsSection={benefitsSection}
         // Gifticon 관련 props 추가
-        gifticons={filteredGifticons}
+        gifticons={filteredGifticons as SharedGifticon[]}
         activeGifticonIndex={0}
         onActiveGifticonChange={(i, id) => {}}
         gifticonTopSection={gifticonTopSection}
@@ -517,7 +792,7 @@ export default function PaymentScreen() {
                 categoryName: "기타",
               },
             })),
-            gifticons: placeGifticons,
+            gifticons: placeGifticons as SharedGifticon[],
           };
         })}
         onPlaceSelect={handlePlaceSelect}
