@@ -19,7 +19,7 @@ const BAR_HEIGHT = 14; // 막대 높이
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
-type BarColor = "yellow" | "blue";
+type BarColor = "yellow" | "blue" | "green" | "purple" | "orange" | "pink";
 
 // 숫자(일자) 텍스트 바로 아래 기준선 높이(폰트에 맞춰 조절)
 const DAY_LINE_H = 18;
@@ -27,11 +27,15 @@ const DAY_LINE_H = 18;
 const BAR_BASE_GAP = 2;
 // 색상별 위/아래 오프셋(+는 더 아래, -는 더 위)
 const COLOR_TOP_OFFSET: Record<BarColor, number> = {
-  yellow: 6, // 노란 막대: 숫자에서 더 내려 보이도록
-  blue: -6, // 파란 막대: 숫자에 더 가깝게
+  yellow: 0, // 노란 막대: 숫자에서 더 내려 보이도록
+  blue: 0, // 파란 막대: 노란색과 겹침 방지를 위해 조정
+  green: 0, // 초록 막대: 파란색과 간격 조금 줄임
+  purple: 0, // 보라 막대: 회색과 하늘색 사이 간격 늘림
+  orange: 0, // 주황 막대: 조금 아래
+  pink: 0, // 분홍 막대: 가장 위
 };
-// 같은 날 여러 개 겹칠 때 줄 간격
-const LANE_GAP = 12;
+// 같은 날 여러 개 겹칠 때 줄 간격 (BAR_HEIGHT와 동일하게 설정하여 여백 없이)
+const LANE_GAP = 14; // BAR_HEIGHT와 동일하여 여백 없이 바로 붙이기
 
 type NormalizedEvent = {
   startDay: number;
@@ -62,19 +66,23 @@ function buildSegments(params: {
   year: number;
   month: number;
   events: NormalizedEvent[];
+  originalEvents: any[]; // 원본 이벤트 배열
 }) {
-  const { year, month, events } = params;
+  const { year, month, events, originalEvents } = params;
   const segs: Array<{
     row: number;
     colStart: number;
     colSpan: number; // 1~7
     label: string;
     color: BarColor;
+    lane: number; // 세로 레인 번호 (0, 1, 2, ...)
+    originalIndex: number; // 원래 이벤트 배열에서의 인덱스
   }> = [];
 
   const startIdxBase = firstDayIndex(year, month);
 
-  for (const e of events) {
+  for (let eventIndex = 0; eventIndex < events.length; eventIndex++) {
+    const e = events[eventIndex];
     let s = e.startDay;
     const en = e.endDay;
 
@@ -92,6 +100,8 @@ function buildSegments(params: {
         colSpan: span,
         label: e.label,
         color: e.color,
+        lane: 0, // 기본값, 나중에 계산됨
+        originalIndex: eventIndex, // 원래 이벤트 배열에서의 인덱스
       });
 
       // 다음 주로 넘어가기
@@ -100,6 +110,30 @@ function buildSegments(params: {
       s = nextDay;
     }
   }
+
+  // 전역 레인 할당 - 한 달 안에서 시작일이 빠른 이벤트가 위쪽 레인에
+  const eventLanes = new Map<number, number>(); // originalIndex -> lane
+  
+  // 1. 모든 이벤트를 시작일 기준으로 정렬 (시작일이 빠를수록 앞에)
+  const sortedEvents = originalEvents
+    .map((event, index) => ({
+      originalIndex: index,
+      startDay: Number(event.startDate.slice(8, 10)),
+      event
+    }))
+    .sort((a, b) => a.startDay - b.startDay);
+  
+  // 2. 시작일이 빠른 이벤트부터 순차적으로 레인 할당
+  // 레인 0이 가장 위, 레인 1이 그 아래, 레인 2가 그 아래...
+  sortedEvents.forEach((item, index) => {
+    eventLanes.set(item.originalIndex, index);
+  });
+  
+  // 3. 모든 세그먼트에 레인 할당
+  for (const seg of segs) {
+    seg.lane = eventLanes.get(seg.originalIndex) || 0;
+  }
+
   return segs;
 }
 
@@ -133,15 +167,28 @@ function SaleCalendarImpl({
     return m;
   }, [merchants]);
 
-  // UI용 정규화
+  // UI용 정규화 - 색상 중복 방지
   const normalized: NormalizedEvent[] = useMemo(() => {
-    return events.map((e) => ({
-      startDay: Number(e.startDate.slice(8, 10)),
-      endDay: Number(e.endDate.slice(8, 10)),
-      label: merchantNameMap.get(e.merchantId) ?? "가맹점",
-      singleDay: e.startDate === e.endDate,
-      color: (e.startDate === e.endDate ? "blue" : "yellow") as BarColor,
-    }));
+    const availableColors: BarColor[] = ["yellow", "blue", "green", "purple", "orange", "pink"];
+    const usedColors = new Set<BarColor>();
+    
+    return events.map((e, index) => {
+      // 이미 사용된 색상 제외하고 순환적으로 할당
+      let colorIndex = index;
+      while (usedColors.has(availableColors[colorIndex % availableColors.length])) {
+        colorIndex++;
+      }
+      const selectedColor = availableColors[colorIndex % availableColors.length];
+      usedColors.add(selectedColor);
+      
+      return {
+        startDay: Number(e.startDate.slice(8, 10)),
+        endDay: Number(e.endDate.slice(8, 10)),
+        label: merchantNameMap.get(e.merchantId) ?? "가맹점",
+        singleDay: e.startDate === e.endDate,
+        color: selectedColor,
+      };
+    });
   }, [events, merchantNameMap]);
 
   // 날짜에 이벤트 존재 여부(선택 하이라이트 도움)
@@ -155,8 +202,8 @@ function SaleCalendarImpl({
 
   // 주 단위 세그먼트
   const segments = useMemo(
-    () => buildSegments({ year, month, events: normalized }),
-    [year, month, normalized]
+    () => buildSegments({ year, month, events: normalized, originalEvents: events }),
+    [year, month, normalized, events]
   );
 
   const onGridLayout = useCallback((e: LayoutChangeEvent) => {
@@ -268,20 +315,35 @@ function SaleCalendarImpl({
               seg.colSpan * CELL_W - (CELL_PAD_X + BAR_INSET_X) * 2
             );
 
-            // 세로 정렬: 숫자 라인 기준 + 색상별 오프셋 + 레인 간격
-            const lane = idx % 2; // 간단히 2줄까지
+            // 세로 정렬: 숫자 라인 기준 + 레인별 고정 위치 + 색상별 오프셋
             const baseTop =
               seg.row * CELL_H + CELL_PAD_Y + DAY_LINE_H + BAR_BASE_GAP;
-            const top = Math.round(
-              baseTop + COLOR_TOP_OFFSET[seg.color] + lane * LANE_GAP
-            );
+            // 레인별 고정 위치: lane 0이 가장 위, lane 1이 그 아래, 여백 없이 바로 붙어서
+            const laneOffset = seg.lane * LANE_GAP; // lane 0=0, lane 1=14, lane 2=28...
+            const colorOffset = COLOR_TOP_OFFSET[seg.color];
+            const top = Math.round(baseTop + laneOffset + colorOffset);
 
-            const bg =
-              seg.color === "yellow"
-                ? colors.YELLOW_LIGHT_ACTIVE
-                : colors.BLUE_NORMAL;
-            const labelColor =
-              seg.color === "yellow" ? colors.BLUE_DARKER : "#fff";
+            // 색상별 배경색과 텍스트 색상 매핑
+            const getColorConfig = (color: BarColor) => {
+              switch (color) {
+                case "yellow":
+                  return { bg: colors.YELLOW_LIGHT, text: colors.BLUE_DARKER };
+                case "blue":
+                  return { bg: colors.BLUE_NORMAL, text: "#fff" };
+                case "green":
+                  return { bg: colors.GRAY_LIGHT, text: colors.BLUE_DARKER };
+                case "purple":
+                  return { bg: colors.BLUE_LIGHT, text: colors.BLUE_DARKER };
+                case "orange":
+                  return { bg: colors.YELLOW_NORMAL, text: colors.BLUE_DARKER };
+                case "pink":
+                  return { bg: colors.GRAY_NORMAL, text: "#fff" };
+                default:
+                  return { bg: colors.BLUE_NORMAL, text: "#fff" };
+              }
+            };
+            
+            const { bg, text: labelColor } = getColorConfig(seg.color);
 
             return (
               <View

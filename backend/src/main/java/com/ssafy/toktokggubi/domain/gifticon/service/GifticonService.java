@@ -36,10 +36,10 @@ public class GifticonService {
     private final OcrClient ocrClient;
     private final FileStorage fileStorage;
 
-    // 바코드/주문번호 등 기프티콘에서 흔히 보이는 패턴(1개 이상 매칭되면 기프티콘으로 간주)
+    // 기프티콘 여부 힌트: 키워드 + 바코드 유사 패턴
     private static final Pattern BARCODE_LIKE = Pattern.compile("\\b\\d{10,}\\b"); // 10자리 이상 숫자
     private static final String[] GIFTICON_KEYWORDS = {
-            "유효기간", "교환처", "교환권", "주문번호", "바코드", "쿠폰번호", "교환만료"
+            "유효기간", "교환처", "교환권", "주문번호", "바코드", "쿠폰번호", "교환만료", "사용기간"
     };
 
     private boolean looksLikeGifticon(String text) {
@@ -54,10 +54,10 @@ public class GifticonService {
 
     @Transactional
     public GifticonCreateResponse createFromUpload(Long userId, MultipartFile file) throws Exception {
-        // 1) 먼저 OCR
+        // 1) OCR 실행
         String allText = ocrClient.extractText(file.getBytes());
 
-        // 2) 기프티콘 여부 판정(판정 실패 시 저장도 하지 않음)
+        // 2) 기프티콘 여부 판정
         if (!looksLikeGifticon(allText)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -65,10 +65,10 @@ public class GifticonService {
             );
         }
 
-        // 3) 파싱(브랜드/라벨/만료일) — 라벨은 OCR 그대로(한글 유지)
+        // 3) 파싱
         var parsed = GifticonTextParser.parse(allText);
-        String brand = parsed.brand();         // ex) 크리스피크림
-        String label = parsed.label();         // ex) 오리지널 글레이즈드 하프더즌
+        String brand = parsed.brand();   // 예: "배달의민족" (캐노니컬 표시명)
+        String label = parsed.label();
         LocalDate expiresAt = parsed.expiresAt();
 
         // 4) 프랜차이즈 매칭(없으면 생성)
@@ -77,13 +77,13 @@ public class GifticonService {
             franchise = franchiseRepository.findFirstByMerchantName(brand)
                     .orElseGet(() -> franchiseRepository.save(
                             Franchise.builder()
-                                    .merchantName(brand) // 우리 스키마 컬럼명
+                                    .merchantName(brand)   // 프랜차이즈는 배달의민족으로 등록
                                     .imageUrl(null)
                                     .build()
                     ));
         }
 
-        // 5) 파일 저장 (검증 끝난 후에 저장)
+        // 5) 파일 저장
         var saved = fileStorage.saveGifticon(file);
 
         // 6) 엔티티 저장
@@ -119,7 +119,7 @@ public class GifticonService {
      * @param sort         latest | expires (기본 latest)
      */
     public GifticonListResponse list(Long userId, Long franchiseId, Boolean usableOnly, String sort) {
-        // 사용자 존재 체크(권한 경계)
+        // 사용자 존재 체크
         userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
 
         // 삭제(INACTIVE) 제외 기본셋
@@ -132,7 +132,7 @@ public class GifticonService {
                     .toList();
         }
 
-        // 사용 가능만: 상태 ACTIVE 이고 (만료일이 없거나 오늘 이후)
+        // 사용 가능만: 상태 ACTIVE & (만료일 없음 or 오늘 이후)
         if (Boolean.TRUE.equals(usableOnly)) {
             LocalDate today = LocalDate.now();
             all = all.stream()
@@ -144,13 +144,11 @@ public class GifticonService {
         // 정렬
         Comparator<Gifticon> comp;
         if ("expires".equalsIgnoreCase(sort)) {
-            // 만료 임박순(남은 일수 ASC, null은 뒤로) -> 동일하면 최신 생성순 DESC
             LocalDate today = LocalDate.now();
             comp = Comparator
                     .comparing((Gifticon g) -> daysUntil(today, g.getExpiresAt()), Comparator.nullsLast(Long::compareTo))
                     .thenComparing(Gifticon::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
         } else {
-            // 최신 생성순
             comp = Comparator.comparing(Gifticon::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
         }
         List<GifticonItemResponse> items = all.stream()
@@ -168,12 +166,12 @@ public class GifticonService {
         if (!g.getUser().getUserId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "삭제 권한이 없습니다.");
         }
-        // 물리삭제 대신 상태 전환(요구사항: 수동 삭제)
+        // 물리삭제 대신 상태 전환
         g = g.toBuilder().status(GifticonStatus.INACTIVE).build();
         gifticonRepository.save(g);
     }
 
-    // ===== 내부 =====
+    /* ========================= 내부 ========================= */
 
     private GifticonItemResponse toItem(Gifticon g) {
         Long franchiseId = g.getFranchise() != null ? g.getFranchise().getFranchiseId() : null;

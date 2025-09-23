@@ -32,11 +32,35 @@ services:
       - ./database/mysql-data:/var/lib/mysql
       - ./backend/src/main/resources/toktokggubi_ddl.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${MYSQL_ROOT_PASSWORD} || exit 1"]
       interval: 10s
       timeout: 20s
       retries: 10
     restart: always
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      MONGO_INITDB_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_PORT: ${MONGO_PORT}
+      MONGO_HOST: ${MONGO_HOST}
+    volumes:
+      - ./database/mongodb:/data/mongodb
+      - ./database/mongodb:/docker-entrypoint-initdb.d
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand({ping: 1})' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   rabbitmq:
     image: 'rabbitmq:management'
@@ -64,15 +88,15 @@ services:
       retries: 10
 
   # AI Service (Flask)
-  ai:
-    build:
-      context: ./ai # Build from the Dockerfile in the ./ai directory
-    restart: always
-    environment:
-      - DB_HOST=postgres
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+  # ai:
+  #   build:
+  #     context: ./ai # Build from the Dockerfile in the ./ai directory
+  #   restart: always
+  #   environment:
+  #     - DB_HOST=postgres
+  #     - POSTGRES_USER=${POSTGRES_USER}
+  #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+  #     - POSTGRES_DB=${POSTGRES_DB}
 
   # Backend Service (Spring Boot with Gradle)
   backend:
@@ -97,6 +121,8 @@ services:
       rabbitmq:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
     environment:
       # Spring Boot database connection properties (using environment variables from .env)
@@ -131,7 +157,7 @@ services:
     depends_on:
       # - frontend
       - backend
-      - ai # Nginx might proxy to AI service directly too
+      # - ai # Nginx might proxy to AI service directly too
 
   # Jenkins CI/CD Server (only in development/CI environment)
   jenkins:
