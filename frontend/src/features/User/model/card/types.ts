@@ -7,13 +7,12 @@ export interface UserCardVM {
   cardType: "CHECK" | "CREDIT";
   last4: string;
   isActive: boolean;
-  image?: { uri: string } | undefined;
+  imageUrl?: string; // 기프티콘과 동일하게 imageUrl로 변경
 }
 
 /** 서버 → 화면 뷰모델 */
 export function mapCardToVM(item: CardItem): UserCardVM {
   const last4 = item.maskedCardNo.slice(-4);
-  const image = item.imageUrl ? { uri: item.imageUrl } : undefined;
   return {
     userCardId: item.userCardId,
     issuerName: item.issuerName,
@@ -21,6 +20,6 @@ export function mapCardToVM(item: CardItem): UserCardVM {
     cardType: item.cardType,
     last4,
     isActive: item.active,
-    image,
+    imageUrl: item.imageUrl || undefined, // null 체크 추가
   };
 }

@@ -6,7 +6,6 @@ import type { RefreshControlProps } from "react-native";
 export interface PaymentTemplateProps {
   selectedTab: number; // 현재 탭 인덱스
   onChangeTab: (index: number) => void;
-  children?: ReactNode; // 각 탭에서 보여줄 뷰
   // 카드 관련 props
   cards?: UserCardVM[];
   activeCardIndex?: number;

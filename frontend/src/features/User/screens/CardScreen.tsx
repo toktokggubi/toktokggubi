@@ -47,6 +47,7 @@ export default function CardsScreen() {
     }
   }, [refetchCards, activeIndex, cards.length]);
 
+
   const handleDelete = useCallback(() => {
     Alert.alert("안내", "삭제 기능은 서버 API 스펙 확정 후 연결할게요.");
   }, []);
