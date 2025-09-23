@@ -32,6 +32,7 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   anomalyData,
   totalAnomalyAmount,
   onNotificationPress,
+  unreadNotificationCount = 0,
 }) => {
   const monthNames = [
     "1월",
@@ -50,10 +51,12 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 알림 아이콘 */}
-      <NotificationIcon onPress={onNotificationPress} />
-
       <ScrollView showsVerticalScrollIndicator={false}>
+        {/* 알림 아이콘 */}
+        <NotificationIcon
+          onPress={onNotificationPress}
+          unreadCount={unreadNotificationCount}
+        />
         {/* 이상탐지 섹션 */}
         {anomalyData && anomalyData.length > 0 && (
           <>

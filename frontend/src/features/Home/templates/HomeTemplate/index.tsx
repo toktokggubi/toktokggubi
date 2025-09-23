@@ -30,6 +30,7 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   onBudgetSetup,
   onBudgetEditPress,
   onNotificationPress,
+  unreadNotificationCount = 0,
   month = "12월",
   listTitle,
   hasBudget = true,
@@ -91,7 +92,10 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   return (
     <SafeAreaView style={styles.safeArea}>
       {/* 알림 아이콘 */}
-      <NotificationIcon onPress={onNotificationPress} />
+      <NotificationIcon
+        onPress={onNotificationPress}
+        unreadCount={unreadNotificationCount}
+      />
 
       {/* 전체 화면을 차지하는 CharacterBackground */}
       <CharacterBackground

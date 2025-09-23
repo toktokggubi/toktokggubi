@@ -5,12 +5,12 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 interface NotificationIconProps {
   onPress?: () => void;
-  hasNotification?: boolean;
+  unreadCount?: number; // 읽지 않은 알림 개수
 }
 
 export default function NotificationIcon({
   onPress,
-  hasNotification = false,
+  unreadCount = 0,
 }: NotificationIconProps) {
   return (
     <TouchableOpacity
@@ -23,25 +23,26 @@ export default function NotificationIcon({
         size={24}
         color={colors.GRAY_NORMAL}
       />
-      {hasNotification && <View style={styles.badge} />}
+      {unreadCount > 0 && <View style={styles.badge} />}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 1000,
-    padding: 8,
+    padding: 0,
+    alignSelf: "flex-end", // 오른쪽 정렬
+    marginTop: 20, // 상단 여백
+    marginRight: 20, // 오른쪽 여백
+    marginBottom: 0,
+    zIndex: 9999, // 다른 요소들 위에 표시
   },
   badge: {
     position: "absolute",
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
+    top: -2,
+    right: -2,
+    width: 6,
+    height: 6,
     borderRadius: 4,
     backgroundColor: colors.BLUE_NORMAL,
   },

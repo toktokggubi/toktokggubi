@@ -1,8 +1,10 @@
+import { fetchNotifications } from "@/features/Notification/api/notificationApi";
 import { Category } from "@/shared/constants/categories";
 import { colors } from "@/shared/constants/colors";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 import {
@@ -300,6 +302,29 @@ export const HomeScreen: React.FC = () => {
     router.push("/notification");
   };
 
+  // 읽지 않은 알림 개수 계산
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // 알림 개수 업데이트 함수
+  const updateNotificationCount = useCallback(async () => {
+    try {
+      const notificationData = await fetchNotifications();
+      const unreadCount = notificationData.items.filter(
+        (notification) => notification.readAt === null
+      ).length;
+      setUnreadNotificationCount(unreadCount);
+    } catch (error) {
+      console.error("알림 개수 조회 실패:", error);
+    }
+  }, []);
+
+  // 페이지 포커스될 때마다 알림 개수 업데이트
+  useFocusEffect(
+    useCallback(() => {
+      updateNotificationCount();
+    }, [updateNotificationCount])
+  );
+
   // 인증 로딩 중이거나 인증되지 않은 경우
   if (authLoading || !isAuthenticated) {
     return (
@@ -333,6 +358,7 @@ export const HomeScreen: React.FC = () => {
         onBudgetSetup={handleBudgetSetup}
         onBudgetEditPress={handleBudgetEditPress}
         onNotificationPress={handleNotificationPress}
+        unreadNotificationCount={unreadNotificationCount}
         hasBudget={hasBudget}
         loading={loading}
         error={error}
