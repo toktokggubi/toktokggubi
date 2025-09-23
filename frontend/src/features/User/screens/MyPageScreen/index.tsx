@@ -41,7 +41,7 @@ const MypageScreen = () => {
   };
 
   const handleSettings = () => {
-    router.push("/user/profile-edit" as Href);
+    router.push("/user/settings" as Href);
   };
 
   const handleBudgetSetup = () => {

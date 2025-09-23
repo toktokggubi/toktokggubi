@@ -52,4 +52,5 @@ export interface ExpenseReportTemplateProps {
 
   // 알림 아이콘
   onNotificationPress?: () => void;
+  unreadNotificationCount?: number;
 }

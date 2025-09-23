@@ -67,10 +67,6 @@ export default function LuckyScreen() {
     router.push("/molbbang");
   }, [router]);
 
-  const handleNotificationPress = useCallback(() => {
-    router.push("/notification");
-  }, [router]);
-
   // 인증 로딩 중이거나 인증되지 않은 경우
   if (authLoading || !isAuthenticated) {
     return null; // useAuthGuard에서 자동으로 리다이렉트됨
@@ -107,7 +103,6 @@ export default function LuckyScreen() {
       molImageSource={require("@/assets/images/illustration/mol_bbang.png")}
       onPressNbbang={handlePressNbbang}
       onPressMolbbang={handlePressMolbbang}
-      onNotificationPress={handleNotificationPress}
     />
   );
 }
