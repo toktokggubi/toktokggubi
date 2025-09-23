@@ -6,7 +6,7 @@ import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types"
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useRouter } from "expo-router"; // ✅ 변경: 훅 사용
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Text } from "react-native";
 
 const now = new Date();
 
@@ -24,7 +24,10 @@ export default function LuckyScreen() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // 훅에 state 사용
-  const { data, isLoading } = useSalesByMonth(year, month, category);
+  const { data, isLoading, error } = useSalesByMonth(year, month, category);
+  
+  // 디버깅용 로그
+  console.log('LuckyScreen - API 상태:', { isLoading, error, data: data ? '데이터 있음' : '데이터 없음' });
 
   const eventsForDay: SaleEventListItem[] = useMemo(() => {
     if (!data || selectedDay == null) return [];
@@ -76,10 +79,27 @@ export default function LuckyScreen() {
     return null; // useAuthGuard에서 자동으로 리다이렉트됨
   }
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
+        <Text style={{ marginTop: 10 }}>로딩 중...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: 'red' }}>에러 발생: {error.message}</Text>
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text>데이터가 없습니다.</Text>
       </View>
     );
   }
