@@ -11,6 +11,19 @@ export interface FixedExpenseItem {
   billingDay?: number;
 }
 
+export interface CategoryBudgetItem {
+  name: string;
+  amount: number;
+}
+
+export interface FixedExpenseItem {
+  id: string;
+  name: string;
+  amount: number;
+  includeInBudget: boolean;
+  billingDay?: number;
+}
+
 export interface BudgetEditTemplateProps {
   /** 현재 월 (예: "8월") */
   month: string;
@@ -46,4 +59,10 @@ export interface BudgetEditTemplateProps {
   onPressSave: () => void;
   /** 수정 완료 버튼 활성화 여부 */
   saveDisabled?: boolean;
+  /** 템플릿 모드 (기본값: 'edit') */
+  mode?: 'edit' | 'ai-setup';
+  /** 저장 버튼 텍스트 (기본값: '수정 완료') */
+  saveButtonText?: string;
+  /** AI 추천 데이터 (ai-setup 모드에서 사용) */
+  aiRecommendations?: any; // AIRecommendationData 타입
 }
