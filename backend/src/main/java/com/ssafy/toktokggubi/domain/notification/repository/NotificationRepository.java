@@ -29,23 +29,6 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
             @Param("categoryId") String categoryId
     );
 
-    // ✅ 로그 적재 (이미 쓰던 insertLog 유지)
-    @Modifying
-    @Query(value = """
-        INSERT INTO notification_log
-            (user_id, type, title, body, payload_json, budget_ym, category_id, sent_at)
-        VALUES
-            (:userId, :type, :title, :body, :payloadJson, :budgetYm, :categoryId, NOW())
-        """, nativeQuery = true)
-    int insertLog(
-            @Param("userId") long userId,
-            @Param("type") String type,
-            @Param("title") String title,
-            @Param("body") String body,
-            @Param("payloadJson") String payloadJson,
-            @Param("budgetYm") String budgetYm,
-            @Param("categoryId") String categoryId
-    );
 
     // 조회 (월 범위 + 읽음필터), 결과는 Object[]로 받고 서비스에서 매핑
     @Query(value = """
@@ -116,4 +99,31 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
             @Param("from") LocalDateTime fromInclusive,
             @Param("to") LocalDateTime toExclusive
     );
+    @Query(value = """
+  SELECT CASE WHEN EXISTS (
+    SELECT 1 FROM notification_log
+     WHERE user_id = :userId
+       AND type    = :type
+       AND sent_at >= :from
+       AND sent_at <  :to
+  ) THEN TRUE ELSE FALSE END
+  """, nativeQuery = true)
+    boolean existsByUserTypeInMonth(@Param("userId") long userId,
+                                    @Param("type") String type,
+                                    @Param("from") LocalDateTime fromInclusive,
+                                    @Param("to") LocalDateTime toExclusive);
+
+    @Modifying
+    @Query(value = """
+  INSERT INTO notification_log
+    (user_id, type, title, body, payload_json, sent_at)
+  VALUES
+    (:userId, :type, :title, :body, :payloadJson, NOW())
+  """, nativeQuery = true)
+    int insertLog(@Param("userId") long userId,
+                  @Param("type") String type,
+                  @Param("title") String title,
+                  @Param("body") String body,
+                  @Param("payloadJson") String payloadJson);
+
 }

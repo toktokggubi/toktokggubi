@@ -7,6 +7,7 @@ import com.ssafy.toktokggubi.domain.user.entity.User;
 import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PushTokenService {
 
     private final DevicePushTokenRepository repo;
