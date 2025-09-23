@@ -27,7 +27,6 @@ export default function LoginScreen() {
           router.replace("/(tabs)/home");
         }
       } catch (error) {
-        console.error("토큰 확인 중 오류:", error);
       } finally {
         setIsCheckingToken(false);
       }
@@ -63,13 +62,11 @@ export default function LoginScreen() {
         if (budgetError?.message === 'BUDGET_NOT_SET' || budgetError?.message === 'BUDGET_NOT_FOUND') {
           router.replace("/budget");
         } else {
-          console.error("예산 상태 확인 실패:", budgetError);
           // 예산 확인 실패 시에도 홈으로 이동 (fallback)
           router.replace("/(tabs)/home");
         }
       }
     } catch (error: any) {
-      console.error("로그인 실패:", error);
       Alert.alert(
         "로그인 실패",
         error?.response?.data?.message || "이메일 또는 비밀번호가 올바르지 않습니다."
@@ -86,7 +83,6 @@ export default function LoginScreen() {
       
       Alert.alert("알림", "카카오 로그인은 준비 중입니다.");
     } catch (error: any) {
-      console.error("카카오 로그인 실패:", error);
       Alert.alert("로그인 실패", "카카오 로그인 중 오류가 발생했습니다.");
     }
   };

@@ -28,8 +28,9 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
 
   onCategoryPress,
   onBudgetSetup,
+  onBudgetEditPress,
   month = "12월",
-  listTitle = "카테고리별 사용현황",
+  listTitle,
   hasBudget = true,
   loading = false,
   error = null,
@@ -124,6 +125,7 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
             categoryBudgets={categoryBudgets}
             transactions={transactions}
             onCategoryPress={onCategoryPress}
+            onEditPress={onBudgetEditPress}
             title={listTitle}
           />
         </ScrollView>

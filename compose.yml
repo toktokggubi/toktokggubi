@@ -126,7 +126,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      #- ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
       - backend
@@ -146,13 +146,10 @@ services:
       - ./jenkins/jenkins_home:/var/jenkins_home
       # Mount Docker socket to allow Jenkins to build/run other Docker containers
       - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
-      - /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins
-      - /home/ubuntu/S13P21B207:/home/ubuntu/S13P21B207
       # Mount Docker client binary from host if docker-compose isn't in Jenkins image
       # - /usr/local/bin/docker:/usr/local/bin/docker
-    group_add:
-      - "122"  
+    # group_add:
+    #   - "122"  
     restart: always
 
 secrets:

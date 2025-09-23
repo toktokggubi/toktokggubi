@@ -4,6 +4,7 @@ import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckRequest;
 import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
 import com.ssafy.toktokggubi.domain.push.service.CategoryBudgetService;
 import com.ssafy.toktokggubi.domain.push.service.TotalBudgetService;
+import com.ssafy.toktokggubi.domain.push.service.TotalBudgetService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

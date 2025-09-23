@@ -18,6 +18,7 @@ public class FileStorageConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         Path uploadPath = Paths.get(baseDir).toAbsolutePath().normalize();
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + uploadPath + "/");
+                .addResourceLocations("file:" + uploadPath + "/")
+                .setCachePeriod(7 * 24 * 60 * 60);
     }
 }

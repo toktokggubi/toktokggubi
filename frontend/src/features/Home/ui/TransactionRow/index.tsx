@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { TransactionRowProps } from "./types";
 import { CATEGORY_LABELS } from "@/shared/constants/categories";
-import { formatCurrency } from "@/shared/utils/currency";
+import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 import { colors } from "@/shared/constants/colors";
 
 export const TransactionRow: React.FC<TransactionRowProps> = ({
@@ -14,76 +14,83 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   onPress,
 }) => {
   const categoryLabel = CATEGORY_LABELS[category];
+  const categoryIcon = CATEGORY_ICON_BY_NAME[categoryLabel];
+  
+  // 날짜 포맷팅 (MM/DD 형식)
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+  };
 
   return (
     <TouchableOpacity
       onPress={onPress}
       style={styles.container}
+      activeOpacity={0.7}
     >
-      {/* 텍스트 정보 */}
-      <View style={styles.textContainer}>
-        <Text style={styles.merchantName}>{merchantName}</Text>
-        <Text style={styles.categoryInfo}>
-          {categoryLabel} | {paymentMethod}
+      {/* 중간: 상점명, 카테고리 */}
+      <View style={styles.contentContainer}>
+        <Text style={styles.merchantName} numberOfLines={1}>
+          {merchantName}
         </Text>
-        {date && <Text style={styles.dateInfo}>{date}</Text>}
+        <View style={styles.subInfoContainer}>
+          <Text style={styles.categoryText}>{categoryLabel}</Text>
+        </View>
       </View>
 
-      {/* 금액 */}
-      <Text style={styles.amount}>{Math.abs(amount).toLocaleString("ko-KR")}원</Text>
+      {/* 오른쪽: 금액 */}
+      <View style={styles.amountContainer}>
+        <Text style={styles.amount}>
+          {Math.abs(amount).toLocaleString("ko-KR")}원
+        </Text>
+        <Text style={styles.paymentMethod}>{paymentMethod}</Text>
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "white",
-    borderRadius: 8,
-    padding: 12,
-    marginHorizontal: 0,
-    marginVertical: 2,
-    borderWidth: 1,
-    borderColor: colors.BLUE_LIGHT,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
     flexDirection: "row",
     alignItems: "center",
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F5F5F5",
   },
-  textContainer: {
+  contentContainer: {
     flex: 1,
     marginRight: 12,
   },
   merchantName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    color: colors.GRAY_DARKER,
-    marginBottom: 2,
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
+    color: "#333333",
+    marginBottom: 4,
   },
-  categoryInfo: {
-    fontSize: 11,
-    color: colors.GRAY_NORMAL,
-    numberOfLines: 1,
-    ellipsizeMode: "tail",
+  subInfoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  dateInfo: {
-    fontSize: 10,
-    color: colors.GRAY_NORMAL,
-    marginTop: 1,
+  categoryText: {
+    fontSize: 12,
+    color: "#666666",
+    fontWeight: "500",
+  },
+  amountContainer: {
+    alignItems: "flex-end",
   },
   amount: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-    color: colors.GRAY_DARKER,
-    textAlign: "right",
-    minWidth: 80,
+    color: "#333333",
+    marginBottom: 2,
+  },
+  paymentMethod: {
+    fontSize: 11,
+    color: "#999999",
+    fontWeight: "500",
   },
 });
