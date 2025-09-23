@@ -20,13 +20,18 @@ export const useProfileQuery = () =>
 // FCM 토큰을 서버에 전송하는 헬퍼 함수
 const sendFCMTokenToServer = async (accessToken: string) => {
   try {
+    console.log('🔔 FCM: 로그인 후 토큰 전송 시작');
     const fcmService = FCMService.getInstance();
     const fcmToken = await fcmService.getToken();
     
     if (fcmToken) {
+      console.log('🔔 FCM: 토큰 획득 성공, 서버 전송 중...');
       await fcmService.sendTokenToServer(fcmToken, accessToken);
+    } else {
+      console.log('🔔 FCM: 토큰 획득 실패');
     }
   } catch (error) {
+    console.log('🔔 FCM: 토큰 전송 중 오류:', error);
     // FCM 토큰 전송 실패는 로그인을 방해하지 않도록 에러를 무시
   }
 };

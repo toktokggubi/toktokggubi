@@ -124,11 +124,16 @@ class FCMService {
    */
   async getToken(): Promise<string | null> {
     try {
-      if (!this.messaging) return null;
+      if (!this.messaging) {
+        console.log('🔔 FCM: 메시징 모듈이 없습니다.');
+        return null;
+      }
       
       const token = await this.messaging().getToken();
+      console.log('🔔 FCM 토큰:', token);
       return token;
     } catch (error) {
+      console.log('🔔 FCM 토큰 가져오기 실패:', error);
       return null;
     }
   }
@@ -138,10 +143,13 @@ class FCMService {
    */
   async sendTokenToServer(token: string, authToken: string): Promise<TokenResponse> {
     try {
+      console.log('🔔 FCM: 서버에 토큰 전송 중...', token);
       const response = await http.post('/token', { token });
+      console.log('🔔 FCM: 토큰 전송 성공');
       
       return { success: true };
     } catch (error: any) {
+      console.log('🔔 FCM: 토큰 전송 실패:', error);
       return { 
         success: false, 
         message: error?.response?.data?.message || '토큰 전송 중 오류가 발생했습니다.' 
@@ -172,7 +180,7 @@ class FCMService {
   private setupBackgroundMessageHandler(): void {
     if (!this.messaging) return;
     
-    this.messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    this.messaging().setBackgroundMessageHandler(async (remoteMessage: any) => {
       
       // 백그라운드에서는 시스템 알림만 표시됨
       // 추가 처리가 필요하면 여기에 로직 추가
@@ -185,7 +193,7 @@ class FCMService {
   private setupForegroundMessageHandler(): void {
     if (!this.messaging) return;
     
-    this.messaging().onMessage(async (remoteMessage) => {
+    this.messaging().onMessage(async (remoteMessage: any) => {
       
       // 포그라운드에서는 커스텀 알림 표시
       this.showForegroundNotification(remoteMessage);
@@ -201,14 +209,14 @@ class FCMService {
     // 앱이 종료된 상태에서 알림을 클릭했을 때
     this.messaging()
       .getInitialNotification()
-      .then((remoteMessage) => {
+      .then((remoteMessage: any) => {
         if (remoteMessage) {
           this.handleNotificationClick(remoteMessage);
         }
       });
 
     // 앱이 백그라운드에 있을 때 알림을 클릭했을 때
-    this.messaging().onNotificationOpenedApp((remoteMessage) => {
+    this.messaging().onNotificationOpenedApp((remoteMessage: any) => {
       this.handleNotificationClick(remoteMessage);
     });
   }
@@ -295,7 +303,7 @@ class FCMService {
   setupTokenRefreshListener(): void {
     if (!this.messaging) return;
     
-    this.messaging().onTokenRefresh((token) => {
+    this.messaging().onTokenRefresh((token: string) => {
       
       // 토큰이 갱신되면 서버에 새 토큰 전송
       // 이때는 사용자가 로그인되어 있는지 확인 필요
@@ -322,29 +330,37 @@ class FCMService {
    * 토큰 확인을 위한 테스트 함수 (개발용)
    */
   async testTokenRetrieval(): Promise<void> {
+    console.log('🔔 FCM: 토큰 테스트 시작');
     
     try {
       // Firebase 메시징 모듈 로드 확인
       const messaging = await this.loadMessaging();
       
       if (!messaging) {
+        console.log('🔔 FCM: 메시징 모듈 로드 실패');
         return;
       }
       
+      console.log('🔔 FCM: 메시징 모듈 로드 성공');
       
       // 토큰 가져오기
       const token = await this.getToken();
       
       if (token) {
+        console.log('🔔 FCM: 토큰 획득 성공');
         
         // 토큰 유효성 간단 체크
         if (token.length > 100 && token.includes(':')) {
+          console.log('🔔 FCM: 토큰 형식 유효');
         } else {
+          console.log('🔔 FCM: 토큰 형식 이상');
         }
       } else {
+        console.log('🔔 FCM: 토큰 획득 실패');
       }
       
     } catch (error) {
+      console.log('🔔 FCM: 토큰 테스트 중 오류:', error);
     }
     
   }

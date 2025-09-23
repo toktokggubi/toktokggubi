@@ -4,7 +4,7 @@ import { font } from "@/shared/typography/font";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View, ScrollView } from "react-native";
 import type { MyPageTemplateProps } from "./types";
 
 export default function MyPageTemplate({
@@ -15,6 +15,7 @@ export default function MyPageTemplate({
   onPressSettings,
   onPressBudgetSetup,
   onPressAIBudgetSetup,
+  onPressFCMTest,
   cardImage,
   gifticonImage,
   isLoggingOut = false,
@@ -25,7 +26,7 @@ export default function MyPageTemplate({
   };
 
   return (
-    <View style={s.page}>
+    <ScrollView style={s.page} showsVerticalScrollIndicator={false}>
       {/* 사용자 정보 섹션 */}
       {userInfo && (
         <View style={s.userInfoSection}>
@@ -105,8 +106,16 @@ export default function MyPageTemplate({
             </Text>
           </TouchableOpacity>
         </View>
+
+        <Text style={[s.tempButtonTitle, { marginTop: 16 }]}>🔔 FCM 토큰 테스트</Text>
+        
+        <TouchableOpacity style={[s.tempButtonSmall, s.tempButtonPurple]} onPress={onPressFCMTest}>
+          <Text style={[s.tempButtonTextSmall, s.tempButtonTextPurple]}>
+            📱 FCM 토큰 확인
+          </Text>
+        </TouchableOpacity>
       </View>
-     </View>
+    </ScrollView>
   );
 }
 
@@ -252,6 +261,10 @@ const s = StyleSheet.create({
     backgroundColor: "#F0FDF4",
     borderColor: "#10B981",
   },
+  tempButtonPurple: {
+    backgroundColor: "#FAF5FF",
+    borderColor: "#8B5CF6",
+  },
   tempButtonTextSmall: {
     fontSize: 12,
     fontWeight: "500",
@@ -262,5 +275,8 @@ const s = StyleSheet.create({
   },
   tempButtonTextGreen: {
     color: "#047857",
+  },
+  tempButtonTextPurple: {
+    color: "#6B21A8",
   },
 });

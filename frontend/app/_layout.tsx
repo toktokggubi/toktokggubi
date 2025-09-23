@@ -39,12 +39,16 @@ export default function RootLayout() {
     // FCM 서비스 초기화
     const initializeFCM = async () => {
       try {
+        console.log('🔔 FCM: 서비스 초기화 시작');
         const fcmService = FCMService.getInstance();
         await fcmService.initialize();
         fcmService.setupTokenRefreshListener();
-        console.log('FCM 서비스가 성공적으로 초기화되었습니다.');
+        console.log('🔔 FCM: 서비스 초기화 완료');
+        
+        // 초기화 후 토큰 테스트
+        await fcmService.testTokenRetrieval();
       } catch (error) {
-        console.error('FCM 초기화 실패:', error);
+        console.log('🔔 FCM: 초기화 실패:', error);
       }
     };
 

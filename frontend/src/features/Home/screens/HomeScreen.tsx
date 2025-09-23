@@ -9,6 +9,7 @@ import {
   fetchMonthlySummaryByCategory,
   fetchMonthlyCategoryList
 } from "../api/fetchers";
+import { fetchFixedIncludedTotal } from "~features/Budget/api/fetchers";
 import { checkBudgetStatus } from "~features/Budget/api/fetchers";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
@@ -136,7 +137,8 @@ export const HomeScreen: React.FC = () => {
         budgetCategoryResponse,
         monthlySummaryResponse,
         monthlySummaryByCategoryResponse,
-        monthlyCategoryListResponse;
+        monthlyCategoryListResponse,
+        fixedIncludedTotalResponse;
 
       try {
         budgetTotalResponse = await fetchBudgetTotal();
@@ -169,6 +171,12 @@ export const HomeScreen: React.FC = () => {
 
       try {
         monthlyCategoryListResponse = await fetchMonthlyCategoryList();
+      } catch (err) {
+        throw err;
+      }
+
+      try {
+        fixedIncludedTotalResponse = await fetchFixedIncludedTotal();
       } catch (err) {
         throw err;
       }
@@ -241,17 +249,23 @@ export const HomeScreen: React.FC = () => {
         );
       }
 
+      // 고정 지출 제외한 사용 금액 계산
+      const fixedIncludedTotal = fixedIncludedTotalResponse?.fixedIncludedTotal || 0;
+      const variableExpenseAmount = Math.max(0, monthlySummaryResponse.totalAmount - fixedIncludedTotal);
+      
+      // 변동 지출 예산 계산 (전체 예산 - 고정 지출)
+      const variableBudgetAmount = budgetTotalResponse.totalAmount - fixedIncludedTotal;
+
       // HomeData 형식으로 변환
       const homeData: HomeData = {
         totalBudget: {
-          currentAmount: monthlySummaryResponse.totalAmount,
-          totalAmount: budgetTotalResponse.totalAmount,
+          currentAmount: variableExpenseAmount, // 고정 지출 제외한 사용 금액
+          totalAmount: budgetTotalResponse.totalAmount, // 전체 예산 (고정 지출 포함)
         },
-        availableAmount:
-          budgetTotalResponse.totalAmount - monthlySummaryResponse.totalAmount,
+        availableAmount: variableBudgetAmount - variableExpenseAmount, // 변동 지출 기준 잔액
         characterMessage: getCharacterMessage(
-          monthlySummaryResponse.totalAmount,
-          budgetTotalResponse.totalAmount
+          variableExpenseAmount, // 고정 지출 제외한 사용 금액
+          variableBudgetAmount   // 변동 지출 예산
         ),
         month: getCurrentMonth(),
         listTitle: "카테고리별 사용현황",
