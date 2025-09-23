@@ -4,22 +4,43 @@ import { z } from "zod";
 export const GifticonServerSchema = z.object({
   gifticonId: z.number(),
   label: z.string(),
-  brandName: z.string().optional().nullable(), // 서버 명세에 brandName 존재
-  franchiseId: z.number().optional().nullable(),
-  franchiseName: z.string().optional().nullable(),
+  franchiseId: z.number().nullable(),
+  franchiseName: z.string().nullable(),
+  imageUrl: z.string(),
   expiresAt: z.string(), // "YYYY-MM-DD"
-  imageUrl: z.string().url().optional().nullable(),
+  daysUntilExpire: z.number(),
   status: z.enum(["ACTIVE", "USED", "EXPIRED"]),
-  ocrPreview: z.string().optional().nullable(),
-  createdAt: z.string().optional().nullable(),
 });
 export type GifticonServer = z.infer<typeof GifticonServerSchema>;
 
-export const GifticonListSchema = z.array(GifticonServerSchema);
+// 🔹 API 응답 래퍼
+export const GifticonListResponseSchema = z.object({
+  items: z.array(GifticonServerSchema),
+});
+export type GifticonListResponse = z.infer<typeof GifticonListResponseSchema>;
+
+// 🔹 API 쿼리 파라미터
+export interface GifticonListParams {
+  franchiseId?: number;
+  usable?: boolean;
+  sort?: "latest" | "expires";
+}
 
 // 🔹 단건 생성(파일 업로드) 응답
 export const GifticonCreateByFileSchema = GifticonServerSchema;
 export type GifticonCreateByFile = z.infer<typeof GifticonCreateByFileSchema>;
 
-/* 이미 있던 프리뷰/생성 스키마는 그대로 두어도 되고,
-   서버 명세에 맞춰 위 스키마들로 통일해도 OK */
+// 🔹 OCR 미리보기 응답
+export const GifticonPreviewSchema = z.object({
+  merchant: z.string().optional(),
+  label: z.string().optional(),
+  expiresAt: z.string().optional(),
+});
+export type GifticonPreview = z.infer<typeof GifticonPreviewSchema>;
+
+// 🔹 기프티콘 생성 응답
+export const GifticonCreateResponseSchema = z.object({
+  gifticonId: z.number(),
+  message: z.string(),
+});
+export type GifticonCreateResponse = z.infer<typeof GifticonCreateResponseSchema>;

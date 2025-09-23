@@ -13,6 +13,9 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
+      config: {
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAP_API_KEY,
+      },
     },
     android: {
       adaptiveIcon: {
@@ -27,6 +30,11 @@ module.exports = {
       versionCode: 1,
       package: "com.technologia.toktokggubi",
       googleServicesFile: "./google-services.json",
+      config: {
+        googleMaps: {
+          apiKey: process.env.EXPO_PUBLIC_GOOGLE_MAP_API_KEY,
+        },
+      },
     },
     web: {
       bundler: "metro",

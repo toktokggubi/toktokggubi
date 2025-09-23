@@ -4,27 +4,18 @@ import { useNavigation, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/constants/colors";
 import GifticonRegisterTemplate from "@/features/User/templates/GifticonRegisterTemplate";
-import {
-  uploadGifticonFile,
-  requestGifticonPreview,
-  createGifticon,
-} from "@/features/User/api/gifticonService";
+import { uploadGifticon } from "@/features/User/api/gifticonService";
+import { useInvalidateGifticons } from "@/features/User/model/gifticon/queries";
 
 const BG = colors.BACKGROUND_PRIMARY;
 const TXT = colors.BLUE_DARKER;
 
 export default function GifticonRegisterScreen() {
   const navigation = useNavigation();
+  const invalidateGifticons = useInvalidateGifticons();
 
   const [localImageUri, setLocalImageUri] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-
-  const [merchant, setMerchant] = useState<string>("");
-  const [label, setLabel] = useState<string>("");
-  const [expiresAt, setExpiresAt] = useState<string>("");
-
-  const [loadingPreview, setLoadingPreview] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -46,59 +37,46 @@ export default function GifticonRegisterScreen() {
     });
   }, [navigation]);
 
-  const handleImagePicked = useCallback(async (uri: string | null) => {
+  const handleImagePicked = useCallback((uri: string | null) => {
     setLocalImageUri(uri);
-    setImageUrl(null);
-    setMerchant("");
-    setLabel("");
-    setExpiresAt("");
-    if (!uri) return;
-    try {
-      setLoadingPreview(true);
-      const { imageUrl } = await uploadGifticonFile(uri);
-      setImageUrl(imageUrl);
-      const preview = await requestGifticonPreview({ imageUrl });
-      setMerchant(preview.merchant ?? "");
-      setLabel(preview.label ?? "");
-      setExpiresAt(preview.expiresAt ?? "");
-    } catch {
-      Alert.alert(
-        "오류",
-        "이미지 분석에 실패했습니다. 값을 직접 입력해 주세요."
-      );
-    } finally {
-      setLoadingPreview(false);
-    }
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!imageUrl)
-      return Alert.alert("안내", "기프티콘 이미지를 먼저 업로드해 주세요.");
-    try {
-      setSaving(true);
-      await createGifticon({ imageUrl, merchant, label, expiresAt });
-      Alert.alert("등록 완료", "기프티콘 저장 완료");
-      router.back();
-    } catch {
-      Alert.alert("실패", "등록 중 오류가 발생했습니다.");
-    } finally {
-      setSaving(false);
+    if (!localImageUri) {
+      Alert.alert("안내", "기프티콘 이미지를 먼저 선택해 주세요.");
+      return;
     }
-  }, [imageUrl, merchant, label, expiresAt]);
+    
+    try {
+      setUploading(true);
+      console.log("기프티콘 등록 시작 - OCR 처리 중...");
+      await uploadGifticon(localImageUri);
+      
+      // ✅ 등록 성공 후 캐시 무효화
+      invalidateGifticons();
+      
+      Alert.alert("등록 완료", "기프티콘이 등록되었습니다!");
+      router.back();
+    } catch (error) {
+      console.error("기프티콘 등록 실패:", error);
+      console.error("에러 상세:", JSON.stringify(error, null, 2));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('timeout')) {
+        Alert.alert("등록 실패", "OCR 처리 시간이 오래 걸려서 타임아웃되었습니다. 다시 시도해주세요.");
+      } else {
+        Alert.alert("등록 실패", `등록 중 오류가 발생했습니다.\n에러: ${errorMessage}`);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }, [localImageUri]);
 
   return (
     <GifticonRegisterTemplate
       imageUri={localImageUri}
       onPickImage={handleImagePicked}
-      loadingPreview={loadingPreview}
-      merchant={merchant}
-      onMerchantChange={setMerchant}
-      label={label}
-      onLabelChange={setLabel}
-      expiresAt={expiresAt}
-      onExpiresAtChange={setExpiresAt}
+      loading={uploading}
       onSubmit={handleSubmit}
-      saving={saving}
     />
   );
 }
