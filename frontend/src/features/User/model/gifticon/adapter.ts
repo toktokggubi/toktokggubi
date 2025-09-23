@@ -8,7 +8,7 @@ function fallback<T>(v: T | null | undefined, alt: T): T {
 
 /** 서버 → 화면용 VM */
 export function toGifticonVM(s: GifticonServer): Gifticon {
-  const merchantName = s.franchiseName;
+  const merchantName = fallback(s.franchiseName, "알 수 없는 브랜드");
   const categoryName = "미분류"; // 서버에 카테고리 없으므로 임시 라벨
   const remainingDays = s.daysUntilExpire;
 
