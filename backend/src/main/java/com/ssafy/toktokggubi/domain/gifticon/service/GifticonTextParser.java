@@ -192,9 +192,12 @@ public class GifticonTextParser {
             NOISE_TOKENS.add(normTight(display));
         }
         NOISE_TOKENS.addAll(List.of("cu","gs25","cgv"));
-        NOISE_TOKENS.add(normTight("빽다방"));
-        NOISE_TOKENS.add(normTight("더벤티"));
-        NOISE_TOKENS.add(normTight("세븐일레븐"));
+        NOISE_TOKENS.add(normTight("mgc"));
+        NOISE_TOKENS.add(normTight("paiks"));
+        NOISE_TOKENS.add("cocacola");
+        NOISE_TOKENS.add("pepsi");
+        NOISE_TOKENS.add("sprite");
+        NOISE_TOKENS.add("fanta");
     }
 
     /* ========================= 공개 API ========================= */
@@ -315,6 +318,46 @@ public class GifticonTextParser {
         return null;
     }
 
+    private static boolean isBoundaryLine(String s) {
+        for (String key : SECTION_BOUNDARY_KEYS) {
+            if (s.contains(key)) return true;
+        }
+        return false;
+    }
+
+    private static boolean isBarcodeLike(String tight) {
+        return BARCODE_LIKE.matcher(tight).find();
+    }
+
+    private static boolean isNoise(String tight) {
+        return NOISE_TOKENS.contains(tight);
+    }
+
+    /** 다음 줄과 이어서 붙여야 할지 휴리스틱 */
+    private static boolean shouldJoin(String curr, String next) {
+        if (next == null || next.isBlank()) return false;
+
+        // 1) 현재 줄이 이어짐 기호로 끝남
+        String c = curr.trim();
+        if (c.endsWith("+") || c.endsWith(",") || c.endsWith("·") || c.endsWith("/") || c.endsWith("("))
+            return true;
+
+        // 2) 괄호가 아직 안 닫힘
+        long open = c.chars().filter(ch -> ch=='(').count();
+        long close = c.chars().filter(ch -> ch==')').count();
+        if (open > close) return true;
+
+        // 3) 다음 줄이 괄호로 시작하거나 소문자/한글로 자연스럽게 이어짐
+        String n = next.trim();
+        if (n.startsWith("(")) return true;
+        if (!n.isEmpty()) {
+            char ch = n.charAt(0);
+            if ((ch >= 'a' && ch <= 'z') || KOREAN.matcher(Character.toString(ch)).find()) return true;
+        }
+        return false;
+    }
+
+    /** 라벨 추출(최대 3줄까지 이어붙임) */
     private static String findLabel(String[] lines, String brand) {
         int startIdx = 0;
         if (brand != null) {
@@ -331,7 +374,6 @@ public class GifticonTextParser {
             }
         }
 
-        // 라벨 가중치
         final Set<String> labelHints = Set.of("상품권", "교환권", "세트", "세트메뉴", "쿠폰", "기프트");
         String best = null;
         int bestScore = Integer.MIN_VALUE;
@@ -341,20 +383,49 @@ public class GifticonTextParser {
             if (ln.length() < 2) continue;
 
             String tight = normTight(ln);
-            if (NOISE_TOKENS.contains(tight)) continue;
-            if (BARCODE_LIKE.matcher(tight).find()) continue;
+            if (isBoundaryLine(ln) || isNoise(tight) || isBarcodeLike(tight)) continue;
 
-            boolean hasKorean = KOREAN.matcher(ln).find();
+            boolean hasKoreanCurr = KOREAN.matcher(ln).find();
+
+            // 현재 줄에 한글이 없고, 다음 줄에는 한글이 있으면 현재 줄은 로고/장식으로 간주하여 스킵
+            if (!hasKoreanCurr && i + 1 < endIdx) {
+                String next = lines[i + 1];
+                String nextTight = normTight(next);
+                if (next.length() >= 2 && !isBoundaryLine(next) && !isNoise(nextTight) && !isBarcodeLike(nextTight)
+                        && KOREAN.matcher(next).find()) {
+                    continue; // Coca-Cola 같은 로고 라인은 건너뛴다
+                }
+            }
+
+            // ----- 이어붙이기: 최대 2줄을 추가(총 3줄) -----
+            String merged = ln.trim();
+            int j = i;
+            for (int joinCount = 0; joinCount < 2; joinCount++) {
+                int nextIdx = j + 1;
+                if (nextIdx >= endIdx) break;
+                String next = lines[nextIdx];
+                String nextTight = normTight(next);
+                if (next.length() < 2) break;
+                if (isBoundaryLine(next) || isNoise(nextTight) || isBarcodeLike(nextTight)) break;
+
+                if (!shouldJoin(merged, next)) break;
+
+                merged = (merged + " " + next).replaceAll("\\s+", " ").trim();
+                j = nextIdx;
+            }
+
+            // ----- 점수 계산 -----
+            boolean hasKorean = KOREAN.matcher(merged).find();
             int score = 0;
             if (hasKorean) score += 2;
             for (String h : labelHints) {
-                if (ln.contains(h)) { score += 3; break; }
+                if (merged.contains(h)) { score += 3; break; }
             }
-            score += Math.min(ln.length(), 40) / 4;
+            score += Math.min(merged.length(), 60) / 4; // 길이 가중(조금 상향)
 
             if (score > bestScore) {
                 bestScore = score;
-                best = ln;
+                best = merged;
             }
         }
         return best;
