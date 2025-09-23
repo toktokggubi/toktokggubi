@@ -1,11 +1,10 @@
 // src/features/User/ui/GifticonCard/types.ts
-import type { GestureResponderEvent, ImageSourcePropType } from "react-native";
+import type { GestureResponderEvent } from "react-native";
 
 export interface GifticonCardProps {
-  imageSource: ImageSourcePropType; // ✅ 로컬/네트워크 둘 다 가능
+  imageUrl: string; // ✅ 서버에서 받은 이미지 URL
   title: string;
   brand: string;
+  expiresAt: string; // ✅ 만료일 (ISO date string)
   onPress: (e: GestureResponderEvent) => void;
-  /** 남은 일수. 17이면 D-17, 0이면 D-DAY, 음수면 D+표시 */
-  dDay?: number;
 }
