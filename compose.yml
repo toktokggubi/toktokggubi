@@ -126,8 +126,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-    #- ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+#    volumes:
+      #- ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       # - frontend
       - backend
