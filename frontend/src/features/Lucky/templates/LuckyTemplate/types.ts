@@ -27,7 +27,4 @@ export interface LuckyTemplateProps {
   onPressMolbbang?: () => void;
   nImageSource: ImageSourcePropType;
   molImageSource: ImageSourcePropType;
-
-  // 알림 아이콘
-  onNotificationPress?: () => void;
 }

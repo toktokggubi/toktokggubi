@@ -54,6 +54,7 @@ export interface HomeTemplateProps {
   onBudgetSetup?: () => void;
   onBudgetEditPress?: () => void;
   onNotificationPress?: () => void;
+  unreadNotificationCount?: number;
 
   // UI 설정
   month?: string;
