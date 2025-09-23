@@ -83,6 +83,8 @@ dependencies {
     // OpenAI 공식 SDK (Spring AI 미사용 시 직접 호출용)
     // ─────────────────────────────────────────────────────────────
     implementation 'com.openai:openai-java:3.0.3'
+    implementation "com.openai:openai-java:latest.release"
+
 
     // ─────────────────────────────────────────────────────────────
     // QR/바코드 (ZXing)

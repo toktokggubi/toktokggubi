@@ -1,10 +1,11 @@
+// src/main/java/com/ssafy/toktokggubi/domain/push/service/CategoryBudgetService.java
 package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.repository.BudgetCategoryRepository;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
 import com.ssafy.toktokggubi.domain.push.dto.PushType;
-import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
+import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResponse;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
@@ -34,44 +35,45 @@ public class CategoryBudgetService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
 
-    private static final String TYPE_THRESHOLD_CAT = PushType.BUDGET_THRESHOLD_CATEGORY_80.code(); // "BUDGET_THRESHOLD/CATEGORY/80"
-    private static final String TYPE_EXCEEDED_CAT  = PushType.BUDGET_EXCEEDED_CATEGORY.code();     // "BUDGET_EXCEEDED/CATEGORY"
+    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_CATEGORY_80.code(); // "BUDGET_THRESHOLD/CATEGORY/80"
+    private static final String EXCEEDED  = PushType.BUDGET_EXCEEDED_CATEGORY.code();     // "BUDGET_EXCEEDED/CATEGORY"
+    private static final String SCOPE = "CATEGORY";
 
     @Transactional
-    public ThresholdCheckResult checkAndMaybeNotifyForCurrentMonth(String transactionUniqueNo) {
+    public ThresholdCheckResponse checkThreshold(String transactionUniqueNo) throws Exception {
         return handleThreshold(
                 transactionUniqueNo,
                 0.8,
-                TYPE_THRESHOLD_CAT,
-                "%s 예산 80%% 임계", // <-- 제목 템플릿 (카테고리명 들어감)
+                THRESHOLD,
+                "%s 예산 80%% 임계", // 제목 템플릿 (카테고리명 포함)
                 "이달 예산 %,d원 중 %,d원 사용 (%.1f%%) · %,d원 남음"
         );
     }
 
     /** 100% 초과 알림 */
     @Transactional
-    public ThresholdCheckResult checkAndNotifyIfExceeded(String transactionUniqueNo) {
+    public ThresholdCheckResponse checkExceed(String transactionUniqueNo) throws Exception {
         return handleThreshold(
                 transactionUniqueNo,
                 1.0,
-                TYPE_EXCEEDED_CAT,
-                "%s 예산 초과", // <-- 제목 템플릿
+                EXCEEDED,
+                "%s 예산 초과", // 제목 템플릿
                 "이달 예산 %,d원을 초과했습니다. 총 사용액: %,d원 (%.1f%%)"
         );
     }
 
     // ================= 내부 공통 로직 =================
-    private ThresholdCheckResult handleThreshold(
+    private ThresholdCheckResponse handleThreshold(
             String transactionUniqueNo,
             double thresholdRate,
             String baseTypeKey,
-            String titleTemplate,   // <-- 변경: 제목 템플릿("%s ...")
+            String titleTemplate,   // 제목 템플릿("%s ...")
             String bodyFormat
-    ) {
+    ) throws Exception {
         CardTransaction tx = txRepo.findByTransactionUniqueNo(transactionUniqueNo).orElse(null);
         if (tx == null) {
             log.warn("[{}] 거래를 찾을 수 없음: {}", baseTypeKey, transactionUniqueNo);
-            return new ThresholdCheckResult(false, null, currentYm(), 0L, 0L, false);
+            return new ThresholdCheckResponse(false, null, null, SCOPE, currentYm(), 0L, 0L, false);
         }
 
         Long userId = tx.getUser().getUserId();
@@ -81,7 +83,7 @@ public class CategoryBudgetService {
         // 안전하게 카테고리명 확보(없으면 ID로 대체)
         String categoryName = null;
         try {
-            // 엔티티에 맞게 필드명 수정: getCategoryName() / getName() 중 프로젝트에 있는 걸 사용
+            // 엔티티 필드명에 맞춰 수정(getCategoryName / getName 중 실제 있는 메서드 사용)
             categoryName = category.getName();
         } catch (Exception ignore) {}
         if (categoryName == null || categoryName.isBlank()) {
@@ -96,47 +98,47 @@ public class CategoryBudgetService {
         Long finalAmount = budgetCategoryRepo.findFinalAmountByUserYmAndCategory(userId, budgetYm, categoryId);
         if (finalAmount == null || finalAmount <= 0) {
             log.info("[{}] 예산 미설정: user={}, ym={}, category={}", baseTypeKey, userId, budgetYm, categoryId);
-            return new ThresholdCheckResult(false, userId, budgetYm, used, finalAmount, false);
+            return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
         }
 
         double rate = used * 1.0 / finalAmount;
         if (rate < thresholdRate) {
-            return new ThresholdCheckResult(false, userId, budgetYm, used, finalAmount, false);
+            return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
         }
 
-        // 카테고리별 dedup: type에 CAT 인코딩
         String typeKey = baseTypeKey + "#CAT:" + categoryId;
         LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
         LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
         boolean already = notificationRepo.existsByUserTypeInMonth(userId, typeKey, monthFrom, monthTo);
         if (already) {
-            return new ThresholdCheckResult(true, userId, budgetYm, used, finalAmount, false);
+            return new ThresholdCheckResponse(true, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
         }
 
         double percent = Math.min(rate * 100.0, 999.9);
         long remaining = Math.max(finalAmount - used, 0);
         String body = String.format(Locale.KOREA, bodyFormat, finalAmount, used, percent, remaining);
-        String link = "toktokggubi://budget/overview?ym=" + budgetYm;
 
-        // 🔹 카테고리명을 끼운 '동적 제목'
+        // 카테고리명을 끼운 동적 제목
         String title = String.format(Locale.KOREA, titleTemplate, categoryName);
 
-        fcmService.sendToUser(userId, title, body, link);
+        // 실제 발송
+        fcmService.sendToUser(userId, title, body);
 
+        // 로그 저장 (DB 스키마에 맞춘 payload — categoryId/Name은 payload로 남김)
         String payloadJson = toJsonSafe(Map.of(
                 "budgetYm", budgetYm,
-                "scope", "CATEGORY",
+                "scope", SCOPE,
                 "categoryId", categoryId,
-                "categoryName", categoryName,   // <-- payload에도 포함
-                "used", used,
+                "categoryName", categoryName,
+                "usedAmount", used,
                 "finalAmount", finalAmount,
-                "percent", percent,
-                "link", link
+                "percent", percent
         ));
         notificationRepo.insertLog(userId, typeKey, title, body, payloadJson);
 
-        return new ThresholdCheckResult(true, userId, budgetYm, used, finalAmount, true);
+        return new ThresholdCheckResponse(true, userId, categoryId, SCOPE, budgetYm, used, finalAmount, true);
     }
+
     // ---- helpers ----
     private String currentYm() { return YearMonth.now(KST).format(YM); }
 

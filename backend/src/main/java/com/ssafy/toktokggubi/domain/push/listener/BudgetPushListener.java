@@ -23,8 +23,8 @@ public class BudgetPushListener {
     public void onApproved(TxApprovedEvent e) {
         String txNo = e.transactionUniqueNo();
         try {
-            categoryBudgetService.checkAndMaybeNotifyForCurrentMonth(txNo);
-            categoryBudgetService.checkAndNotifyIfExceeded(txNo);
+            categoryBudgetService.checkThreshold(txNo);
+            categoryBudgetService.checkExceed(txNo);
             totalBudgetService.checkThreshold(txNo);
             totalBudgetService.checkExceed(txNo);
         } catch (Exception ex) {

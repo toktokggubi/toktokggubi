@@ -40,7 +40,6 @@ public class WalletService {
     private final MerchantRepository merchantRepository;
     private final CardTransactionRepository cardTransactionRepository;
     private final ApplicationEventPublisher publisher;
-    private final FcmService fcmService;
 
     // ========== 조회 ==========
 
@@ -158,15 +157,6 @@ public class WalletService {
         cardTransactionRepository.save(txn);
 
         publisher.publishEvent(new TxApprovedEvent(txn.getTransactionUniqueNo()));
-
-        try {
-            String title = "결제 승인";
-            String body  = String.format("가맹점 %s에서 %,d원 결제 완료", merchant.getMerchantName(), finalAmount);
-            String link  = "toktokggubi://tx/" + txnId; // 딥링크는 선택
-            fcmService.sendToUser(userId, title, body, link);
-        } catch (Exception ex) {
-
-        }
 
         return new PaymentResponse(
                 txnId,

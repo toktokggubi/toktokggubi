@@ -18,4 +18,15 @@ public interface DevicePushTokenRepository extends JpaRepository<PushToken, Long
     Optional<PushToken> findByTokenAndUser_UserId(String token, Long userId);
     List<PushToken> findByUser_UserIdAndIsActiveTrue(Long userId);
     List<PushToken> findByUser_UserIdInAndIsActiveTrue(Collection<Long> userIds);
+
+    // 토큰 문자열만 바로 조회 (성능/메모리 효율 good)
+    @Query("""
+        select t.token
+        from PushToken t
+        where t.user.userId = :userId
+          and t.isActive = true
+    """)
+    static List<String> findActiveTokenStringsByUserId(@Param("userId") Long userId) {
+        return null;
+    }
 }

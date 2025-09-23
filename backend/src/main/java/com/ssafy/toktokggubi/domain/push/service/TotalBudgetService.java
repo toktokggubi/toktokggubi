@@ -1,10 +1,11 @@
+// src/main/java/com/ssafy/toktokggubi/domain/push/service/TotalBudgetService.java
 package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
 import com.ssafy.toktokggubi.domain.push.dto.PushType;
-import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
+import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResponse;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
@@ -34,9 +35,10 @@ public class TotalBudgetService {
 
     private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code();
     private static final String EXCEED    = PushType.BUDGET_EXCEEDED_TOTAL.code();
+    private static final String SCOPE     = "TOTAL";
 
     @Transactional
-    public ThresholdCheckResult checkThreshold(String txNo) {
+    public ThresholdCheckResponse checkThreshold(String txNo) throws Exception {
         return handleTotal(
                 txNo, 0.8, THRESHOLD,
                 "전체 예산 80% 임계",
@@ -46,7 +48,7 @@ public class TotalBudgetService {
     }
 
     @Transactional
-    public ThresholdCheckResult checkExceed(String txNo) {
+    public ThresholdCheckResponse checkExceed(String txNo) throws Exception {
         return handleTotal(
                 txNo, 1.0, EXCEED,
                 "전체 예산 초과",
@@ -55,18 +57,18 @@ public class TotalBudgetService {
         );
     }
 
-    private ThresholdCheckResult handleTotal(
+    private ThresholdCheckResponse handleTotal(
             String txNo,
             double thresholdRate,
             String typeKey,
             String title,
             String bodyFormat,
             boolean includeRemaining
-    ) {
+    ) throws Exception {
         CardTransaction tx = txRepo.findByTransactionUniqueNo(txNo).orElse(null);
         if (tx == null) {
             log.warn("[{}] 거래 없음: {}", typeKey, txNo);
-            return new ThresholdCheckResult(false, null, currentYm(), 0L, 0L, false);
+            return new ThresholdCheckResponse(false, null, null, SCOPE, currentYm(), 0L, 0L, false);
         }
 
         Long userId = tx.getUser().getUserId();
@@ -79,13 +81,13 @@ public class TotalBudgetService {
 
         if (totalBudget == null || totalBudget <= 0) {
             // 전체 예산 미설정
-            return new ThresholdCheckResult(false, userId, budgetYm, used, totalBudget, false);
+            return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         double rate = used * 1.0 / totalBudget;
         if (rate < thresholdRate) {
             // 임계 미도달
-            return new ThresholdCheckResult(false, userId, budgetYm, used, totalBudget, false);
+            return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         // ==== 중복 발송 방지: 이번 달 범위 + type ====
@@ -93,7 +95,7 @@ public class TotalBudgetService {
         LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
         boolean already = notificationRepo.existsByUserTypeInMonth(userId, typeKey, monthFrom, monthTo);
         if (already) {
-            return new ThresholdCheckResult(true, userId, budgetYm, used, totalBudget, false);
+            return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         double percent = Math.min(rate * 100.0, 999.9);
@@ -103,23 +105,20 @@ public class TotalBudgetService {
                 ? String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent, remaining)
                 : String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent);
 
-        String link = "toktokggubi://budget/overview?ym=" + budgetYm;
-
         // 실제 전송
-        fcmService.sendToUser(userId, title, body, link);
+        fcmService.sendToUser(userId, title, body);
 
-        // 로그 저장 (budget_ym 컬럼 없이 sent_at만 저장)
+        // 로그 저장 (payload에 컨텍스트만 남김)
         String payloadJson = toJsonSafe(Map.of(
                 "budgetYm", budgetYm,
-                "scope", "TOTAL",
-                "used", used,
+                "scope", SCOPE,
+                "usedAmount", used,
                 "finalAmount", totalBudget,
-                "percent", percent,
-                "link", link
+                "percent", percent
         ));
         notificationRepo.insertLog(userId, typeKey, title, body, payloadJson);
 
-        return new ThresholdCheckResult(true, userId, budgetYm, used, totalBudget, true);
+        return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, true);
     }
 
     private String currentYm() { return YearMonth.now(KST).format(YM); }

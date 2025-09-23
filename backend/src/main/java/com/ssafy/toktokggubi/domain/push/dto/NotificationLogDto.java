@@ -1,7 +1,7 @@
 package com.ssafy.toktokggubi.domain.push.dto;
 
 
-public record ThresholdCheckResult(
+public record NotificationLogDto(
         boolean triggered,   // 조건 충족 여부
         Long userId,         // 사용자 ID
         String budgetYm,     // "yyyyMM"

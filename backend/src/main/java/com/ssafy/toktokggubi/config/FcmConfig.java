@@ -30,7 +30,6 @@ public class FcmConfig {
                 creds = GoogleCredentials.fromStream(in);
             }
         } else {
-            // 배포에서 GOOGLE_APPLICATION_CREDENTIALS 등 ADC 경로 사용
             creds = GoogleCredentials.getApplicationDefault();
         }
        ;

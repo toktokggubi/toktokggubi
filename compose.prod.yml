@@ -38,4 +38,5 @@ services:
     depends_on:
       # - frontend # Nginx proxies to the production frontend and backend
       - backend
-      - ai
+      # - ai
+

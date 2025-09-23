@@ -17,9 +17,21 @@ public class FcmService {
     private static final int BATCH = 500;
     private final PushTokenService tokenService; // ✅ 토큰서비스로 위임
 
-    public void sendToUser(long userId, String title, String body, String link) {
-        List<String> tokens = tokenService.findTokensByUserIds(List.of(userId));
-        sendInBatches(tokens, title, body, link, userId);
+    public void sendToUser(Long userId, String title, String body) throws Exception {
+        List<String> tokens = tokenService.findActiveTokensByUser(userId);
+        if (tokens.isEmpty()) return;
+
+        Notification noti = Notification.builder()
+                .setTitle(title)
+                .setBody(body)
+                .build();
+
+        MulticastMessage msg = MulticastMessage.builder()
+                .addAllTokens(tokens)
+                .setNotification(noti)     // ← data 없이 순수 알림
+                .build();
+
+        FirebaseMessaging.getInstance().sendEachForMulticast(msg);
     }
 
     private void sendInBatches(List<String> tokens, String title, String body, String link, long userId) {
@@ -32,6 +44,36 @@ public class FcmService {
             sendOneBatch(part, title, body, link, userId);
         }
     }
+    public String sendToSingleToken(String token, String title, String body, boolean dryRun) throws Exception {
+        Notification noti = Notification.builder()
+                .setTitle(title)
+                .setBody(body)
+                .build();
+
+        Message msg = Message.builder()
+                .setToken(token)
+                .setNotification(noti)
+                // (선택) 안드로이드 채널/우선순위
+                .setAndroidConfig(AndroidConfig.builder()
+                        .setPriority(AndroidConfig.Priority.HIGH)
+                        .setNotification(AndroidNotification.builder()
+                                .setChannelId("budget-alerts") // 앱에서 같은 id 채널 생성 필요
+                                .build())
+                        .build())
+                // (선택) 웹푸시 링크
+                .setWebpushConfig(WebpushConfig.builder()
+                        .setNotification(WebpushNotification.builder()
+                                .setTitle(title).setBody(body).build())
+                        .setFcmOptions(WebpushFcmOptions.builder()
+                                .setLink(linkOrEmpty(null))
+                                .build())
+                        .build())
+                .build();
+
+        return FirebaseMessaging.getInstance().send(msg, dryRun);
+    }
+
+    private String linkOrEmpty(String s) { return (s == null) ? "" : s; }
 
     private void sendOneBatch(List<String> tokens, String title, String body, String link, long userId) {
         MulticastMessage message = MulticastMessage.builder()
