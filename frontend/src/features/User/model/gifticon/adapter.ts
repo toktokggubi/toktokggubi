@@ -1,6 +1,7 @@
 import type { Gifticon } from "./types";
 import type { GifticonServer } from "./schemas";
 import { calcDDay } from "./date";
+import { normalizeImageUrl } from "@/features/User/utils/imageUtils";
 
 function fallback<T>(v: T | null | undefined, alt: T): T {
   return v ?? alt;
@@ -20,8 +21,8 @@ export function toGifticonVM(s: GifticonServer): Gifticon {
     expiresAt: s.expiresAt,
     remainingDays,
     status: s.status,
-    // 서버에서 제공하는 imageUrl을 사용
-    imageKey: s.imageUrl,
+    // 서버에서 제공하는 imageUrl을 정규화하여 사용
+    imageKey: normalizeImageUrl(s.imageUrl),
     createdAt: undefined, // 서버에서 createdAt을 제공하지 않음
   };
 }
