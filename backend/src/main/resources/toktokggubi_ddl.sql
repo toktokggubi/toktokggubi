@@ -2,8 +2,8 @@
    0) 스키마
 ========================================================= */
 CREATE DATABASE IF NOT EXISTS toktokggubi
-  DEFAULT CHARACTER SET utf8mb4
-  COLLATE utf8mb4_0900_ai_ci;
+    DEFAULT CHARACTER SET utf8mb4
+    COLLATE utf8mb4_0900_ai_ci;
 USE toktokggubi;
 
 /* =========================================================
@@ -29,6 +29,11 @@ DROP TABLE IF EXISTS card_product;
 DROP TABLE IF EXISTS card_issuer;
 DROP TABLE IF EXISTS franchise;
 DROP TABLE IF EXISTS category;
+DROP VIEW IF EXISTS v_molbbang_room_totals;
+DROP TABLE IF EXISTS molbbang_score;
+DROP TABLE IF EXISTS molbbang_round;
+DROP TABLE IF EXISTS molbbang_member;
+DROP TABLE IF EXISTS molbbang_room;
 DROP TABLE IF EXISTS `user`;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -345,3 +350,119 @@ CREATE TABLE `sale_event` (
                                   FOREIGN KEY (`franchise_id`) REFERENCES `franchise`(`franchise_id`)
                                       ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+
+
+/* =========================================================
+   10) 몰빵 게임: 방
+   - status: LOBBY(대기), IN_PROGRESS(진행), FINISHED(종료), CANCELLED(취소)
+========================================================= */
+CREATE TABLE `molbbang_room` (
+                                 `room_id`          BIGINT       NOT NULL AUTO_INCREMENT,
+                                 `room_code`        VARCHAR(12)  NOT NULL COMMENT '입장 코드, 대소문자+숫자, 예: ABC123',
+                                 `host_user_id`     BIGINT       NOT NULL,
+                                 `amount`           BIGINT       NOT NULL COMMENT '몰빵 금액',
+                                 `total_rounds`     TINYINT      NOT NULL DEFAULT 3,
+                                 `current_round_no` TINYINT      NULL,
+                                 `status`           VARCHAR(20)  NOT NULL DEFAULT 'LOBBY' COMMENT 'ENUM(`LOBBY`,`IN_PROGRESS`,`FINISHED`,`CANCELLED`)',
+                                 `created_at`       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                 `started_at`       DATETIME     NULL,
+                                 `ended_at`         DATETIME     NULL,
+                                 CONSTRAINT `PK_MOLBBANG_ROOM` PRIMARY KEY (`room_id`),
+                                 UNIQUE KEY `uq_mr_code` (`room_code`),
+                                 KEY `idx_mr_status` (`status`),
+                                 CONSTRAINT `FK_mr_host_user`
+                                     FOREIGN KEY (`host_user_id`) REFERENCES `user`(`user_id`)
+                                         ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+/* =========================================================
+   11) 몰빵 게임: 방 참여자
+   - 닉네임 중복 방지: 동일 방 내 UNIQUE
+   - 중복 참가 방지: 동일 방+유저 UNIQUE
+========================================================= */
+CREATE TABLE `molbbang_member` (
+                                   `member_id`   BIGINT       NOT NULL AUTO_INCREMENT,
+                                   `room_id`     BIGINT       NOT NULL,
+                                   `user_id`     BIGINT       NOT NULL,
+                                   `nickname`    VARCHAR(50)  NOT NULL,
+                                   `is_host`     BOOLEAN      NOT NULL DEFAULT FALSE,
+                                   `is_ready`    BOOLEAN      NOT NULL DEFAULT FALSE,
+                                   `is_active`   BOOLEAN      NOT NULL DEFAULT TRUE,
+                                   `joined_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                   `left_at`     DATETIME     NULL,
+                                   CONSTRAINT `PK_MOLBBANG_MEMBER` PRIMARY KEY (`member_id`),
+                                   UNIQUE KEY `uq_mm_room_user` (`room_id`, `user_id`),
+                                   UNIQUE KEY `uq_mm_room_nickname` (`room_id`, `nickname`),
+                                   KEY `idx_mm_room` (`room_id`),
+                                   KEY `idx_mm_user` (`user_id`),
+                                   CONSTRAINT `FK_mm_room`
+                                       FOREIGN KEY (`room_id`) REFERENCES `molbbang_room`(`room_id`)
+                                           ON UPDATE CASCADE ON DELETE CASCADE,
+                                   CONSTRAINT `FK_mm_user`
+                                       FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`)
+                                           ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+/* =========================================================
+   12) 몰빵 게임: 라운드
+   - status: PENDING(대기), ACTIVE(진행), ENDED(종료)
+========================================================= */
+CREATE TABLE `molbbang_round` (
+                                  `round_id`    BIGINT       NOT NULL AUTO_INCREMENT,
+                                  `room_id`     BIGINT       NOT NULL,
+                                  `round_no`    TINYINT      NOT NULL,
+                                  `status`      VARCHAR(20)  NOT NULL DEFAULT 'PENDING' COMMENT 'ENUM(`PENDING`,`ACTIVE`,`ENDED`)',
+                                  `started_at`  DATETIME     NULL,
+                                  `ended_at`    DATETIME     NULL,
+                                  CONSTRAINT `PK_MOLBBANG_ROUND` PRIMARY KEY (`round_id`),
+                                  UNIQUE KEY `uq_mrd_room_no` (`room_id`, `round_no`),
+                                  KEY `idx_mrd_room` (`room_id`),
+                                  KEY `idx_mrd_status` (`status`),
+                                  CONSTRAINT `FK_mrd_room`
+                                      FOREIGN KEY (`room_id`) REFERENCES `molbbang_room`(`room_id`)
+                                          ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+/* =========================================================
+   13) 몰빵 게임: 점수 제출
+   - 라운드별 멤버 1회 제출 보장: UNIQUE(round_id, member_id)
+   - 점수 음수/양수 모두 허용(게임 규칙에 따라 합산)
+========================================================= */
+CREATE TABLE `molbbang_score` (
+                                  `score_id`    BIGINT     NOT NULL AUTO_INCREMENT,
+                                  `round_id`    BIGINT     NOT NULL,
+                                  `member_id`   BIGINT     NOT NULL,
+                                  `score`       INT        NOT NULL,
+                                  `submitted_at` DATETIME  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                  CONSTRAINT `PK_MOLBBANG_SCORE` PRIMARY KEY (`score_id`),
+                                  UNIQUE KEY `uq_ms_round_member` (`round_id`, `member_id`),
+                                  KEY `idx_ms_round` (`round_id`),
+                                  KEY `idx_ms_member` (`member_id`),
+                                  CONSTRAINT `FK_ms_round`
+                                      FOREIGN KEY (`round_id`) REFERENCES `molbbang_round`(`round_id`)
+                                          ON UPDATE CASCADE ON DELETE CASCADE,
+                                  CONSTRAINT `FK_ms_member`
+                                      FOREIGN KEY (`member_id`) REFERENCES `molbbang_member`(`member_id`)
+                                          ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+/* =========================================================
+   14) 뷰: 방별 총점/순위(집계)
+   - total_score: 각 멤버의 누적 점수
+   - rank_desc : 점수 높은 순(1등이 가장 높음)
+   - rank_asc  : 점수 낮은 순(꼴등이 1위) → jackpotUserId 계산에 사용
+========================================================= */
+CREATE VIEW `v_molbbang_room_totals` AS
+SELECT
+    mr.room_id,
+    mm.member_id,
+    mm.user_id,
+    mm.nickname,
+    COALESCE(SUM(ms.score), 0) AS total_score,
+    RANK() OVER (PARTITION BY mr.room_id ORDER BY COALESCE(SUM(ms.score), 0) DESC) AS rank_desc,
+    RANK() OVER (PARTITION BY mr.room_id ORDER BY COALESCE(SUM(ms.score), 0) ASC)  AS rank_asc
+FROM molbbang_room mr
+         JOIN molbbang_member mm ON mm.room_id = mr.room_id AND mm.is_active = TRUE
+         LEFT JOIN molbbang_round mrd ON mrd.room_id = mr.room_id
+         LEFT JOIN molbbang_score ms ON ms.round_id = mrd.round_id AND ms.member_id = mm.member_id
+GROUP BY mr.room_id, mm.member_id, mm.user_id, mm.nickname;
