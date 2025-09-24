@@ -77,6 +77,8 @@ function GifticonGridImpl({
       ]}
       showsVerticalScrollIndicator={false}
       ListEmptyComponent={ListEmptyComponent} // ★ 전달
+      contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustContentInsets={false}
     />
   );
 }
@@ -84,9 +86,16 @@ function GifticonGridImpl({
 export const GifticonGrid = memo(GifticonGridImpl);
 
 const s = StyleSheet.create({
-  container: { paddingBottom: 24, flexGrow: 1 }, // ★ flexGrow:1 줘야 가운데 배치 잘됨
+  container: { 
+    paddingBottom: 24,
+    paddingTop: 8, // 상단 패딩 추가
+  },
   row: { gap: GAP, paddingHorizontal: 16, marginBottom: GAP },
-  col: { flex: 1, minWidth: 0 },
+  col: { 
+    flex: 1, 
+    minWidth: 0,
+    maxWidth: "50%", // 최대 너비를 50%로 제한하여 항상 작은 크기 유지
+  },
 
   // 선택 배지
   checkDot: {

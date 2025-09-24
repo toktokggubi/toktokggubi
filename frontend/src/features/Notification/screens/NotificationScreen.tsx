@@ -15,7 +15,6 @@ import {
   fetchNotifications,
   markNotificationsAsRead,
 } from "../api/notificationApi";
-import { mockNotificationData } from "../data/mockData";
 import type { NotificationItem } from "../templates/NotificationTemplate/types";
 import NotificationList from "../ui/NotificationList";
 
@@ -66,8 +65,8 @@ export default function NotificationScreen() {
       }
     } catch (error) {
       console.error("알림 로드 실패:", error);
-      // 에러 시 목업 데이터 사용
-      setNotifications(mockNotificationData.items);
+      // 에러 시 빈 배열로 설정
+      setNotifications([]);
     } finally {
       if (isRefresh) {
         setRefreshing(false);

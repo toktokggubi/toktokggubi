@@ -5,6 +5,7 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import { Pressable, Alert, ActivityIndicator, View } from "react-native";
 import { useNavigation, router } from "expo-router";
@@ -19,7 +20,8 @@ import { useGifticonsQuery, useInvalidateGifticons } from "@/features/User/model
 import type { GifticonListParams } from "@/features/User/model/gifticon/schemas";
 import { useFranchisesQuery } from "@/features/User/model/franchise/queries";
 import { deleteGifticon } from "@/features/User/api/gifticonService";
-import { normalizeImageUrl } from "@/features/User/utils/imageUtils";
+import * as ImagePicker from "expo-image-picker";
+import { uploadGifticon } from "@/features/User/api/gifticonService";
 
 const BG = colors.BACKGROUND_PRIMARY;
 const TXT = colors.BLUE_DARKER;
@@ -177,8 +179,12 @@ export default function GifticonsScreen() {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
 
+  // 📱 이미지 업로드 상태
+  const [uploading, setUploading] = useState(false);
+
+
   const imagesForViewer = useMemo(() => 
-    data.map((item) => ({ uri: normalizeImageUrl(item.imageKey) })), 
+    data.map((item) => ({ uri: item.imageKey })), 
     [data]
   );
 
@@ -193,6 +199,52 @@ export default function GifticonsScreen() {
     },
     [selecting, toggleSelectOne]
   );
+
+
+  // 이미지 선택 및 업로드
+  const handleAddPress = useCallback(async () => {
+    try {
+      // 갤러리 권한 요청
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert("권한 필요", "갤러리에 접근하려면 권한이 필요합니다.");
+        return;
+      }
+
+      // 갤러리에서 이미지 선택
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.9,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const imageUri = result.assets[0].uri;
+        
+        // 이미지 업로드 및 OCR 처리
+        setUploading(true);
+        console.log("기프티콘 등록 시작 - OCR 처리 중...");
+        
+        await uploadGifticon(imageUri);
+        
+        // ✅ 등록 성공 후 캐시 무효화
+        invalidateGifticons();
+        
+        Alert.alert("등록 완료", "기프티콘이 등록되었습니다!");
+      }
+    } catch (error) {
+      console.error("기프티콘 등록 실패:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('timeout')) {
+        Alert.alert("등록 실패", "OCR 처리 시간이 오래 걸려서 타임아웃되었습니다. 다시 시도해주세요.");
+      } else {
+        Alert.alert("등록 실패", `등록 중 오류가 발생했습니다.\n에러: ${errorMessage}`);
+      }
+    } finally {
+      setUploading(false);
+    }
+  }, [invalidateGifticons]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -218,15 +270,18 @@ export default function GifticonsScreen() {
       ),
       headerRight: () => (
         <Pressable
-          onPress={() => {
-            router.push("/gifticons/register");
-          }}
+          onPress={handleAddPress}
           style={{ paddingHorizontal: 12, paddingVertical: 6 }}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="기프티콘 추가"
+          disabled={uploading}
         >
-          <Ionicons name="add" size={24} color={ACCENT} />
+          {uploading ? (
+            <ActivityIndicator size="small" color={ACCENT} />
+          ) : (
+            <Ionicons name="add" size={24} color={ACCENT} />
+          )}
         </Pressable>
       ),
     });
@@ -283,6 +338,7 @@ export default function GifticonsScreen() {
         index={viewerIndex}
         onRequestClose={() => setViewerOpen(false)}
       />
+
     </>
   );
 }
