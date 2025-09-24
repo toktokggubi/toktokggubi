@@ -1,22 +1,26 @@
 import { fetchNotifications } from "@/features/Notification/api/notificationApi";
 import { Category } from "@/shared/constants/categories";
 import { colors } from "@/shared/constants/colors";
-import { HomeData, CategoryBudget, Transaction } from "../templates/HomeTemplate/types";
-import { 
-  fetchBudgetTotal, 
-  fetchBudgetCategory, 
-  fetchMonthlySummary, 
-  fetchMonthlySummaryByCategory,
-  fetchMonthlyCategoryList
-} from "../api/fetchers";
-import { checkBudgetStatus } from "~features/Budget/api/fetchers";
-import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { checkBudgetStatus } from "~features/Budget/api/fetchers";
+import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
+import {
+  fetchBudgetCategory,
+  fetchBudgetTotal,
+  fetchMonthlyCategoryList,
+  fetchMonthlySummary,
+  fetchMonthlySummaryByCategory,
+} from "../api/fetchers";
 import { HomeTemplate } from "../templates/HomeTemplate";
+import {
+  CategoryBudget,
+  HomeData,
+  Transaction,
+} from "../templates/HomeTemplate/types";
 
 // 헬퍼 함수들
 const getCategoryNameById = (categoryId: number): Category => {
@@ -291,7 +295,7 @@ export const HomeScreen: React.FC = () => {
     try {
       // 이전 달 예산 설정 여부 확인
       const budgetStatus = await checkBudgetStatus();
-      
+
       if (budgetStatus.totalAmount > 0) {
         // 이전 달에 예산이 있으면 AI 추천으로 새로운 예산 설정
         router.push("/budget/ai-setup" as any);
@@ -301,7 +305,10 @@ export const HomeScreen: React.FC = () => {
       }
     } catch (error: any) {
       // 예산이 설정되지 않은 경우 (BUDGET_NOT_SET 에러)
-      if (error?.message === 'BUDGET_NOT_SET' || error?.message === 'BUDGET_NOT_FOUND') {
+      if (
+        error?.message === "BUDGET_NOT_SET" ||
+        error?.message === "BUDGET_NOT_FOUND"
+      ) {
         // 이전 달에 예산이 없음 → 초기 단계별 프로세스
         router.push("/budget");
       } else {
@@ -316,8 +323,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleNotificationPress = () => {
-    // TODO: 알림 화면 구현 후 경로 수정
-    console.log("알림 화면으로 이동");
+    router.push("/notification");
   };
 
   // 읽지 않은 알림 개수 계산
