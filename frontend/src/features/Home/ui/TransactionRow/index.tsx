@@ -1,9 +1,9 @@
-import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { TransactionRowProps } from "./types";
 import { CATEGORY_LABELS } from "@/shared/constants/categories";
 import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 import { colors } from "@/shared/constants/colors";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { TransactionRowProps } from "./types";
 
 export const TransactionRow: React.FC<TransactionRowProps> = ({
   merchantName,
@@ -15,12 +15,15 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
 }) => {
   const categoryLabel = CATEGORY_LABELS[category];
   const categoryIcon = CATEGORY_ICON_BY_NAME[categoryLabel];
-  
+
   // 날짜 포맷팅 (MM/DD 형식)
   const formatDate = (dateString?: string) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+    return `${(date.getMonth() + 1).toString().padStart(2, "0")}/${date
+      .getDate()
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   return (
@@ -67,7 +70,7 @@ const styles = StyleSheet.create({
   merchantName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333333",
+    color: colors.BLUE_DARKER,
     marginBottom: 4,
   },
   subInfoContainer: {
@@ -85,7 +88,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333333",
+    color: colors.BLUE_DARKER,
     marginBottom: 2,
   },
   paymentMethod: {

@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "374294761901",
-    "project_id": "toktokggubi-a65f2",
-    "storage_bucket": "toktokggubi-a65f2.firebasestorage.app"
+    "project_number": "962256398815",
+    "project_id": "toktokggubi",
+    "storage_bucket": "toktokggubi.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:374294761901:android:f2168008ac15b0d5295124",
+        "mobilesdk_app_id": "1:962256398815:android:55e52d0fb2a78ecf03fc6a",
         "android_client_info": {
           "package_name": "com.technologia.toktokggubi"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCCu3X8RWUQz-wv1NxKqB-sMPXPJs3E2Ok"
+          "current_key": "AIzaSyDWvWgH4OJr3xfhSg80WhcdU--cNOJZBfY"
         }
       ],
       "services": {

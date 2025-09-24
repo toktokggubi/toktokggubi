@@ -1,6 +1,7 @@
 import Tabs2Png from "@/assets/icon/Tabs2.png";
 import { colors } from "@/shared/constants/colors";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
   Dimensions,
@@ -122,6 +123,17 @@ export default function SvgTabBar({
               const isFocused = state.index === index;
 
               const onPress = () => {
+                // 중간 버튼(payment)인 경우 다른 동작
+                if (index === 2) {
+                  // router로 직접 결제 화면 열기 (탭 없이)
+                  router.push({
+                    pathname: "/pay/payment",
+                    params: { source: "tab" },
+                  });
+                  return;
+                }
+                
+                // 일반 탭 네비게이션
                 const event = navigation.emit({
                   type: "tabPress",
                   target: route.key,
