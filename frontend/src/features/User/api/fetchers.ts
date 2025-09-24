@@ -1,15 +1,21 @@
 import { http } from "@/shared/api/http";
-import { GIFTICON_ENDPOINTS } from "./endpoints";
+import { GIFTICON_ENDPOINTS, FRANCHISE_ENDPOINTS } from "./endpoints";
 import {
-  GifticonListSchema,
+  GifticonListResponseSchema,
   GifticonCreateByFileSchema,
   type GifticonServer,
+  type GifticonListParams,
 } from "@/features/User/model/gifticon/schemas";
+import {
+  FranchiseListResponseSchema,
+  type FranchiseServer,
+  type FranchiseListParams,
+} from "@/features/User/model/franchise/schemas";
 
 /** 1) 목록 조회 */
-export async function fetchGifticonList() {
-  const { data } = await http.get(GIFTICON_ENDPOINTS.list);
-  return GifticonListSchema.parse(data); // GifticonServer[]
+export async function fetchGifticonList(params?: GifticonListParams) {
+  const { data } = await http.get(GIFTICON_ENDPOINTS.list, { params });
+  return GifticonListResponseSchema.parse(data); // { items: GifticonServer[] }
 }
 
 /** 2) 파일로 등록 (POST /wallet/gifticons, multipart/form-data) */
@@ -36,4 +42,10 @@ export async function previewGifticon(payload: { imageUrl: string }) {
   // 프리뷰는 기존 GifticonPreviewSchema 재사용
   // 서버 스펙에 따라 필요 시 스키마 조정
   return data;
+}
+
+/** 프랜차이즈 목록 조회 */
+export async function fetchFranchiseList(params?: FranchiseListParams) {
+  const { data } = await http.get(FRANCHISE_ENDPOINTS.list, { params });
+  return FranchiseListResponseSchema.parse(data); // FranchiseServer[]
 }

@@ -1,6 +1,7 @@
 // frontend/src/features/User/templates/GifticonsTemplate/types.ts
 import type { Gifticon } from "@/features/User/model/gifticon/types";
 import type { GifticonSort } from "@/features/User/ui/GifticonSortTabs/types";
+import type { FranchiseServer } from "@/features/User/model/franchise/schemas";
 
 export interface GifticonsTemplateProps {
   /** 화면에 실제로 표시할(검색/정렬 적용된) 데이터 */
@@ -20,6 +21,14 @@ export interface GifticonsTemplateProps {
 
   /** 사용자가 검색을 '시도'했는지(Submit/엔터/검색버튼) */
   hasSearched: boolean;
+
+  // 필터링
+  franchiseId?: number;
+  onFranchiseChange?: (id: number | undefined) => void;
+  usable?: boolean;
+  onUsableChange?: (usable: boolean | undefined) => void;
+  onClearFilters?: () => void;
+  franchises?: FranchiseServer[];
 
   // 삭제/선택
   selecting: boolean;

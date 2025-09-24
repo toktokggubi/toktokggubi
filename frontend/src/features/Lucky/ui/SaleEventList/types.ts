@@ -4,7 +4,7 @@ export interface SaleEventListItem {
   title: string;
   period: string; // 예: "9/21 ~ 9/23"
   note?: string;
-  color: "yellow" | "blue";
+  color: "yellow" | "blue" | "green" | "purple" | "orange" | "pink";
 }
 
 export interface SaleEventListProps {

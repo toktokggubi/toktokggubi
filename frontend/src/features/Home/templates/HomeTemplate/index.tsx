@@ -1,21 +1,21 @@
+import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
+import NotificationIcon from "@/shared/components/NotificationIcon";
+import { colors } from "@/shared/constants/colors";
 import React from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
   Dimensions,
-  TouchableOpacity,
-  ActivityIndicator,
   Image,
   RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { HomeTemplateProps } from "./types";
-import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
 import { CircularProgress } from "../../ui/CircularProgress";
 import { ProgressList } from "../../ui/ProgressList";
-import { colors } from "@/shared/constants/colors";
+import { HomeTemplateProps } from "./types";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -29,6 +29,8 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
   onCategoryPress,
   onBudgetSetup,
   onBudgetEditPress,
+  onNotificationPress,
+  unreadNotificationCount = 0,
   month = "12월",
   listTitle,
   hasBudget = true,
@@ -89,6 +91,12 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* 알림 아이콘 */}
+      <NotificationIcon
+        onPress={onNotificationPress}
+        unreadCount={unreadNotificationCount}
+      />
+
       {/* 전체 화면을 차지하는 CharacterBackground */}
       <CharacterBackground
         message={characterMessage}

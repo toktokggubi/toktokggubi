@@ -1,6 +1,7 @@
 import type { Gifticon } from "./types";
 import type { GifticonServer } from "./schemas";
 import { calcDDay } from "./date";
+import { normalizeImageUrl } from "@/features/User/utils/imageUtils";
 
 function fallback<T>(v: T | null | undefined, alt: T): T {
   return v ?? alt;
@@ -8,9 +9,9 @@ function fallback<T>(v: T | null | undefined, alt: T): T {
 
 /** 서버 → 화면용 VM */
 export function toGifticonVM(s: GifticonServer): Gifticon {
-  const merchantName = fallback(s.brandName, s.franchiseName ?? "알수없음");
+  const merchantName = fallback(s.franchiseName, "알 수 없는 브랜드");
   const categoryName = "미분류"; // 서버에 카테고리 없으므로 임시 라벨
-  const remainingDays = calcDDay(s.expiresAt);
+  const remainingDays = s.daysUntilExpire;
 
   return {
     gifticonId: s.gifticonId,
@@ -20,8 +21,8 @@ export function toGifticonVM(s: GifticonServer): Gifticon {
     expiresAt: s.expiresAt,
     remainingDays,
     status: s.status,
-    // dummy에는 imageKey가 있었지만 서버는 imageUrl이므로 임시 키 생성
-    imageKey: "server", // Grid에서 resolveAssetSource 대신 imageUrl로 그릴 계획이면 UI 수정 필요
-    createdAt: s.createdAt ?? undefined,
+    // 서버에서 제공하는 imageUrl을 정규화하여 사용
+    imageKey: normalizeImageUrl(s.imageUrl),
+    createdAt: undefined, // 서버에서 createdAt을 제공하지 않음
   };
 }

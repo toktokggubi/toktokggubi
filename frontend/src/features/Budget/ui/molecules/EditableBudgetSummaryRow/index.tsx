@@ -9,12 +9,14 @@ export interface EditableBudgetSummaryRowProps {
   title: string;
   amount: number;
   onAmountChange: (amount: number) => void;
+  mode?: 'edit' | 'ai-setup';
 }
 
 export default function EditableBudgetSummaryRow({ 
   title, 
   amount, 
-  onAmountChange 
+  onAmountChange,
+  mode = 'edit'
 }: EditableBudgetSummaryRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState((amount || 0).toString());
@@ -52,8 +54,8 @@ export default function EditableBudgetSummaryRow({
   };
 
   return (
-    <View style={styles.editableRow}>
-      <Text style={styles.editableRowTitle}>{title}</Text>
+    <View style={[styles.editableRow, mode === 'ai-setup' && styles.aiModeRow]}>
+      <Text style={[styles.editableRowTitle, mode === 'ai-setup' && styles.aiModeTitle]}>{title}</Text>
       {isEditing ? (
         <View style={styles.editContainer}>
           <TextInput
@@ -71,7 +73,7 @@ export default function EditableBudgetSummaryRow({
         </View>
       ) : (
         <TouchableOpacity onPress={handlePress}>
-          <Text style={styles.editableAmount}>{(amount || 0).toLocaleString()}원</Text>
+          <Text style={[styles.editableAmount, mode === 'ai-setup' && styles.aiModeAmount]}>{(amount || 0).toLocaleString()}원</Text>
         </TouchableOpacity>
       )}
       <ValidationError error={error} />
@@ -118,5 +120,14 @@ const styles = StyleSheet.create({
   cancelEditText: {
     ...textStyles.body,
     color: colors.GRAY_DARK,
+  },
+  aiModeRow: {
+    backgroundColor: colors.BLUE_NORMAL,
+  },
+  aiModeTitle: {
+    color: "#ffffff",
+  },
+  aiModeAmount: {
+    color: "#ffffff",
   },
 });

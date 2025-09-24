@@ -75,6 +75,8 @@ out/
 .env
 .env.local
 .env.*.local
+.env.development
+.env.production
 
 # Do not ignore .env.example, it's meant to be a template
 !/.env.example
@@ -93,6 +95,7 @@ database/data-ai/
 data/
 database/mysql-data/
 database/postgres/
+database/mongodb
 
 # Ignore Jenkins CI/CD files
 jenkins/

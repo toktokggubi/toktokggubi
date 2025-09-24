@@ -10,8 +10,8 @@ import {
 import type { GifticonGridProps } from "./types";
 import type { Gifticon } from "@/features/User/model/gifticon/types";
 import { GifticonCard } from "@/features/User/ui/GifticonCard";
-import { gifticonImages } from "@/features/User/model/gifticon/images";
-import { calcDDay } from "@/features/User/model/gifticon/date";
+// import { gifticonImages } from "@/features/User/model/gifticon/images"; // 더미 이미지 사용 중단
+// import { calcDDay } from "@/features/User/model/gifticon/date"; // 더 이상 사용하지 않음
 import { colors } from "@/shared/constants/colors";
 
 const GAP = 12;
@@ -28,7 +28,8 @@ function GifticonGridImpl({
   ListEmptyComponent, // ★ 추가
 }: GifticonGridProps) {
   const renderItem = ({ item, index }: ListRenderItemInfo<Gifticon>) => {
-    const src = gifticonImages[item.imageKey];
+    // 서버에서 받은 imageUrl 사용 (item.imageKey는 서버의 imageUrl)
+    const imageUrl = item.imageKey;
 
     // key/id 결정
     const id = getId ? getId(item) : String(item.gifticonId ?? index);
@@ -43,10 +44,10 @@ function GifticonGridImpl({
       <View style={s.col}>
         <View style={{ position: "relative" }}>
           <GifticonCard
-            imageSource={src}
+            imageUrl={imageUrl}
             title={item.label}
             brand={item.merchantName}
-            dDay={calcDDay(item.expiresAt)}
+            expiresAt={item.expiresAt}
             onPress={handlePress}
           />
 
@@ -55,6 +56,7 @@ function GifticonGridImpl({
               {checked && <Text style={s.checkMark}>✓</Text>}
             </View>
           )}
+
         </View>
       </View>
     );
@@ -75,6 +77,8 @@ function GifticonGridImpl({
       ]}
       showsVerticalScrollIndicator={false}
       ListEmptyComponent={ListEmptyComponent} // ★ 전달
+      contentInsetAdjustmentBehavior="never"
+      automaticallyAdjustContentInsets={false}
     />
   );
 }
@@ -82,9 +86,16 @@ function GifticonGridImpl({
 export const GifticonGrid = memo(GifticonGridImpl);
 
 const s = StyleSheet.create({
-  container: { paddingBottom: 24, flexGrow: 1 }, // ★ flexGrow:1 줘야 가운데 배치 잘됨
+  container: { 
+    paddingBottom: 24,
+    paddingTop: 8, // 상단 패딩 추가
+  },
   row: { gap: GAP, paddingHorizontal: 16, marginBottom: GAP },
-  col: { flex: 1, minWidth: 0 },
+  col: { 
+    flex: 1, 
+    minWidth: 0,
+    maxWidth: "50%", // 최대 너비를 50%로 제한하여 항상 작은 크기 유지
+  },
 
   // 선택 배지
   checkDot: {

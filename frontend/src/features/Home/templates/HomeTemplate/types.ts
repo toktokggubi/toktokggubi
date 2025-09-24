@@ -53,6 +53,8 @@ export interface HomeTemplateProps {
   onCategoryPress?: (category: Category) => void;
   onBudgetSetup?: () => void;
   onBudgetEditPress?: () => void;
+  onNotificationPress?: () => void;
+  unreadNotificationCount?: number;
 
   // UI 설정
   month?: string;

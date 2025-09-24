@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -58,6 +59,7 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
                         @Param("budgetYm") String budgetYm, // "202509"
                         @Param("status") com.ssafy.toktokggubi.domain.transaction.entity.CardStatus status);
 
+
     // 합계 (CATEGORY)
     @Query("""
   select coalesce(sum(ct.paymentBalance), 0)
@@ -72,20 +74,28 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
                                    @Param("categoryId") Long categoryId,
                                    @Param("status") com.ssafy.toktokggubi.domain.transaction.entity.CardStatus status);
 
-    @Query(value = """
-    SELECT COUNT(*)
-      FROM card_transaction
-     WHERE user_id = :userId
-       AND merchant_id = :merchantId
-       AND card_status = :status
-       AND DATE_FORMAT(transaction_ymd, '%Y%m') = :ym
-""", nativeQuery = true)
-    long countByUserMonthAndMerchant(
-            @Param("userId") Long userId,
-            @Param("ym") String yearMonth,           // 예: "202509"
-            @Param("merchantId") Long merchantId,
-            @Param("status") String status           // Enum이면 status.name()으로 넘겨도 됨
-    );
+
+    // 승인 건만 카테고리ID별 합계
+    @Query("""
+        select ct.merchant.category.categoryId, sum(ct.paymentBalance)
+        from CardTransaction ct
+        where ct.user.userId = :userId
+          and ct.cardStatus = com.ssafy.toktokggubi.domain.transaction.entity.CardStatus.APPROVED
+          and ct.transactionYmd between :fromYmd and :toYmd
+        group by ct.merchant.category.categoryId
+    """)
+    List<Object[]> sumApprovedByCategoryId(Long userId, String fromYmd, String toYmd);
+
+    // 승인 건 전체 합계
+    @Query("""
+        select coalesce(sum(ct.paymentBalance), 0)
+        from CardTransaction ct
+        where ct.user.userId = :userId
+          and ct.cardStatus = com.ssafy.toktokggubi.domain.transaction.entity.CardStatus.APPROVED
+          and ct.transactionYmd between :fromYmd and :toYmd
+    """)
+    Long sumApprovedTotal(Long userId, String fromYmd, String toYmd);
+
 
 
 }

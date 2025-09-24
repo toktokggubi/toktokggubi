@@ -31,3 +31,14 @@ export interface MonthResult {
   events: SaleEvent[];
   merchants: Merchant[];
 }
+
+export interface PeriodParams {
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  franchiseId?: number;
+}
+
+export interface PeriodResult {
+  events: SaleEvent[];
+  merchants: Merchant[];
+}

@@ -21,13 +21,19 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For remote debugging
     depends_on:
       - mysql
-      - postgres
+      - mongodb
       - rabbitmq
       - redis
+    env_file:
+      - .env.development
+    volumes:
+      - ./backend/logs:/app/logs
 
-  ai:
-    ports:
-      - "5000:5000" # Expose AI service port
+
+
+  # ai:
+  #   ports:
+  #     - "5000:5000" # Expose AI service port
 
   nginx:
     ports:
@@ -38,7 +44,7 @@ services:
     depends_on:
       # - frontend # Nginx depends on frontend and backend for proxying
       - backend
-      - ai
+      # - ai
 
   # Jenkins CI/CD Server (only in development/CI environment)
   jenkins:
