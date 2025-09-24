@@ -2,9 +2,9 @@ package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.repository.BudgetCategoryRepository;
-import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
-import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
+import com.ssafy.toktokggubi.domain.push.dto.PushType;
+import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResponse;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
@@ -13,9 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
@@ -25,112 +27,131 @@ public class CategoryBudgetService {
 
     private final CardTransactionRepository txRepo;
     private final BudgetCategoryRepository budgetCategoryRepo;
-    private final UserMonthlyBudgetRepository umbRepo;
     private final NotificationRepository notificationRepo;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM");
-    private static final String TYPE_THRESHOLD = "BUDGET_THRESHOLD/CATEGORY/80";
-    private static final String TYPE_EXCEED = "BUDGET_EXCEED/CATEGORY/100";
+    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
 
-    // =========================================
-    // 80% 임계 알림
-    // =========================================
+    // 풀키(중복방지/로그용)
+    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_CATEGORY_80.code(); // "BUDGET_THRESHOLD/CATEGORY/80"
+    private static final String EXCEEDED = PushType.BUDGET_EXCEEDED_CATEGORY.code();     // "BUDGET_EXCEEDED/CATEGORY"
+    private static final String SCOPE         = "CATEGORY";
+
     @Transactional
-    public ThresholdCheckResult checkAndMaybeNotifyForCurrentMonth(String transactionUniqueNo) {
-        return handleThreshold(transactionUniqueNo, 0.8, TYPE_THRESHOLD,
-                "카테고리 예산 80% 임계",
-                "이달 예산 %,d원 중 %,d원 사용 (%.1f%%) · %,d원 남음");
+    public ThresholdCheckResponse checkThreshold(String transactionUniqueNo) throws Exception {
+        return handleThreshold(
+                transactionUniqueNo,
+                0.8,
+                THRESHOLD,
+                "%s 예산 80%% 임계",
+                "이달 예산 %,d원 중 %,d원 사용 (%.1f%%) · %,d원 남음"
+        );
     }
 
-    // =========================================
-    // 100% 초과 알림
-    // =========================================
     @Transactional
-    public ThresholdCheckResult checkAndNotifyIfExceeded(String transactionUniqueNo) {
-        return handleThreshold(transactionUniqueNo, 1.0, TYPE_EXCEED,
-                "카테고리 예산 초과",
-                "이달 예산 %,d원을 초과했습니다. 총 사용액: %,d원 (%.1f%%)");
+    public ThresholdCheckResponse checkExceed(String transactionUniqueNo) throws Exception {
+        return handleThreshold(
+                transactionUniqueNo,
+                1.0,
+                EXCEEDED,
+                "%s 예산 초과",
+                "이달 예산 %,d원을 초과했습니다. 총 사용액: %,d원 (%.1f%%)"
+        );
     }
 
-
-
-    // =========================================
-    // 내부 공통 로직
-    // =========================================
-    private ThresholdCheckResult handleThreshold(
+    private ThresholdCheckResponse handleThreshold(
             String transactionUniqueNo,
             double thresholdRate,
-            String typeKey,
-            String title,
+            String typeKeyFull,     // 풀키(중복방지/로그용)
+            String titleTemplate,
             String bodyFormat
-    ) {
-        // 1) 거래 조회
+    ) throws Exception {
+
         CardTransaction tx = txRepo.findByTransactionUniqueNo(transactionUniqueNo).orElse(null);
         if (tx == null) {
-            log.warn("[{}] 거래를 찾을 수 없음: {}", typeKey, transactionUniqueNo);
-            return new ThresholdCheckResult(false, null, null, currentYm(), 0L, 0L, false);
+            log.warn("[{}] 거래를 찾을 수 없음: {}", typeKeyFull, transactionUniqueNo);
+            return new ThresholdCheckResponse(false, null, null, SCOPE, currentYm(), 0L, 0L, false);
         }
 
         Long userId = tx.getUser().getUserId();
-        long categoryId = tx.getMerchant().getCategory().getCategoryId();
+        var category = tx.getMerchant().getCategory();
+        Long categoryId = category.getCategoryId();
 
-        // 2) 현재 달 계산
+        String categoryName;
+        try { categoryName = category.getName(); }
+        catch (Exception ignore) { categoryName = null; }
+        if (categoryName == null || categoryName.isBlank()) categoryName = "카테고리#" + categoryId;
+
         YearMonth ym = YearMonth.now(KST);
         String budgetYm = ym.format(YM);
-        String ymStart = budgetYm + "01";
 
+        long used = txRepo.sumByUserMonthAndCategory(userId, budgetYm, categoryId, CardStatus.APPROVED);
 
-        // 3) 누적 사용액
-        long used = txRepo.sumByUserMonthAndCategory(
-                userId, ymStart,  categoryId, CardStatus.APPROVED
-        );
-
-        // 4) 예산 조회
         Long finalAmount = budgetCategoryRepo.findFinalAmountByUserYmAndCategory(userId, budgetYm, categoryId);
+
         if (finalAmount == null || finalAmount <= 0) {
-            log.info("[{}] 예산 미설정: user={}, ym={}, category={}", typeKey, userId, budgetYm, categoryId);
-            return new ThresholdCheckResult(false, userId, String.valueOf(categoryId), budgetYm, used, finalAmount, false);
+            log.info("[{}] 예산 미설정: user={}, ym={}, category={}", typeKeyFull, userId, budgetYm, categoryId);
+            return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
         }
 
-        // 5) 비율 계산
         double rate = used * 1.0 / finalAmount;
         if (rate < thresholdRate) {
-            return new ThresholdCheckResult(false, userId, String.valueOf(categoryId), budgetYm, used, finalAmount, false);
+            return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
+        }
+        String typeKey = typeKeyFull;
+        // 월 범위 계산
+        LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
+        LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
+
+        // ── EXCEEDED 우선 정책: THRESHOLD 호출인데 이미 100% 이상이면 스킵
+        if (THRESHOLD.equals(typeKeyFull) && rate >= 1.0) {
+            return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
         }
 
-        // 6) 중복 발송 방지
-        boolean already = notificationRepo.existsComposite(userId, typeKey, budgetYm, String.valueOf(categoryId));
-        if (already) {
-            return new ThresholdCheckResult(true, userId, String.valueOf(categoryId), budgetYm, used, finalAmount, false);
+        // ── THRESHOLD 호출인데 같은 달에 EXCEEDED/CATEGORY가 이미 있으면 스킵
+        if (THRESHOLD.equals(typeKeyFull)) {
+            long exceededDup = notificationRepo.countByUserTypeAndPeriod(userId, EXCEEDED, monthFrom, monthTo);
+            if (exceededDup > 0) {
+                return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
+            }
         }
 
-        // 7) 알림 전송
+
+        long dup = notificationRepo.countByUserTypeAndPeriod(userId, typeKey, monthFrom, monthTo);
+        if (dup > 0) {
+            return new ThresholdCheckResponse(true, userId, categoryId, SCOPE, budgetYm, used, finalAmount, false);
+        }
+
         double percent = Math.min(rate * 100.0, 999.9);
         long remaining = Math.max(finalAmount - used, 0);
-        String body = String.format(bodyFormat, finalAmount, used, percent, remaining);
-        String link = "toktokggubi://budget/overview?ym=" + budgetYm;
 
-        fcmService.sendToUser(userId, title, body, link);
+        String body  = String.format(Locale.KOREA, bodyFormat, finalAmount, used, percent, remaining);
+        String title = String.format(Locale.KOREA, titleTemplate, categoryName);
 
-        // 8) 로그 저장
+        // 전송
+        fcmService.sendToUser(userId, title, body);
+
+        // 로그(INSERT는 scope 불필요 — type만 풀키로 저장)
         String payloadJson = toJsonSafe(Map.of(
                 "budgetYm", budgetYm,
-                "categoryId", String.valueOf(categoryId),
-                "used", used,
+                "scope", "CATEGORY",
+                "categoryId", categoryId,
+                "categoryName", categoryName,
+                "usedAmount", used,
                 "finalAmount", finalAmount,
-                "percent", percent,
-                "link", link
+                "percent", percent
         ));
+        notificationRepo.insertLog(userId, typeKey, title, body, payloadJson);
 
-        notificationRepo.insertLog(userId, typeKey, title, body, payloadJson, budgetYm, String.valueOf(categoryId));
-
-        return new ThresholdCheckResult(true, userId, String.valueOf(categoryId), budgetYm, used, finalAmount, true);
+        return new ThresholdCheckResponse(true, userId, categoryId, SCOPE, budgetYm, used, finalAmount, true);
     }
 
-    // ---- helpers ----
     private String currentYm() { return YearMonth.now(KST).format(YM); }
-    private String toJsonSafe(Object o) { try { return objectMapper.writeValueAsString(o); } catch (Exception e) { return null; } }
+
+    private String toJsonSafe(Object o) {
+        try { return objectMapper.writeValueAsString(o); }
+        catch (Exception e) { return null; }
+    }
 }

@@ -1,7 +1,6 @@
 package com.ssafy.toktokggubi.domain.push.controller;
 
 import com.ssafy.toktokggubi.domain.push.dto.PushTokenRegisterRequest;
-import com.ssafy.toktokggubi.domain.push.service.FcmService;
 import com.ssafy.toktokggubi.domain.push.service.PushTokenService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;

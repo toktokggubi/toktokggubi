@@ -1,0 +1,26 @@
+package com.ssafy.toktokggubi.domain.report.dto.request;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * 상위 지출 가맹점 정보를 담는 DTO.
+ * AI 월간 리포트의 지출 상세 섹션에 포함됩니다.
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TopSpendingMerchant {
+    private Integer rank;
+    private String merchant;
+    /**
+     * 거래 횟수.
+     * JSON 필드명 `transactions_count`에 매핑됩니다.
+     */
+    @JsonProperty("transactions_count")
+    private Integer transactionsCount;
+}

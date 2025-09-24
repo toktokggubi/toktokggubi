@@ -7,6 +7,7 @@ import com.ssafy.toktokggubi.domain.user.entity.User;
 import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
@@ -14,11 +15,18 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class PushTokenService {
 
     private final DevicePushTokenRepository repo;
     private final UserRepository userRepo;
 
+    @Transactional(readOnly = true)
+    public List<String> findActiveTokensByUser(Long userId) {
+        if (userId == null) return List.of();
+        List<String> tokens = repo.findActiveTokenStringsByUserId(userId);
+        return tokens == null ? List.of() : tokens;
+    }
     /** 토큰 등록 (존재하면 활성화/소유자 갱신, 없으면 새로 저장) */
     public void saveToken(Long userId, String token) {
         Objects.requireNonNull(userId, "userId is null");
