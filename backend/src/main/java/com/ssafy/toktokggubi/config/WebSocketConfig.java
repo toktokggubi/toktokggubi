@@ -30,7 +30,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setHeartbeatValue(new long[]{10000, 10000})
                 .setTaskScheduler(brokerScheduler);
         registry.setApplicationDestinationPrefixes("/app");
-        registry.setPathMatcher(new AntPathMatcher("."));
     }
 
     @Override
