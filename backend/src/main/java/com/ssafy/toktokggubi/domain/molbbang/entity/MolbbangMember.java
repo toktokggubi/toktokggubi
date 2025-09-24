@@ -44,13 +44,13 @@ public class MolbbangMember {
     private String nickname;
 
     @Column(name = "is_host", nullable = false)
-    private boolean isHost;
+    private boolean host;
 
     @Column(name = "is_ready", nullable = false)
-    private boolean isReady;
+    private boolean ready;
 
     @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    private boolean active;
 
     @CreationTimestamp
     @Column(name = "joined_at", nullable = false)
