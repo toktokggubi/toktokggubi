@@ -39,8 +39,8 @@ export const s = StyleSheet.create({
   },
   titleBox: {
     marginTop: 40,
-    width: 225,
-    height: 53,
+    width: 230,
+    height: 57,
     backgroundColor: colors.YELLOW_NORMAL,
     alignItems: "center",
     justifyContent: "center",

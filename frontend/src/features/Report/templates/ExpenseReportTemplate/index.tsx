@@ -1,6 +1,7 @@
 // frontend/src/features/Report/templates/ExpenseReportTemplate/index.tsx
 import NotificationIcon from "@/shared/components/NotificationIcon";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import React from "react";
 import {
   ScrollView,
@@ -19,7 +20,6 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   year,
   month,
   totalAmount,
-  summaryText,
   chartData,
   categoryData,
   onCategoryPress,
@@ -83,7 +83,10 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {summaryText}
+              <Text style={styles.statsText}>
+                예산의 <Text style={styles.boldText}>89%</Text>, 월소득의{" "}
+                <Text style={styles.boldText}>23%</Text>를 사용했어요
+              </Text>
             </Text>
           </View>
         </View>
@@ -164,7 +167,8 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
               <Text style={styles.boldText}>
                 {dailyPaymentData.reduce((sum, item) => sum + item.count, 0)}개
               </Text>
-              의 결제 내역이 있고, 하루 중 가장 많은 결제 건수는{" "}
+              의 결제 내역이 있고,{"\n"}
+              하루 중 가장 많은 결제 건수는{" "}
               <Text style={styles.boldText}>
                 {Math.max(...dailyPaymentData.map((item) => item.count))}개
               </Text>
@@ -222,9 +226,9 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
 
           {/* VIP 매장 요약 */}
           <View style={styles.vipSummary}>
-            <Text style={styles.vipSummaryText}>
-              <Text style={styles.vipStoreName}>{vipStores[0]?.name}</Text>에서
-              가장 많은 지출을 했어요
+            <Text style={styles.statsText}>
+              <Text style={styles.boldText}>{vipStores[0]?.name}</Text>에서 가장
+              많은 지출을 했어요
             </Text>
           </View>
 
@@ -267,6 +271,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 20,
+    paddingBottom: 20,
   },
   titleContainer: {
     minWidth: 0,
@@ -274,17 +279,19 @@ const styles = StyleSheet.create({
     flexWrap: "nowrap",
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 8,
+    fontSize: 16,
+    ...font.medium,
+    color: colors.BLUE_DARK_HOVER,
+    lineHeight: 16,
+    marginBottom: 15,
     flexWrap: "nowrap",
   },
   totalAmount: {
     fontSize: 32,
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: 8,
+    ...font.bold,
+    color: colors.BLUE_DARKER,
+    lineHeight: 33.5,
+    marginBottom: 14,
   },
   summaryText: {
     fontSize: 14,
@@ -299,10 +306,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 24,
+    fontSize: 16,
+    ...font.medium,
+    color: colors.BLUE_DARK_HOVER,
+    lineHeight: 16,
+    marginBottom: 20,
   },
   chartContainer: {
     alignItems: "center",
@@ -327,8 +335,8 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: "#6B7280",
-    fontWeight: "500",
+    color: colors.GRAY_NORMAL,
+    ...font.regular,
   },
   listSection: {
     paddingHorizontal: 20,
@@ -361,8 +369,9 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#374151",
+    ...font.regular,
+    lineHeight: 16,
+    color: colors.BLUE_DARKER,
     flexShrink: 1,
     minWidth: 0,
   },
@@ -391,13 +400,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   statsText: {
-    fontSize: 16,
-    color: "#374151",
+    fontSize: 18,
+    color: colors.BLUE_DARKER,
     lineHeight: 24,
+    marginBottom: 10,
   },
   boldText: {
-    fontWeight: "700",
-    color: "#111827",
+    ...font.bold,
+    color: colors.BLUE_DARKER,
   },
   maxPaymentDaySection: {
     marginTop: 24,
@@ -405,21 +415,16 @@ const styles = StyleSheet.create({
   maxPaymentDayTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.BLUE_DARKER,
     marginBottom: 16,
   },
   paymentDetailsList: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowColor: "#1e69bf9e",
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 8,
   },
   paymentDetailItem: {
     flexDirection: "row",
@@ -434,7 +439,7 @@ const styles = StyleSheet.create({
   storeName: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#111827",
+    color: colors.BLUE_DARKER,
     marginBottom: 4,
   },
   paymentInfo: {
@@ -444,7 +449,7 @@ const styles = StyleSheet.create({
   paymentAmount: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
+    color: colors.BLUE_DARKER,
   },
   moreDetailsButton: {
     alignItems: "center",
@@ -473,14 +478,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
     padding: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
+    shadowColor: "#1e69bf9e",
     shadowRadius: 4,
-    elevation: 3,
+    elevation: 8,
   },
   vipItem: {
     flexDirection: "row",
@@ -491,15 +491,16 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: colors.BLUE_LIGHT,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 16,
   },
   vipRankNumber: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
+    fontSize: 12,
+    ...font.medium,
+    lineHeight: 14,
+    color: colors.BLUE_DARKER,
   },
   vipStoreInfo: {
     flex: 1,

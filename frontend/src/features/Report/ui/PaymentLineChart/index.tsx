@@ -27,7 +27,7 @@ export const PaymentLineChart: React.FC<PaymentLineChartProps> = ({
 
   // 좌표 계산 함수
   const getX = (index: number) => padding + index * stepX;
-  const getY = (value: number) => chartHeight - padding - (value * stepY);
+  const getY = (value: number) => chartHeight - padding - value * stepY;
 
   // 라인 경로 생성
   const pathData = data
@@ -57,7 +57,7 @@ export const PaymentLineChart: React.FC<PaymentLineChartProps> = ({
 
           {/* X축 그리드 라인 (5일 간격으로만 표시) */}
           {data.map((item, index) => {
-            const day = parseInt(item.date.split('.')[1]);
+            const day = parseInt(item.date.split(".")[1]);
             // 5일 간격으로만 그리드 라인 표시
             if (day % 5 === 0 || day === 1 || day === 30) {
               return (
@@ -101,7 +101,7 @@ export const PaymentLineChart: React.FC<PaymentLineChartProps> = ({
 
           {/* X축 라벨 (5일 간격으로 표시) */}
           {data.map((item, index) => {
-            const day = parseInt(item.date.split('.')[1]);
+            const day = parseInt(item.date.split(".")[1]);
             // 5일 간격으로만 라벨 표시
             if (day % 5 === 0 || day === 1 || day === 30) {
               return (
@@ -138,9 +138,6 @@ const styles = StyleSheet.create({
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   noDataText: {
     fontSize: 16,
