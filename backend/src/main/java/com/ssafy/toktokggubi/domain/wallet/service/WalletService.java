@@ -1,5 +1,6 @@
 package com.ssafy.toktokggubi.domain.wallet.service;
 
+import com.ssafy.toktokggubi.domain.push.service.FcmService;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.BestCardsResponse;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.CardBenefitsResponse;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.CardsListResponse;
@@ -13,8 +14,10 @@ import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
 import com.ssafy.toktokggubi.domain.wallet.entity.UserCard;
+import com.ssafy.toktokggubi.domain.wallet.event.TxApprovedEvent;
 import com.ssafy.toktokggubi.domain.wallet.repository.UserCardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -36,6 +39,7 @@ public class WalletService {
     private final CardProductBenefitRepository cardProductBenefitRepository;
     private final MerchantRepository merchantRepository;
     private final CardTransactionRepository cardTransactionRepository;
+    private final ApplicationEventPublisher publisher;
 
     // ========== 조회 ==========
 
@@ -152,6 +156,8 @@ public class WalletService {
 
         cardTransactionRepository.save(txn);
 
+        publisher.publishEvent(new TxApprovedEvent(txn.getTransactionUniqueNo()));
+
         return new PaymentResponse(
                 txnId,
                 txn.getCardStatus().name(),
@@ -166,6 +172,7 @@ public class WalletService {
                 hms,
                 txn.getCreatedAt()
         );
+
     }
 
     // ========== 내부 유틸 ==========

@@ -1,27 +1,4 @@
 services:
-  # Database Service (PostgreSQL by default, change image for MySQL)
-  postgres:
-    image: postgres:15
-    ports:
-      - "5432:5432"
-    environment:
-      # These environment variables configure the PostgreSQL container
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    volumes:
-      # Persist database data to avoid losing it when containers restart
-      - ./database/postgres:/var/lib/postgresql/data
-      # Initialize database with a script if init.sql exists
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-      # - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
   mysql:
     image: mysql:8.0
     ports:
@@ -62,6 +39,19 @@ services:
       timeout: 5s
       retries: 10
 
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8082:8081
+    env_file:
+      - .env
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017
+      
   rabbitmq:
     image: 'rabbitmq:management'
     ports:
@@ -97,7 +87,6 @@ services:
   #     - POSTGRES_USER=${POSTGRES_USER}
   #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
   #     - POSTGRES_DB=${POSTGRES_DB}
-
   # Backend Service (Spring Boot with Gradle)
   backend:
     build:
@@ -114,8 +103,8 @@ services:
       retries: 5
       start_period: 20s
     depends_on:
-      postgres:
-        condition: service_healthy
+      # postgres:
+      #   condition: service_healthy
       mysql:
         condition: service_healthy
       rabbitmq:
@@ -130,10 +119,14 @@ services:
       - SPRING_DATASOURCE_USERNAME=${MYSQL_USER}
       - SPRING_DATASOURCE_PASSWORD=${MYSQL_PASSWORD}
       - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/gcp-sa.json
+      - FCM_ENABLED=true
+      - FCM_CREDENTIALS_LOCATION=file:/run/secrets/fcm-sa.json
       # Other common environment variables for backend
     secrets:
       - source: gcp_sa_json
         target: gcp-sa.json
+      - source: fcm_sa_json
+        target: fcm-sa.json      
     volumes:
       - ./backend/uploads:/data/uploads
 
@@ -142,6 +135,15 @@ services:
     #   build:
     #     context: ./frontend # Build from the Dockerfile in the ./frontend directory
     #   restart: always
+
+    volumes:
+      - ./backend/uploads:/data/uploads
+
+  # Frontend Service (React)
+  # frontend:
+  #   build:
+  #     context: ./frontend # Build from the Dockerfile in the ./frontend directory
+  #   restart: always
     # Frontend will be configured with specific build targets/ports in override files
 
   # Nginx Reverse Proxy
@@ -157,7 +159,7 @@ services:
     depends_on:
       # - frontend
       - backend
-      # - ai # Nginx might proxy to AI service directly too
+        #- ai # Nginx might proxy to AI service directly too
 
   # Jenkins CI/CD Server (only in development/CI environment)
   jenkins:
@@ -182,3 +184,6 @@ services:
 secrets:
   gcp_sa_json:
     file: ./secrets/toktokggubi-sa.json
+  fcm_sa_json:               
+    file: ./secrets/firebase-service-account.json    
+
