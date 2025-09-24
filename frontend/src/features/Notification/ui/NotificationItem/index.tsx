@@ -16,8 +16,10 @@ interface NotificationItemProps {
 
 const getNotificationIcon = (type: NotificationType) => {
   switch (type) {
-    case "THRESHOLD":
-    case "EXCEED":
+    case "THRESHOLD/CATEGORY":
+    case "THRESHOLD/TOTAL":
+    case "EXCEEDED/CATEGORY":
+    case "EXCEEDED/TOTAL":
       return { name: "wallet-outline" as const, color: colors.BLUE_NORMAL };
     case "LOCATION":
       return { name: "location-outline" as const, color: colors.BLUE_NORMAL };
