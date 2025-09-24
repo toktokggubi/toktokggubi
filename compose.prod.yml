@@ -39,4 +39,3 @@ services:
       # - frontend # Nginx proxies to the production frontend and backend
       - backend
       # - ai
-

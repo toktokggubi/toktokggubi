@@ -83,8 +83,6 @@ dependencies {
     // OpenAI 공식 SDK (Spring AI 미사용 시 직접 호출용)
     // ─────────────────────────────────────────────────────────────
     implementation 'com.openai:openai-java:3.0.3'
-    implementation "com.openai:openai-java:latest.release"
-
 
     // ─────────────────────────────────────────────────────────────
     // QR/바코드 (ZXing)
@@ -128,7 +126,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'                // JUnit/AssertJ/MockMvc 등
     testImplementation 'org.springframework.amqp:spring-rabbit-test'                      // AMQP 테스트 유틸
     testImplementation 'org.springframework.security:spring-security-test'                // Security 테스트 지원
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'                          // JUnit Platform 런처
 }
 
 dependencyManagement {

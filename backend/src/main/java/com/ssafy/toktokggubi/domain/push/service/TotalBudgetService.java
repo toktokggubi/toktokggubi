@@ -1,4 +1,3 @@
-// src/main/java/com/ssafy/toktokggubi/domain/push/service/TotalBudgetService.java
 package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,9 +32,9 @@ public class TotalBudgetService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
 
-    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code();
-    private static final String EXCEED    = PushType.BUDGET_EXCEEDED_TOTAL.code();
-    private static final String SCOPE     = "TOTAL";
+    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code(); // "BUDGET_THRESHOLD/TOTAL/80"
+    private static final String EXCEED    = PushType.BUDGET_EXCEEDED_TOTAL.code();     // "BUDGET_EXCEEDED/TOTAL"
+    private static final String SCOPE         = "TOTAL";
 
     @Transactional
     public ThresholdCheckResponse checkThreshold(String txNo) throws Exception {
@@ -60,41 +59,54 @@ public class TotalBudgetService {
     private ThresholdCheckResponse handleTotal(
             String txNo,
             double thresholdRate,
-            String typeKey,
+            String typeKeyFull,     // 풀키(중복방지/로그용)
             String title,
             String bodyFormat,
             boolean includeRemaining
     ) throws Exception {
         CardTransaction tx = txRepo.findByTransactionUniqueNo(txNo).orElse(null);
         if (tx == null) {
-            log.warn("[{}] 거래 없음: {}", typeKey, txNo);
+            log.warn("[{}] 거래 없음: {}", typeKeyFull, txNo);
             return new ThresholdCheckResponse(false, null, null, SCOPE, currentYm(), 0L, 0L, false);
         }
 
         Long userId = tx.getUser().getUserId();
         YearMonth ym = YearMonth.now(KST);
         String budgetYm = ym.format(YM);
-        String ymStart = budgetYm + "01";
 
-        long used = txRepo.sumByUserMonth(userId, ymStart, CardStatus.APPROVED);
+
+        long used = txRepo.sumByUserMonth(userId, budgetYm, CardStatus.APPROVED);
         Long totalBudget = umbRepo.findFinalTotalAmount(userId, budgetYm);
 
         if (totalBudget == null || totalBudget <= 0) {
-            // 전체 예산 미설정
             return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         double rate = used * 1.0 / totalBudget;
         if (rate < thresholdRate) {
-            // 임계 미도달
             return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
-        // ==== 중복 발송 방지: 이번 달 범위 + type ====
         LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
         LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
-        boolean already = notificationRepo.existsByUserTypeInMonth(userId, typeKey, monthFrom, monthTo);
-        if (already) {
+
+// ✅ [가드 #1] THRESHOLD인데 이미 100% 초과면 바로 스킵
+        if (THRESHOLD.equals(typeKeyFull) && rate >= 1.0) {
+            return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
+        }
+
+        if (THRESHOLD.equals(typeKeyFull)) {
+            long exceedDup = notificationRepo.countByUserTypeAndPeriod(
+                    userId, SCOPE, monthFrom, monthTo
+            );
+            if (exceedDup > 0) {
+                return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
+            }
+        }
+        String typeKey = typeKeyFull; // TOTAL은 추가 식별자 불필요
+
+        long dup = notificationRepo.countByUserTypeAndPeriod(userId, typeKey, monthFrom, monthTo);
+        if (dup > 0) {
             return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
@@ -105,13 +117,11 @@ public class TotalBudgetService {
                 ? String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent, remaining)
                 : String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent);
 
-        // 실제 전송
         fcmService.sendToUser(userId, title, body);
 
-        // 로그 저장 (payload에 컨텍스트만 남김)
         String payloadJson = toJsonSafe(Map.of(
                 "budgetYm", budgetYm,
-                "scope", SCOPE,
+                "scope", "TOTAL",
                 "usedAmount", used,
                 "finalAmount", totalBudget,
                 "percent", percent

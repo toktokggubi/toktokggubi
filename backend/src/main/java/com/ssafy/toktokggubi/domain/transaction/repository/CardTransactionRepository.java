@@ -46,7 +46,46 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
             @Param("budgetYm") String budgetYm,  // "YYYYMM"
             @Param("status") CardStatus status
     );
+    // 합계 (TOTAL)
+    @Query("""
+  select coalesce(sum(ct.paymentBalance), 0)
+  from CardTransaction ct
+  where ct.user.userId = :userId
+    and ct.cardStatus = :status
+    and function('date_format', ct.transactionYmd, '%Y%m') = :budgetYm
+""")
+    long sumByUserMonth(@Param("userId") Long userId,
+                        @Param("budgetYm") String budgetYm, // "202509"
+                        @Param("status") com.ssafy.toktokggubi.domain.transaction.entity.CardStatus status);
 
+    // 합계 (CATEGORY)
+    @Query("""
+  select coalesce(sum(ct.paymentBalance), 0)
+  from CardTransaction ct
+  where ct.user.userId = :userId
+    and ct.cardStatus = :status
+    and ct.merchant.category.categoryId = :categoryId
+    and function('date_format', ct.transactionYmd, '%Y%m') = :budgetYm
+""")
+    long sumByUserMonthAndCategory(@Param("userId") Long userId,
+                                   @Param("budgetYm") String budgetYm,
+                                   @Param("categoryId") Long categoryId,
+                                   @Param("status") com.ssafy.toktokggubi.domain.transaction.entity.CardStatus status);
+
+    @Query(value = """
+    SELECT COUNT(*)
+      FROM card_transaction
+     WHERE user_id = :userId
+       AND merchant_id = :merchantId
+       AND card_status = :status
+       AND DATE_FORMAT(transaction_ymd, '%Y%m') = :ym
+""", nativeQuery = true)
+    long countByUserMonthAndMerchant(
+            @Param("userId") Long userId,
+            @Param("ym") String yearMonth,           // 예: "202509"
+            @Param("merchantId") Long merchantId,
+            @Param("status") String status           // Enum이면 status.name()으로 넘겨도 됨
+    );
 
 
 }

@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -100,30 +103,50 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
             @Param("to") LocalDateTime toExclusive
     );
     @Query(value = """
-  SELECT CASE WHEN EXISTS (
-    SELECT 1 FROM notification_log
+        SELECT CASE WHEN EXISTS (
+            SELECT 1
+              FROM notification_log
+             WHERE user_id = :userId
+               AND type    = :type
+               AND sent_at >= :fromInclusive
+               AND sent_at <  :toExclusive
+        ) THEN TRUE ELSE FALSE END
+        """, nativeQuery = true)
+    boolean existsByUserTypeInMonth(
+            @Param("userId") long userId,
+            @Param("type") String type,
+            @Param("fromInclusive") java.time.LocalDateTime fromInclusive,
+            @Param("toExclusive")  java.time.LocalDateTime toExclusive
+    );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Query(value = """
+    INSERT INTO notification_log
+        (user_id, type, title, body, payload_json, sent_at)
+    VALUES
+        (:userId, :type, :title, :body, :payloadJson, NOW())
+    """, nativeQuery = true)
+    int insertLog(
+            @Param("userId") long userId,
+            @Param("type") String type,
+            @Param("title") String title,
+            @Param("body") String body,
+            @Param("payloadJson") String payloadJson
+    );
+    @Query(value = """
+    SELECT COUNT(*)
+      FROM notification_log
      WHERE user_id = :userId
        AND type    = :type
        AND sent_at >= :from
        AND sent_at <  :to
-  ) THEN TRUE ELSE FALSE END
-  """, nativeQuery = true)
-    boolean existsByUserTypeInMonth(@Param("userId") long userId,
-                                    @Param("type") String type,
-                                    @Param("from") LocalDateTime fromInclusive,
-                                    @Param("to") LocalDateTime toExclusive);
-
-    @Modifying
-    @Query(value = """
-  INSERT INTO notification_log
-    (user_id, type, title, body, payload_json, sent_at)
-  VALUES
-    (:userId, :type, :title, :body, :payloadJson, NOW())
-  """, nativeQuery = true)
-    int insertLog(@Param("userId") long userId,
-                  @Param("type") String type,
-                  @Param("title") String title,
-                  @Param("body") String body,
-                  @Param("payloadJson") String payloadJson);
-
+    """, nativeQuery = true)
+    long countByUserTypeAndPeriod(
+            @Param("userId") long userId,
+            @Param("type") String type,
+            @Param("from") java.time.LocalDateTime fromInclusive,
+            @Param("to")   java.time.LocalDateTime toExclusive
+    );
 }
+

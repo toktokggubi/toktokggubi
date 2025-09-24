@@ -26,7 +26,5 @@ public interface DevicePushTokenRepository extends JpaRepository<PushToken, Long
         where t.user.userId = :userId
           and t.isActive = true
     """)
-    static List<String> findActiveTokenStringsByUserId(@Param("userId") Long userId) {
-        return null;
-    }
+    List<String> findActiveTokenStringsByUserId(@Param("userId") Long userId);
 }

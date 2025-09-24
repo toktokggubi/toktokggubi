@@ -24,7 +24,8 @@ public class PushTokenService {
     @Transactional(readOnly = true)
     public List<String> findActiveTokensByUser(Long userId) {
         if (userId == null) return List.of();
-        return DevicePushTokenRepository.findActiveTokenStringsByUserId(userId);
+        List<String> tokens = repo.findActiveTokenStringsByUserId(userId);
+        return tokens == null ? List.of() : tokens;
     }
     /** 토큰 등록 (존재하면 활성화/소유자 갱신, 없으면 새로 저장) */
     public void saveToken(Long userId, String token) {
