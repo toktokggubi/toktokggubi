@@ -25,7 +25,7 @@ def run(data_path):
     df['결제일시'] = pd.to_datetime(df['날짜'] + ' ' + df['시간'])   # Combine into datetime object
 
     # 중복 제거
-    df.drop_duplicates(subset=['날짜', '시간', '금액', '결제수단'], inplace=True)
+    df.drop_duplicates(subset=['날짜', '시간', '금액'], inplace=True)
     logger.info(f"중복 제거 후 데이터 크기: {df.shape}")
 
     # --- '타입'이 '지출'인 데이터만 필터링 ---
@@ -196,7 +196,7 @@ def train_ae(df: pd.DataFrame):
     df['날짜'] = pd.to_datetime(df['날짜']).dt.strftime('%Y-%m-%d')
     df['시간'] = pd.to_datetime(df['시간']).dt.strftime('%H:%M')
     df['결제일시'] = pd.to_datetime(df['날짜'] + ' ' + df['시간'])
-    df.drop_duplicates(subset=['날짜', '시간', '금액', '결제수단'], inplace=True, keep='first')
+    df.drop_duplicates(subset=['날짜', '시간', '금액'], inplace=True, keep='first')
     df = df[df['타입'] == '지출'].copy()
     
     df['요일'] = df['결제일시'].dt.dayofweek

@@ -15,10 +15,13 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_user_id ON users (user_id);
 
 -- Insert initial user data based on available CSV files for testing
-INSERT INTO users (username, user_id) VALUES
-   ('kwonjaheun', 'kwonjaheun'),
-   ('yang', 'yang'),
-   ('lee', 'lee')
+INSERT INTO users (user_id, username) VALUES
+    ('3', '양준하'),
+    ('4', '안덕현'),
+    ('5', '허정현'),
+    ('6', '권자은'),
+    ('7', '이하연'),
+    ('8', '우지연')
 ON CONFLICT (user_id) DO NOTHING;
 -- Optional: Create a table for products (as an example of another entity)
 -- CREATE TABLE IF NOT EXISTS products (
