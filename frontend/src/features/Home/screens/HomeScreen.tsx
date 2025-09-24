@@ -2,6 +2,7 @@ import { fetchNotifications } from "@/features/Notification/api/notificationApi"
 import { Category } from "@/shared/constants/categories";
 import { colors } from "@/shared/constants/colors";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { font } from "@/shared/typography/font";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -422,6 +423,7 @@ const styles = StyleSheet.create({
   testButtonText: {
     color: "white",
     fontSize: 12,
-    fontWeight: "bold",
+    lineHeight: 14,
+    ...font.bold,
   },
 });

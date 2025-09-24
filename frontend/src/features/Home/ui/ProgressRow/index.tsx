@@ -1,6 +1,7 @@
 import { CATEGORY_LABELS } from "@/shared/constants/categories";
 import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ProgressRowProps } from "./types";
@@ -144,7 +145,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    lineHeight: 18,
+    ...font.medium,
     color: colors.BLUE_DARKER,
     marginRight: 8,
   },
@@ -156,12 +158,14 @@ const styles = StyleSheet.create({
   },
   percentage: {
     fontSize: 14,
-    fontWeight: "500",
+    lineHeight: 16,
+    ...font.medium,
     color: "#999999", // 라이트 그레이 텍스트
   },
   remainingAmount: {
     fontSize: 14,
-    fontWeight: "600",
+    lineHeight: 16,
+    ...font.medium,
     color: colors.BLUE_DARKER,
   },
   progressBarContainer: {
@@ -184,12 +188,14 @@ const styles = StyleSheet.create({
   },
   spentAmount: {
     fontSize: 14,
-    fontWeight: "600",
+    lineHeight: 16,
+    ...font.medium,
     color: colors.BLUE_DARKER,
   },
   budgetAmount: {
     fontSize: 14,
-    fontWeight: "500",
+    lineHeight: 16,
+    ...font.medium,
     color: "#999999", // 라이트 그레이 텍스트
   },
   editButton: {

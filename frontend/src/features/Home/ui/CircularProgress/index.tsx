@@ -1,4 +1,5 @@
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
@@ -87,23 +88,27 @@ const styles = StyleSheet.create({
     textShadowColor: "transparent",
   },
   percentageText: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 24,
+    lineHeight: 26,
+    ...font.bold,
     color: colors.BLUE_NORMAL,
     marginVertical: 1,
     backgroundColor: "transparent",
     textShadowColor: "transparent",
+    marginBottom: 5,
   },
   usedAmountText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    lineHeight: 14,
+    ...font.medium,
     color: colors.GRAY_DARKER,
     backgroundColor: "transparent",
     textShadowColor: "transparent",
   },
   totalAmountText: {
-    fontSize: 10,
-    fontWeight: "500",
+    fontSize: 12,
+    lineHeight: 14,
+    ...font.medium,
     color: colors.GRAY_NORMAL,
     backgroundColor: "transparent",
     textShadowColor: "transparent",

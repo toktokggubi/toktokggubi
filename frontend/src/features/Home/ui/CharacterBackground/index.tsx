@@ -1,4 +1,5 @@
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import { Image as ExpoImage } from "expo-image";
 import React from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
@@ -116,7 +117,8 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 12,
-    fontWeight: "600",
+    lineHeight: 14,
+    ...font.medium,
     color: colors.BLUE_NORMAL,
     textAlign: "center",
   },
