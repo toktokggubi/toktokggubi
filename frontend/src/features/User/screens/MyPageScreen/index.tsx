@@ -42,6 +42,10 @@ const MypageScreen = () => {
     router.push("/user/settings" as Href);
   };
 
+  const handleProfileEdit = () => {
+    router.push("/user/profile-edit" as Href);
+  };
+
   const handleBudgetSetup = () => {
     router.push("/budget" as Href);
   };
@@ -73,6 +77,7 @@ const MypageScreen = () => {
         onPressGifticon={() => router.push("/gifticons" as Href)}
         onPressLogout={handleLogout}
         onPressSettings={handleSettings}
+        onPressProfileEdit={handleProfileEdit}
         onPressBudgetSetup={handleBudgetSetup}
         onPressAIBudgetSetup={handleAIBudgetSetup}
         isLoggingOut={logoutMutation.isPending}
