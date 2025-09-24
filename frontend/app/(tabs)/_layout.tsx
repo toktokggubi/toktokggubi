@@ -56,7 +56,13 @@ export default function TabLayout() {
         params: { source: "shake" },
       });
     },
-    { enabled: isFocused }
+    { 
+      enabled: isFocused,
+      thresholdG: 0.8, // 임계값을 낮춰서 더 민감하게 (기본값: 1.4)
+      minShakes: 3, // 연속 흔들기 횟수를 줄여서 더 민감하게 (기본값: 5)
+      sampleMs: 30, // 샘플링 주기를 짧게 해서 더 반응 빠르게 (기본값: 50)
+      windowMs: 300, // 연속 판정 시간창을 짧게 (기본값: 450)
+    }
   );
 
   return (

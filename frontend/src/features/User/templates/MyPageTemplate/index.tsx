@@ -13,6 +13,7 @@ export default function MyPageTemplate({
   onPressGifticon,
   onPressLogout,
   onPressSettings,
+  onPressProfileEdit,
   onPressBudgetSetup,
   onPressAIBudgetSetup,
   onPressFCMTest,
@@ -32,7 +33,7 @@ export default function MyPageTemplate({
         <View style={s.userInfoSection}>
           <View style={s.userHeader}>
             <Text style={s.nickname}>{userInfo.nickname} 님</Text>
-            <TouchableOpacity onPress={onPressSettings}>
+            <TouchableOpacity onPress={onPressProfileEdit}>
               <Text style={s.settings}>계정설정</Text>
             </TouchableOpacity>
           </View>
