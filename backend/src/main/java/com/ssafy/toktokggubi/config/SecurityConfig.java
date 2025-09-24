@@ -30,6 +30,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -40,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment", "/images/**").permitAll()
                         .requestMatchers("/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
                                 "/auth/token/refresh", "/auth/kakao/login").permitAll()
-                        .requestMatchers("/push/**", "/dev/**").permitAll()
+                        .requestMatchers("/push/test/**", "/dev/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

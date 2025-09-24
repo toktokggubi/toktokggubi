@@ -47,6 +47,33 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
             @Param("budgetYm") String budgetYm,  // "YYYYMM"
             @Param("status") CardStatus status
     );
+    // 합계 (TOTAL)
+    @Query("""
+  select coalesce(sum(ct.paymentBalance), 0)
+  from CardTransaction ct
+  where ct.user.userId = :userId
+    and ct.cardStatus = :status
+    and function('date_format', ct.transactionYmd, '%Y%m') = :budgetYm
+""")
+    long sumByUserMonth(@Param("userId") Long userId,
+                        @Param("budgetYm") String budgetYm, // "202509"
+                        @Param("status") com.ssafy.toktokggubi.domain.transaction.entity.CardStatus status);
+
+
+    // 합계 (CATEGORY)
+    @Query("""
+  select coalesce(sum(ct.paymentBalance), 0)
+  from CardTransaction ct
+  where ct.user.userId = :userId
+    and ct.cardStatus = :status
+    and ct.merchant.category.categoryId = :categoryId
+    and function('date_format', ct.transactionYmd, '%Y%m') = :budgetYm
+""")
+    long sumByUserMonthAndCategory(@Param("userId") Long userId,
+                                   @Param("budgetYm") String budgetYm,
+                                   @Param("categoryId") Long categoryId,
+                                   @Param("status") com.ssafy.toktokggubi.domain.transaction.entity.CardStatus status);
+
 
     // 승인 건만 카테고리ID별 합계
     @Query("""
@@ -68,6 +95,7 @@ public interface CardTransactionRepository extends JpaRepository<CardTransaction
           and ct.transactionYmd between :fromYmd and :toYmd
     """)
     Long sumApprovedTotal(Long userId, String fromYmd, String toYmd);
+
 
 
 }

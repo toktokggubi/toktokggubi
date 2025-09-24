@@ -16,17 +16,13 @@ services:
       - SPRING_PROFILES_ACTIVE=prod # Activate 'prod' profile in Spring Boot
     depends_on:
       - mysql
-      - postgres
+      - mongodb
       - rabbitmq
       - redis
     env_file:
       - .env
     volumes:
       - ./backend/logs:/app/logs
-
-        # ai:
-        #    ports:
-        #      - "5000:5000" # Expose AI service port
 
   nginx:
     ports:

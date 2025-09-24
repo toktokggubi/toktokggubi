@@ -14,41 +14,59 @@ export const firebaseConfig = {
 // FCM 설정
 export const fcmConfig = {
   // 알림 채널 설정 (Android)
-  defaultChannelId: 'toktokggubi_default',
-  defaultChannelName: '똑똑꺼비 알림',
-  defaultChannelDescription: '똑똑꺼비 앱의 기본 알림 채널',
-  
+  defaultChannelId: "toktokggubi_default",
+  defaultChannelName: "똑똑꺼비 알림",
+  defaultChannelDescription: "똑똑꺼비 앱의 기본 알림 채널",
+
   // 알림 아이콘 (Android)
-  smallIcon: 'ic_notification',
-  
+  smallIcon: "ic_notification",
+
   // 알림 색상 (Android)
-  color: '#FF6B6B',
-  
+  color: "#FF6B6B",
+
   // 알림 사운드
-  sound: 'default',
-  
+  sound: "default",
+
   // 진동 설정
   vibrate: true,
 };
 
 // 알림 타입별 설정
 export const notificationTypes = {
-  BUDGET_THRESHOLD: {
-    title: '예산 임계점 도달',
-    body: '카테고리 예산의 80%를 초과했습니다.',
-    icon: 'ic_budget',
-    color: '#FF6B6B',
+  BUDGET_THRESHOLD_CATEGORY: {
+    title: "카테고리 예산 임계점 도달",
+    body: "카테고리 예산의 80%를 초과했습니다.",
+    icon: "ic_budget",
+    color: "#FF6B6B",
+  },
+  BUDGET_THRESHOLD_TOTAL: {
+    title: "총 예산 임계점 도달",
+    body: "총 예산의 80%를 초과했습니다.",
+    icon: "ic_budget",
+    color: "#FF6B6B",
+  },
+  BUDGET_EXCEEDED_CATEGORY: {
+    title: "카테고리 예산 초과",
+    body: "카테고리 예산을 초과했습니다.",
+    icon: "ic_budget",
+    color: "#FF4444",
+  },
+  BUDGET_EXCEEDED_TOTAL: {
+    title: "총 예산 초과",
+    body: "총 예산을 초과했습니다.",
+    icon: "ic_budget",
+    color: "#FF4444",
   },
   PAYMENT_SUCCESS: {
-    title: '결제 완료',
-    body: '결제가 성공적으로 완료되었습니다.',
-    icon: 'ic_payment',
-    color: '#4CAF50',
+    title: "결제 완료",
+    body: "결제가 성공적으로 완료되었습니다.",
+    icon: "ic_payment",
+    color: "#4CAF50",
   },
   GENERAL: {
-    title: '알림',
-    body: '새로운 알림이 있습니다.',
-    icon: 'ic_notification',
-    color: '#2196F3',
+    title: "알림",
+    body: "새로운 알림이 있습니다.",
+    icon: "ic_notification",
+    color: "#2196F3",
   },
 };

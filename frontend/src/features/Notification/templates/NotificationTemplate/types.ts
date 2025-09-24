@@ -7,7 +7,12 @@ export interface NotificationItem {
   readAt: string | null;
 }
 
-export type NotificationType = "THRESHOLD" | "EXCEED" | "LOCATION";
+export type NotificationType =
+  | "THRESHOLD/CATEGORY"
+  | "THRESHOLD/TOTAL"
+  | "EXCEEDED/CATEGORY"
+  | "EXCEEDED/TOTAL"
+  | "LOCATION";
 
 export interface NotificationListResponse {
   readFilter: "all" | "read" | "unread";
