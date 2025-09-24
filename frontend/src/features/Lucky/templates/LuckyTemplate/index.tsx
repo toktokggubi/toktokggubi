@@ -1,5 +1,4 @@
 // src/features/Lucky/templates/LuckyTemplate/index.tsx
-import { CategoryChips } from "@/features/Lucky/ui/CategoryChips";
 import { SaleCalendar } from "@/features/Lucky/ui/SaleCalendar";
 import { SaleEventList } from "@/features/Lucky/ui/SaleEventList";
 import { SeriesCards } from "@/features/Lucky/ui/SeriesCards";
@@ -56,7 +55,6 @@ export default function LuckyTemplate({
         >
           <Text style={s.header}>세일</Text>
 
-          <CategoryChips value={category} onChange={onChangeCategory} />
 
           <SaleCalendar
             year={year}

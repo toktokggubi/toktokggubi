@@ -6,7 +6,7 @@ import type { SaleEventListItem } from "@/features/Lucky/ui/SaleEventList/types"
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useRouter } from "expo-router"; // ✅ 변경: 훅 사용
 import React, { useCallback, useMemo, useState } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, View, Text } from "react-native";
 
 const now = new Date();
 
@@ -24,38 +24,58 @@ export default function LuckyScreen() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // 훅에 state 사용
-  const { data, isLoading } = useSalesByMonth(year, month, category);
+  const { data, isLoading, error } = useSalesByMonth(year, month, category);
+  
+  // 디버깅용 로그
+  console.log('LuckyScreen - API 상태:', { isLoading, error, data: data ? '데이터 있음' : '데이터 없음' });
 
-  const eventsForDay: SaleEventListItem[] = useMemo(() => {
+  const eventsForDay = useMemo((): SaleEventListItem[] => {
     if (!data || selectedDay == null) return [];
-    return data.events
-      .filter((e) => {
-        const s = Number(e.startDate.slice(8, 10));
-        const en = Number(e.endDate.slice(8, 10));
-        return selectedDay >= s && selectedDay <= en;
-      })
-      .map((e) => {
-        const s = new Date(e.startDate);
-        const en = new Date(e.endDate);
-        const merchant =
-          data.merchants.find((m) => m.id === e.merchantId)?.name ?? "가맹점";
-        const period =
-          s.getDate() === en.getDate()
-            ? `${s.getMonth() + 1}/${s.getDate()}`
-            : `${s.getMonth() + 1}/${s.getDate()} ~ ${
-                en.getMonth() + 1
-              }/${en.getDate()}`;
-        const color: "yellow" | "blue" =
-          e.startDate === e.endDate ? "blue" : "yellow";
-        return {
-          id: e.id,
-          merchant,
-          title: e.title,
-          period,
-          note: e.note,
-          color,
-        };
-      });
+    
+    // 달력과 동일한 색상 할당 로직 - 전체 이벤트 기준으로 색상 할당
+    const availableColors: ("yellow" | "blue" | "green" | "purple" | "orange" | "pink")[] = 
+      ["yellow", "blue", "green", "purple", "orange", "pink"];
+    const usedColors = new Set<string>();
+    
+    // 전체 이벤트에 대해 달력과 동일한 순서로 색상 할당
+    const colorMap = new Map<string, "yellow" | "blue" | "green" | "purple" | "orange" | "pink">();
+    data.events.forEach((e, index) => {
+      let colorIndex = index;
+      while (usedColors.has(availableColors[colorIndex % availableColors.length])) {
+        colorIndex++;
+      }
+      const selectedColor = availableColors[colorIndex % availableColors.length];
+      usedColors.add(selectedColor);
+      colorMap.set(e.id, selectedColor);
+    });
+    
+    const filteredEvents = data.events.filter((e) => {
+      const s = Number(e.startDate.slice(8, 10));
+      const en = Number(e.endDate.slice(8, 10));
+      return selectedDay >= s && selectedDay <= en;
+    });
+    
+    return filteredEvents.map((e) => {
+      const s = new Date(e.startDate);
+      const en = new Date(e.endDate);
+      const merchant =
+        data.merchants.find((m) => m.id === e.merchantId)?.name ?? "가맹점";
+      const period =
+        s.getDate() === en.getDate()
+          ? `${s.getMonth() + 1}/${s.getDate()}`
+          : `${s.getMonth() + 1}/${s.getDate()} ~ ${
+              en.getMonth() + 1
+            }/${en.getDate()}`;
+      
+      return {
+        id: e.id,
+        merchant,
+        title: e.title,
+        period,
+        note: e.note,
+        color: colorMap.get(e.id) || "blue", // 달력에서 할당된 색상 사용
+      };
+    });
   }, [data, selectedDay]);
 
   // ✅ 이동 핸들러 (useCallback으로 메모이즈)
@@ -72,10 +92,27 @@ export default function LuckyScreen() {
     return null; // useAuthGuard에서 자동으로 리다이렉트됨
   }
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
         <ActivityIndicator />
+        <Text style={{ marginTop: 10 }}>로딩 중...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: 'red' }}>에러 발생: {error.message}</Text>
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <Text>데이터가 없습니다.</Text>
       </View>
     );
   }
