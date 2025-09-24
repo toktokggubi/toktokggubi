@@ -1,6 +1,10 @@
 from flask import Flask, jsonify, render_template_string, request
 import pandas as pd
 import os
+from dotenv import load_dotenv
+
+load_dotenv() # Load environment variables from .env file
+
 import numpy as np
 import sys
 import model_functions.ae_functions as ae
@@ -336,8 +340,9 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
                 **inputs,
                 max_new_tokens=max_tokens,
                 do_sample=True,
-                temperature=0.2,
+                temperature=0.7, # Increased temperature for more diverse output
                 top_p=0.9,
+                repetition_penalty=1.2, # Added repetition penalty to prevent repeating words/phrases
                 eos_token_id=local_hf_tokenizer.eos_token_id,
                 pad_token_id=local_hf_tokenizer.pad_token_id
             )
@@ -681,26 +686,47 @@ def combined_anomaly_detection():
 
 def get_user_transactions(user_id: str, user_name: str, start_date: datetime, end_date: datetime):
     """
-    Placeholder function to fetch user transaction data.
-    In a real application, this would query a database.
-    For this example, it loads a user-specific CSV or a default one and filters by date.
+    Fetches user transaction data from the backend API, processes it into a DataFrame,
+    and filters it by the specified date range.
     """
     logger.info(f"Fetching data for user '{user_name}' from {start_date.date()} to {end_date.date()}")
-    
-    data_path = os.path.join('data', f'payment_{user_name}.csv')
-    if not os.path.exists(data_path):
-        # Fallback to a default file for demonstration
-        data_path = os.path.join('data', 'payment_lhy.csv')
-        logger.warning(f"No data file for user '{user_name}'. Using default data from {data_path}")
 
     try:
-        df = pd.read_csv(data_path)
-        df['날짜'] = pd.to_datetime(df['날짜'])
+        # Fetch data from the API
+        api_url = f"https://j13b207.p.ssafy.io/api/ai/transaction?userId={user_id}"
+        response = requests.get(api_url)
+        response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
+
+        api_data = response.json()
+        items = api_data.get('items', [])
+
+        if not items:
+            logger.info(f"No transactions found for user '{user_name}' (ID: {user_id}) from the API.")
+            return pd.DataFrame()
+
+        # Process the transaction data into the required format
+        processed_transactions = []
+        for item in items:
+            if item.get('cardStatus') == 'APPROVED':
+                dt = pd.to_datetime(item['dateTime'])
+                processed_transactions.append({
+                    '날짜': dt.date(),  # Store as date object for filtering
+                    '시간': dt.strftime('%H:%M:%S'),
+                    '타입': '지출',  # Assuming all are expenses
+                    '대분류': item['categoryName'],
+                    '내용': item['merchantName'],
+                    '금액': item['amount']
+                })
+        
+        df = pd.DataFrame(processed_transactions)
+        df['날짜'] = pd.to_datetime(df['날짜']) # Convert date objects to datetime for comparison
+
         # Filter data within the specified date range
         mask = (df['날짜'] >= start_date) & (df['날짜'] <= end_date)
         return df.loc[mask].copy()
-    except FileNotFoundError:
-        logger.error(f"Data file not found at {data_path}")
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Failed to fetch transaction data for user '{user_id}' from API: {e}")
         return pd.DataFrame()
 
 @app.route("/ai/analyze", methods=['POST'])
@@ -1101,7 +1127,7 @@ def transaction_anomaly():
 def send_monthly_report():
     """
     Generates and "sends" a monthly report for all registered users.
-    This function is scheduled to run on the first day of every month.
+    This function is scheduled to run regularly (e.g., monthly).
     """
     logger.info("Starting monthly report generation for all users...")
     users = get_all_users()
@@ -1110,239 +1136,73 @@ def send_monthly_report():
         logger.info("No users found to send monthly reports to.")
         return
 
+    # The analysis is for the previous full month.
+    last_month_date = datetime.now() - relativedelta(months=1)
+    year = str(last_month_date.year)
+    month = str(last_month_date.month)
+
     for user in users:
         user_id = user['user_id']
         username = user['username']
-        logger.info(f"Generating monthly report for user: {username} (ID: {user_id})")
+        logger.info(f"Generating monthly report for user: {username} (ID: {user_id}) for {year}-{month}")
 
-        # For monthly reports, we analyze the previous month's data.
-        # The analyze_user_data function already handles this logic.
-        # We need to simulate a request to the analyze_user_data endpoint.
-        # Since it's an internal call, we can directly call the function.
-        
-        # Dummy budget for now, as the report generation doesn't strictly require a real budget for its core logic.
-        # In a real scenario, you might fetch the user's last known budget from the DB.
-
-        # TODO : request budget of the user from backend
-        # TODO : request total expense
-        # TODO : request total expense from each category
-
-        dummy_budget = {
-            "total": 1000000, "food": 300000, "cafe": 50000, "nightlife": 50000,
-            "life": 100000, "cosmetics": 50000, "transportation": 100000,
-            "car": 50000, "medical": 50000, "entertainment": 50000,
-            "shopping": 100000, "etc": 50000
+        headers = {
+            'Content-Type': 'application/json' 
         }
 
         try:
-            # Simulate the request object for analyze_user_data
-            class MockRequest:
-                def get_json(self):
-                    return {
-                        'user_id': user_id,
-                        'username': username,
-                        'budget': dummy_budget
-                    }
-            
-            # Temporarily replace Flask's request.get_json with our mock
-            # This is a bit hacky but allows calling analyze_user_data directly
-            # without a full Flask request context.
-            # A more robust solution might involve refactoring analyze_user_data
-            # to accept parameters directly instead of relying on request.get_json().
-            original_request_get_json = request.get_json
-            request.get_json = MockRequest().get_json
-            
-            report_response = analyze_user_data()
-            
-            # Restore original request.get_json
-            request.get_json = original_request_get_json
-
-            if report_response.status_code == 200:
-                report_data = json.loads(report_response.data)
-                logger.info(f"Monthly report for {username} (ID: {user_id}):\n{json.dumps(report_data, indent=2, ensure_ascii=False)}")
-                # Here you would typically send this report via email, push notification, etc.
-            else:
-                logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_response.json}")
-
-            # get last month expense data of the user from backend
-            month = (datetime.now() - relativedelta(months=1)).strftime('%Y%m')
-            expense_response = requests.get("https://j13b207.p.ssafy.io/api/ai/transaction?userId=" + user_id + "&month=" + month)
-            expense_response.raise_for_status()
-            api_data = expense_response.json()
-
-            items = api_data.get('items', [])
-            processed_transactions = []
-            for item in items:
-                if item.get('cardStatus') == 'APPROVED':
-                    dt = pd.to_datetime(item['dateTime'])
-                    processed_transactions.append({
-                        '날짜': dt.strftime('%Y-%m-%d'),
-                        '시간': dt.strftime('%H:%M:%S'),
-                        '타입': '지출',
-                        '대분류': item['categoryName'],
-                        '내용': item['merchantName'],
-                        '금액': item['amount']
-                    })
-            
-            last_month_df = pd.DataFrame(processed_transactions)
-            logger.info(f"Created DataFrame with {len(last_month_df)} transactions for user {user_id} for month {month}.")
-
-            # import model using user_id
-            try:
-                ae_model = model.find_autoencoder_model(user_id)
-                if_model = model.find_isolation_forest_model(user_id)
-                ae_scaler = model.find_preprocessor(user_id, "ae_scaler")
-                ae_cols = model.find_preprocessor(user_id, "ae_train_cols")
-                if_encoder = model.find_preprocessor(user_id, "if_encoder")
-            except:
-                logger.error(f"Error importing models for user {user_id}")
-
-            # make analysis
-            try:
-                ae_anomalies = ae.predict_ae(last_month_df.copy(), ae_model, ae_scaler, ae_cols)
-                if_anomalies = it.predict_if(last_month_df.copy(), if_model, if_encoder)
-            except:
-                logger.error(f"Error making analysis for user {user_id}")
-                continue
-
-            # make report
-
-            if not ae_anomalies.empty:
-                ae_anomalies['detection_method'] = 'autoencoder'
-            if not if_anomalies.empty:
-                if_anomalies['detection_method'] = 'isolation_forest'
-
-            combined_df = pd.concat([ae_anomalies, if_anomalies], ignore_index=True)
-
-            if not combined_df.empty:
-                # De-duplicate anomalies found by both models
-                combined_df['abs_amount'] = combined_df['금액'].abs()
-                combined_df = combined_df.drop_duplicates(subset=['날짜', '시간', '내용', 'abs_amount'], keep='first').drop(columns=['abs_amount'])
-
-                # Filter out non-expense categories
-                filtered_df = combined_df[~combined_df['대분류'].isin(NON_EXPENSE_CATEGORIES)]
-            else:
-                filtered_df = pd.DataFrame()
-
-            total_transactions = len(last_month_df[last_month_df['타입'] == '지출'])
-            anomaly_count = len(filtered_df)
-
-            logger.info(f"Total transactions: {total_transactions}")
-            logger.info(f"Anomaly count: {anomaly_count}")
-
-            # make report
-            
-            if filtered_df.empty:
-                logger.info("No expense anomalies detected after filtering.")
-                summary = "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
-                return jsonify({
-                    "overall_summary": summary,
-                    "anomalies": [],
-                    "adjustment": {
-                        "recommendation": "현재 이상 소비가 없어 예산 조정이 필요하지 않습니다.",
-                        "budget_change_impact": "현재 소비 패턴이 안정적이므로 예산 조정은 필요하지 않습니다.",
-                        "predicted_savings": 0
-                    }
-                })
-
-            # --- Generate JSON Response ---
-
-            anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
-            anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
-            logger.info(data_path)
-            
-            # 1. Generate `overall_summary` using LLM
-            summary_prompt = (
-                f"사용자의 소비 데이터를 분석한 결과입니다. 이 정보를 바탕으로 사용자에게 현재 소비 상태에 대한 전반적인 요약(overall_summary)을 한국어로 생성해주세요.\n\n"
-                f"- 총 거래 건수: {total_transactions}건\n"
-                f"- 발견된 이상 소비 건수: {anomaly_count}건\n"
-                f"- 이상 소비가 가장 많은 상위 카테고리:\n"
-            )
-            for category, count in list(anomaly_categories.items())[:3]:
-                summary_prompt += f"  - {category}: {count}건\n"
-            summary_prompt += "\n요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 어떤 분야에 주의해야 하는지 언급해주세요."
-
-            overall_summary = generate_llm_response(summary_prompt)
-            
-            # Fallback for summary
-            if not overall_summary:
-                logger.warning("LLM summary generation failed. Using template-based summary.")
-                top_bad_category = max(anomaly_categories, key=anomaly_categories.get)
-                overall_summary = (
-                    f"총 {total_transactions}건의 거래 중 {anomaly_count}건의 이상 소비가 발견되었습니다. "
-                    f"특히 '{top_bad_category}' 분야에서 지출이 많은 것으로 보입니다. "
-                    f"해당 분야의 지출 내역을 검토해보시는 것을 추천합니다."
-                )
-
-            # 2. Format `anomalies` list
-            anomalies_list_df = filtered_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
-            anomalies_list_df.rename(columns={'시간': '시각'}, inplace=True)
-            anomalies_list_df['금액'] = anomalies_list_df['금액'].astype(int)
-
-            # Sort by date and time (most recent first)
-            anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시각'])
-            anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
-
-            # 3. Generate `adjustment` using LLM
-            recommend_category = anomaly_amount_by_cat.index[0]
-            savings = int(anomaly_amount_by_cat.iloc[0])
-            anomaly_count_in_cat = anomaly_categories[recommend_category]
-
-            adjustment_prompt = (
-                f"사용자의 이상 소비 분석 결과, '{recommend_category}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
-                f"- 조정 추천 카테고리: '{recommend_category}'\n"
-                f"- 해당 카테고리 내 이상 소비 건수: {anomaly_count_in_cat}건\n"
-                f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n\n"
-                "JSON 형식은 다음과 같아야 합니다:\n"
-                "{\n"
-                "  \"recommendation\": \"'{category}' 분야의 지출을 줄이는 것을 추천하는 문장\",\n"
-                "  \"budget_change_impact\": \"지출을 줄였을 때의 긍정적 효과에 대한 설명\",\n"
-                "  \"predicted_savings\": {amount_integer}\n"
-                "}\n\n"
-                "predicted_savings 값은 주어진 이상 소비 총액({savings})을 그대로 사용해주세요. 모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
-            )
-
-            llm_adjustment_str = generate_llm_response(adjustment_prompt, is_json=True)
-            adjustment = None
-
-            if llm_adjustment_str:
-                try:
-                    # The model sometimes returns extra text after the JSON object.
-                    # We use raw_decode to parse only the first valid JSON object from the string.
-                    json_decoder = json.JSONDecoder()
-                    start_index = llm_adjustment_str.find('{')
-                    if start_index == -1:
-                        raise json.JSONDecodeError("No JSON object found in response", llm_adjustment_str, 0)
-                    
-                    adjustment, _ = json_decoder.raw_decode(llm_adjustment_str[start_index:])
-
-                    if 'predicted_savings' in adjustment:
-                        adjustment['predicted_savings'] = int(adjustment['predicted_savings'])
-                    else: # Ensure the key exists
-                        adjustment['predicted_savings'] = savings
-                except (json.JSONDecodeError, TypeError) as e:
-                    logger.error(f"Failed to parse LLM adjustment response: {e}. Response was: {llm_adjustment_str}")
-                    adjustment = None
-
-            # Fallback for adjustment
-            if adjustment is None:
-                logger.warning("LLM adjustment generation failed. Using template-based adjustment.")
-                adjustment = {
-                    "recommendation": f"'{recommend_category}' 분야의 지출을 줄이는 것을 고려해보세요. 이 분야에서 {anomaly_count_in_cat}건의 이상 소비가 감지되었습니다.",
-                    "budget_change_impact": f"'{recommend_category}' 관련 지출을 줄이면, 해당 예산을 다른 필수적인 곳에 사용하거나 저축을 늘릴 수 있습니다.",
-                    "predicted_savings": savings
-                }
-
-            # Final JSON response
-            response_data = {
-                "overall_summary": overall_summary,
-                "anomalies": anomalies_list_df.to_dict('records'),
-                "adjustment": adjustment
+            # 1. Fetch budget info from the backend for the previous month.
+            # The analyze_user_data endpoint requires a budget object to provide comprehensive feedback.
+            backend_info_url = "https://j13b207.p.ssafy.io/api/ai/report/information"
+            backend_payload = {
+                "userId": int(user_id),  # Convert to int for consistency with Java DTO
+                "username": username,
+                "year": year,
+                "month": month,
             }
 
-            return response_data
+            backend_res = requests.post(backend_info_url, json=backend_payload, headers=headers)
+            backend_res.raise_for_status()
+            backend_data = backend_res.json()
+
+            budget_data = backend_data.get('budget_set', {})
+            if not budget_data:
+                logger.warning(f"No budget data found for user {username} (ID: {user_id}). Analysis will proceed without budget context.")
+
+            # 2. Call the /ai/analyze endpoint to perform the analysis.
+            # This reuses the existing logic for analyzing the previous month's data for an existing user.
+            analyze_url = "http://localhost:5000/ai/analyze"
+            analyze_payload = {"user_id": user_id, "username": username, "budget": budget_data}
+            report_response = requests.post(analyze_url, json=analyze_payload, headers=headers)
+            report_response.raise_for_status()
+
+            report_data = report_response.json()
+            logger.info(f"Report data: {report_data}")
+
+            if "error" in report_data:
+                logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_data['error']}")
+            elif "message" in report_data:
+                logger.info(f"Analysis for {username} (ID: {user_id}) resulted in a message: {report_data['message']}")
+            else:
+                logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
+                # Save the generated report to the backend database.
+                save_report_url = "http//localhost/api/ai/report"
+                save_payload = {
+                    "userId": int(user_id),
+                    "username": username,
+                    "year": year,
+                    "month": month,
+                    **report_data  # Unpack the analysis results into the payload
+                }
+                save_res = requests.post(save_report_url, json=save_payload, headers=headers)
+                if save_res.status_code == 200:
+                    logger.info(f"Successfully saved report for user {username} (ID: {user_id}) to the backend.")
+                else:
+                    logger.error(f"Failed to save report for user {username} (ID: {user_id}). Status: {save_res.status_code}, Response: {save_res.text}")
 
 
+        except requests.exceptions.RequestException as e:
+            logger.error(f"A network error occurred while processing report for {username} (ID: {user_id}): {e}")
         except Exception as e:
             logger.error(f"Error generating monthly report for {username} (ID: {user_id}): {e}", exc_info=True)
 
@@ -1356,7 +1216,7 @@ if __name__ == "__main__":
     # Schedule the monthly report job
     scheduler.add_job(
         func=send_monthly_report,
-        trigger=CronTrigger(day=23, hour=10, minute=49), # Run on the first day of every month at midnight
+        trigger=CronTrigger(day=24, hour=12, minute=33), # Run on the first day of every month at midnight
         id='monthly_report_job',
         name='Monthly Report Generator',
         replace_existing=True
@@ -1368,4 +1228,4 @@ if __name__ == "__main__":
     import atexit
     atexit.register(lambda: scheduler.shutdown())
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

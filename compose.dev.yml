@@ -21,7 +21,7 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For remote debugging
     depends_on:
       - mysql
-      - postgres
+      - mongodb
       - rabbitmq
       - redis
 

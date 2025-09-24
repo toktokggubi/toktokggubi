@@ -93,6 +93,7 @@ database/data-ai/
 data/
 database/mysql-data/
 database/postgres/
+database/mongodb
 
 # Ignore Jenkins CI/CD files
 jenkins/
