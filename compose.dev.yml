@@ -24,6 +24,12 @@ services:
       - mongodb
       - rabbitmq
       - redis
+    env_file:
+      - .env.development
+    volumes:
+      - ./backend/logs:/app/logs
+
+
 
   # ai:
   #   ports:
