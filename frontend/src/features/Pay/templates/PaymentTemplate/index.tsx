@@ -5,7 +5,7 @@ import { font } from "@/shared/typography/font";
 import CardSlide from "@/shared/ui/CardSlide";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Dimensions,
   PanResponder,
@@ -14,9 +14,11 @@ import {
   TouchableOpacity,
   ScrollView,
   View,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Carousel from "react-native-reanimated-carousel";
+import { useSharedValue } from "react-native-reanimated";
+import Carousel, { ICarouselInstance } from "react-native-reanimated-carousel";
 import SegmentedTabs from "~features/Pay/ui/SegmentedTabs";
 import type { PaymentTemplateProps } from "./types";
 
@@ -24,14 +26,13 @@ import type { Gifticon } from "@/shared/types/gifticon";
 import GifticonSlide from "@/shared/ui/GifticonSlide";
 
 const { width: SCREEN_W } = Dimensions.get("window");
-const ITEM_W = Math.round(SCREEN_W * 0.68);
-const ITEM_W_LARGE = Math.round(SCREEN_W * 0.68); // 가맹점이 없을 때 더 큰 카드
+const ITEM_W = Math.round(SCREEN_W * 0.8);
+const ITEM_W_LARGE = Math.round(SCREEN_W * 0.8); // 가맹점이 없을 때 더 큰 카드
 const GIFTICON_ITEM_W = 296; // 기프티콘 카드 너비 (280 + 16 margin)
 
 function PaymentTemplate({
   selectedTab,
   onChangeTab,
-  children,
   cards = [],
   activeCardIndex = 0,
   onActiveCardChange,
@@ -46,9 +47,11 @@ function PaymentTemplate({
   refreshControl,
 }: PaymentTemplateProps) {
   const router = useRouter();
-  const carouselRef = useRef<Carousel<UserCardVM> | null>(null);
+  const carouselRef = useRef<ICarouselInstance | null>(null);
   const isInitialized = useRef(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const progress = useSharedValue<number>(0);
+  const gifticonProgress = useSharedValue<number>(0);
 
   const handleBack = () => {
     router.back();
@@ -147,21 +150,47 @@ function PaymentTemplate({
     if (id != null) onActiveCardChange?.(index, id);
   };
 
-  const renderCard = ({ item }: { item: UserCardVM; index: number }) => {
-    return <CardSlide card={item} />;
+  // 카드 터치 핸들러 - QR 스캐너로 이동
+  const handleCardPress = () => {
+    if (cards.length === 0 || !cards[activeCardIndex]) {
+      Alert.alert("오류", "카드 정보를 불러올 수 없습니다.");
+      return;
+    }
+
+    const selectedCard = cards[activeCardIndex];
+    router.push({
+      pathname: "/pay/qr-scanner",
+      params: {
+        cardId: selectedCard.userCardId.toString(),
+        cardName: selectedCard.cardName || "카드명 없음",
+        last4: selectedCard.last4 || "0000",
+        source: "payment"
+      }
+    });
   };
 
+  const renderCard = useCallback(({ item }: { item: UserCardVM }) => {
+    console.log('Payment Template - Rendering card:', item);
+    console.log('Payment Template - Selected tab:', selectedTab);
+    return <CardSlide card={item} />;
+  }, [selectedTab]);
+
   // 카드 기프티콘
-  const giftCarouselRef = useRef<Carousel<Gifticon> | null>(null);
+  const giftCarouselRef = useRef<ICarouselInstance | null>(null);
   const [currentGiftIndex, setCurrentGiftIndex] = useState(0);
 
   const handleGiftChange = (index: number) => {
     setCurrentGiftIndex(index);
   };
 
-  const renderGifticon = ({ item }: { item: Gifticon }) => (
-    <GifticonSlide gifticon={item} />
-  );
+  const renderGifticon = ({ item }: { item: Gifticon }) => {
+    // imageUrl을 imageSource로 변환
+    const gifticonCard = {
+      ...item,
+      imageSource: item.imageUrl ? { uri: item.imageUrl } : undefined,
+    };
+    return <GifticonSlide gifticon={gifticonCard} />;
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -202,42 +231,49 @@ function PaymentTemplate({
                   {cardTopSection}
                 </View>
               ) : null}
-              <Carousel<UserCardVM>
-                ref={carouselRef}
-                data={cards}
-                renderItem={renderCard}
-                width={SCREEN_W}
-                height={ITEM_W * 0.6}
-                mode="parallax"
-                modeConfig={{
-                  parallaxScrollingScale: 0.9,
-                  parallaxScrollingOffset: 50,
-                }}
-                onSnapToItem={handleCardChange}
-                keyExtractor={(item, index) =>
-                  item?.userCardId != null
-                    ? String(item.userCardId)
-                    : String(index)
-                }
-                style={[
-                  styles.carouselContainer,
-                  {
-                    opacity: selectedTab === 0 ? 1 : 0,
-                    height: selectedTab === 0 ? "auto" : 0,
-                  }
-                ]}
-              />
-              <View
-                style={{
-                  opacity: selectedTab === 0 ? 1 : 0,
-                  height: selectedTab === 0 ? "auto" : 0,
-                }}
-              >
-                <PagerDots
-                  length={cards.length}
-                  activeIndex={activeCardIndex}
-                />
-              </View>
+              {selectedTab === 0 && (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={handleCardPress}
+                  style={styles.carouselTouchArea}
+                >
+                  <Carousel
+                    ref={carouselRef}
+                    data={cards}
+                    renderItem={renderCard}
+                    width={ITEM_W}
+                    height={250}
+                    loop={false}
+                    autoPlay={false}
+                    pagingEnabled={true}
+                    scrollAnimationDuration={300}
+                    onSnapToItem={handleCardChange}
+                    onProgressChange={progress}
+                    mode="parallax"
+                    modeConfig={{
+                      parallaxScrollingScale: 0.92,
+                      parallaxScrollingOffset: 80,
+                    }}
+                    style={styles.carouselContainer}
+                  />
+                </TouchableOpacity>
+              )}
+              {selectedTab === 0 && cards.length > 0 && (
+                <>
+                  {/* 카드 정보 영역 - 고정 위치 */}
+                  {cards[activeCardIndex] && (
+                    <View style={styles.cardInfoSection}>
+                      <Text style={styles.cardName}>{cards[activeCardIndex].cardName || "카드명 없음"}</Text>
+                      <Text style={styles.cardNumber}>**** **** **** {cards[activeCardIndex].last4 || "0000"}</Text>
+                    </View>
+                  )}
+                  
+                  <PagerDots
+                    length={cards.length}
+                    activeIndex={activeCardIndex}
+                  />
+                </>
+              )}
               {benefitsSection ? (
                 <View
                   style={{ marginTop: 8, marginBottom: 12 }}
@@ -265,37 +301,42 @@ function PaymentTemplate({
               </View>
             ) : null}
 
-            {gifticons.length === 0 ? (
-              <View style={[styles.cardContainer, styles.empty]}>
-                <Text style={styles.emptyText}>보유한 기프티콘이 없어요</Text>
-              </View>
-            ) : (
-              <>
-                <Carousel<Gifticon>
-                  ref={giftCarouselRef}
-                  data={gifticons}
-                  renderItem={renderGifticon}
-                  width={SCREEN_W}
-                  height={GIFTICON_ITEM_W * 0.6}
-                  mode="parallax"
-                  modeConfig={{
-                    parallaxScrollingScale: 0.9,
-                    parallaxScrollingOffset: 50,
-                  }}
-                  onSnapToItem={handleGiftChange}
-                  keyExtractor={(item, idx) =>
-                    item?.gifticonId != null
-                      ? String(item.gifticonId)
-                      : String(idx)
-                  }
-                  style={styles.carouselContainer}
-                />
-                <PagerDots
-                  length={gifticons.length}
-                  activeIndex={currentGiftIndex}
-                />
-              </>
-            )}
+            {(() => {
+              // 만료되지 않은 기프티콘만 필터링
+              const activeGifticons = gifticons.filter(gifticon => gifticon.status === "ACTIVE");
+              
+              if (activeGifticons.length === 0) {
+                return (
+                  <View style={[styles.cardContainer, styles.empty]}>
+                    <Text style={styles.emptyText}>사용 가능한 기프티콘이 없어요</Text>
+                  </View>
+                );
+              }
+              
+              return (
+                <>
+                  <Carousel
+                    ref={giftCarouselRef}
+                    data={activeGifticons}
+                    renderItem={renderGifticon}
+                    width={ITEM_W}
+                    height={220}
+                    loop={false}
+                    autoPlay={false}
+                    pagingEnabled={true}
+                    scrollAnimationDuration={300}
+                    onSnapToItem={handleGiftChange}
+                    onProgressChange={gifticonProgress}
+                    mode="parallax"
+                    modeConfig={{
+                      parallaxScrollingScale: 0.92,
+                      parallaxScrollingOffset: 80,
+                    }}
+                    style={styles.carouselContainer}
+                  />
+                </>
+              );
+            })()}
 
             {gifticonBottomSection ? (
               <View
@@ -305,6 +346,28 @@ function PaymentTemplate({
                 {gifticonBottomSection}
               </View>
             ) : null}
+            
+            {/* 기프티콘 탭에서만 정보와 PagerDots 표시 */}
+            {selectedTab === 1 && (() => {
+              const activeGifticons = gifticons.filter(gifticon => gifticon.status === "ACTIVE");
+              return activeGifticons.length > 0 ? (
+                <>
+                  {/* 기프티콘 정보 영역 - 하단 위치 */}
+                  {activeGifticons[currentGiftIndex] && (
+                    <View style={styles.gifticonInfoSection}>
+                      <Text style={styles.gifticonName}>{activeGifticons[currentGiftIndex].label || "기프티콘명 없음"}</Text>
+                      <Text style={styles.gifticonBrand}>{activeGifticons[currentGiftIndex].merchantName || "브랜드 정보 없음"}</Text>
+                    </View>
+                  )}
+                  
+                  <PagerDots
+                    length={activeGifticons.length}
+                    activeIndex={currentGiftIndex}
+                  />
+                </>
+              ) : null;
+            })()}
+            
             <View
               style={styles.instructionContainer}
               {...panResponder.panHandlers}
@@ -369,7 +432,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     ...font.medium,
   },
-  carouselContainer: { flex: 0, flexGrow: 0, alignSelf: "stretch" },
+  carouselContainer: { 
+    flex: 0, 
+    flexGrow: 0, 
+    alignSelf: "center",
+    alignItems: "center",
+    overflow: "visible",
+  },
+  carouselTouchArea: {
+    flex: 0,
+    alignSelf: "center",
+  },
+  cardInfoSection: {
+    alignItems: "center",
+    marginTop: -2,
+    marginBottom: -4,
+    paddingHorizontal: 16,
+  },
+  cardName: {
+    fontSize: 18,
+    ...font.bold,
+    color: colors.GRAY_DARKER,
+    textAlign: "center",
+    marginBottom: -10,
+  },
+  cardNumber: {
+    fontSize: 14,
+    color: colors.GRAY_NORMAL,
+    textAlign: "center",
+  },
+  gifticonInfoSection: {
+    alignItems: "center",
+    marginTop: 160,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+  },
+  gifticonName: {
+    fontSize: 18,
+    ...font.bold,
+    color: colors.GRAY_DARKER,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  gifticonBrand: {
+    fontSize: 14,
+    color: colors.GRAY_NORMAL,
+    textAlign: "center",
+  },
   gifticonBottomContainer: {
     marginTop: 8,
     marginBottom: 12,

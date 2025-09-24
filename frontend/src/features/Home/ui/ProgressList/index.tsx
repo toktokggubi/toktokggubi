@@ -1,11 +1,11 @@
+import { Category } from "@/shared/constants/categories";
+import { colors } from "@/shared/constants/colors";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { ProgressRow } from "../ProgressRow";
 import { TransactionList } from "../TransactionList";
-import { ProgressListProps, CategoryBudget, Transaction } from "./types";
-import { colors } from "@/shared/constants/colors";
-import { Category } from "@/shared/constants/categories";
-import { Ionicons } from "@expo/vector-icons";
+import { ProgressListProps } from "./types";
 
 export const ProgressList: React.FC<ProgressListProps> = ({
   categoryBudgets,
@@ -14,8 +14,9 @@ export const ProgressList: React.FC<ProgressListProps> = ({
   transactions = {},
   onEditPress,
 }) => {
-  const [expandedCategory, setExpandedCategory] = useState<Category | null>(null);
-
+  const [expandedCategory, setExpandedCategory] = useState<Category | null>(
+    null
+  );
 
   const handleUsageDetailsPress = (category: Category) => {
     setExpandedCategory(expandedCategory === category ? null : category);
@@ -35,8 +36,8 @@ export const ProgressList: React.FC<ProgressListProps> = ({
         <View style={styles.titleContainer}>
           <Text style={styles.title}>{title}</Text>
           {onEditPress && (
-            <TouchableOpacity 
-              style={styles.editButton} 
+            <TouchableOpacity
+              style={styles.editButton}
               onPress={onEditPress}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -62,9 +63,11 @@ export const ProgressList: React.FC<ProgressListProps> = ({
                   totalAmount={item.totalAmount}
                   onPress={() => handleCategoryPress(item.category)}
                   isExpanded={isExpanded}
-                  onUsageDetailsPress={() => handleUsageDetailsPress(item.category)}
+                  onUsageDetailsPress={() =>
+                    handleUsageDetailsPress(item.category)
+                  }
                 />
-                
+
                 {/* 토글된 거래 내역 */}
                 {isExpanded && categoryTransactions.length > 0 && (
                   <View style={styles.transactionContainer}>
@@ -74,15 +77,19 @@ export const ProgressList: React.FC<ProgressListProps> = ({
                     />
                   </View>
                 )}
-                
+
                 {/* 구분선 */}
-                {index < categoryBudgets.length - 1 && <View style={styles.separator} />}
+                {index < categoryBudgets.length - 1 && (
+                  <View style={styles.separator} />
+                )}
               </View>
             );
           })
         ) : (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>카테고리별 예산 데이터가 없습니다.</Text>
+            <Text style={styles.emptyText}>
+              카테고리별 예산 데이터가 없습니다.
+            </Text>
           </View>
         )}
       </View>
@@ -113,11 +120,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 12,
+    paddingHorizontal: 12,
   },
   title: {
     fontSize: 18,
-    fontWeight: "700",
-    color: colors.GRAY_DARKER,
+    color: colors.BLUE_DARKER,
     flex: 1,
   },
   editButton: {
@@ -140,11 +147,11 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     paddingVertical: 32,
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
     fontSize: 14,
     color: colors.GRAY_NORMAL,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
