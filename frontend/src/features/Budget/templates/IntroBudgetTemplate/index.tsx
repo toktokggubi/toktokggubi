@@ -1,9 +1,10 @@
+import NextButton from "@/features/Budget/ui/atoms/NextButton";
+import { Image as ExpoImage } from "expo-image";
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, Image, ImageSourcePropType, Animated } from "react-native";
+import { Animated, ImageSourcePropType, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BudgetIntroTemplateProps } from "./types";
 import { introTemplateStyles as s } from "./variants";
-import NextButton from "@/features/Budget/ui/atoms/NextButton";
 
 export default function BudgetIntroTemplate({
   onNext,
@@ -14,13 +15,13 @@ export default function BudgetIntroTemplate({
   const line1Opacity = useRef(new Animated.Value(0)).current;
   const line2Opacity = useRef(new Animated.Value(0)).current;
   const line3Opacity = useRef(new Animated.Value(0)).current;
-  const mascotOpacity = useRef(new Animated.Value(0)).current;
-  
+  const mascotOpacity = useRef(new Animated.Value(1)).current; // 처음부터 보이도록 1로 설정
+
   // 애니메이션 완료 상태
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
 
   useEffect(() => {
-    // 순차적으로 애니메이션 실행 (총 3초)
+    // 순차적으로 애니메이션 실행 (총 1.5초)
     const animationSequence = Animated.sequence([
       // 첫 번째 라인 (0.5초)
       Animated.timing(line1Opacity, {
@@ -38,12 +39,6 @@ export default function BudgetIntroTemplate({
       Animated.timing(line3Opacity, {
         toValue: 1,
         duration: 500,
-        useNativeDriver: true,
-      }),
-      // 마스코트 (1초)
-      Animated.timing(mascotOpacity, {
-        toValue: 1,
-        duration: 1000,
         useNativeDriver: true,
       }),
     ]);
@@ -72,19 +67,22 @@ export default function BudgetIntroTemplate({
         </View>
 
         {mascotSource && (
-          <Animated.Image
-            source={mascotSource as ImageSourcePropType}
-            style={[s.mascot, { opacity: mascotOpacity }]}
-          />
+          <Animated.View style={[s.mascot, { opacity: mascotOpacity }]}>
+            <ExpoImage
+              source={mascotSource as ImageSourcePropType}
+              style={s.mascot}
+              contentFit="cover"
+            />
+          </Animated.View>
         )}
       </View>
 
       {/* 하단 버튼 - 애니메이션 완료 후 활성화 */}
       <View style={s.footer}>
-        <NextButton 
-          onPress={onNext} 
-          disabled={nextDisabled || !isAnimationComplete} 
-          tone="link" 
+        <NextButton
+          onPress={onNext}
+          disabled={nextDisabled || !isAnimationComplete}
+          tone="link"
         />
       </View>
     </SafeAreaView>

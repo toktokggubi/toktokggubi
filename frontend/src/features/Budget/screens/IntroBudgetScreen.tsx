@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from "react";
-import { useRouter, useFocusEffect } from "expo-router";
-import { BackHandler } from "react-native";
 import BudgetIntroTemplate from "@/features/Budget/templates/IntroBudgetTemplate";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { BackHandler } from "react-native";
 
 export default function StartBugetScreen() {
   const router = useRouter();
   const [isNavigating, setIsNavigating] = useState(false);
-  
+
   // 인증 가드
   const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
 
@@ -26,7 +26,10 @@ export default function StartBugetScreen() {
       };
 
       // 뒤로가기 이벤트 리스너 등록
-      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
 
       return () => subscription.remove();
     }, [router])
@@ -52,7 +55,7 @@ export default function StartBugetScreen() {
     <BudgetIntroTemplate
       onNext={goNext}
       nextDisabled={isNavigating}
-      mascotSource={require("@/assets/images/character/big-character-01.png")}
+      mascotSource={require("@/assets/images/character/character_jump_paticle.gif")}
     />
   );
 }
