@@ -48,17 +48,23 @@ public class PushToken {
 
     /* ========= 도메인 메서드 ========= */
 
-    /** 토큰 활성화 */
+    /**
+     * 토큰 활성화
+     */
     public void activate() {
         this.isActive = true;
     }
 
-    /** 토큰 비활성화 */
+    /**
+     * 토큰 비활성화
+     */
     public void deactivate() {
         this.isActive = false;
     }
 
-    /** 소유자 교체 */
+    /**
+     * 소유자 교체
+     */
     public void changeOwner(User newUser) {
         this.user = newUser;
     }

@@ -3,17 +3,19 @@ package com.ssafy.toktokggubi.domain.push.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
-import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
+import com.ssafy.toktokggubi.domain.push.dto.PushType;
+import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResponse;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.YearMonth;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -24,101 +26,115 @@ public class TotalBudgetService {
     private final CardTransactionRepository txRepo;
     private final UserMonthlyBudgetRepository umbRepo;
     private final NotificationRepository notificationRepo;
-    private final FcmService fcmService;        // FCM 사용 안 하면 제거해도 됨
+    private final FcmService fcmService;
     private final ObjectMapper objectMapper;
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM");
+    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
 
-    private static final String TYPE_THRESHOLD = "BUDGET_THRESHOLD/TOTAL/80";
-    private static final String TYPE_EXCEED    = "BUDGET_EXCEED/TOTAL/100";
+    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code(); // "BUDGET_THRESHOLD/TOTAL/80"
+    private static final String EXCEED    = PushType.BUDGET_EXCEEDED_TOTAL.code();     // "BUDGET_EXCEEDED/TOTAL"
+    private static final String SCOPE         = "TOTAL";
 
-    public ThresholdCheckResult checkThreshold(String txNo) {
-        return handleTotal(txNo, 0.8, TYPE_THRESHOLD,
+    @Transactional
+    public ThresholdCheckResponse checkThreshold(String txNo) throws Exception {
+        return handleTotal(
+                txNo, 0.8, THRESHOLD,
                 "전체 예산 80% 임계",
                 "이번달 전체 예산 %,d원 중 %,d원 사용 (%.1f%%) · %,d원 남음",
-                true);
+                true
+        );
     }
 
-    public ThresholdCheckResult checkExceed(String txNo) {
-        return handleTotal(txNo, 1.0, TYPE_EXCEED,
+    @Transactional
+    public ThresholdCheckResponse checkExceed(String txNo) throws Exception {
+        return handleTotal(
+                txNo, 1.0, EXCEED,
                 "전체 예산 초과",
                 "이번달 전체 예산 %,d원을 초과했습니다. 총 사용액: %,d원 (%.1f%%)",
-                false);
+                false
+        );
     }
 
-    private ThresholdCheckResult handleTotal(
+    private ThresholdCheckResponse handleTotal(
             String txNo,
             double thresholdRate,
-            String typeKey,
+            String typeKeyFull,     // 풀키(중복방지/로그용)
             String title,
             String bodyFormat,
             boolean includeRemaining
-    ) {
+    ) throws Exception {
         CardTransaction tx = txRepo.findByTransactionUniqueNo(txNo).orElse(null);
         if (tx == null) {
-            log.warn("[{}] 거래 없음: {}", typeKey, txNo);
-            return new ThresholdCheckResult(false, null, "TOTAL", currentYm(), 0L, 0L, false);
+            log.warn("[{}] 거래 없음: {}", typeKeyFull, txNo);
+            return new ThresholdCheckResponse(false, null, null, SCOPE, currentYm(), 0L, 0L, false);
         }
 
         Long userId = tx.getUser().getUserId();
         YearMonth ym = YearMonth.now(KST);
         String budgetYm = ym.format(YM);
-        String ymStart = budgetYm + "01";
 
-        long used = txRepo.sumByUserMonth(userId, ymStart, CardStatus.APPROVED);
+
+        long used = txRepo.sumByUserMonth(userId, budgetYm, CardStatus.APPROVED);
         Long totalBudget = umbRepo.findFinalTotalAmount(userId, budgetYm);
 
         if (totalBudget == null || totalBudget <= 0) {
-            return new ThresholdCheckResult(false, userId, "TOTAL", budgetYm, used, totalBudget, false);
+            return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         double rate = used * 1.0 / totalBudget;
         if (rate < thresholdRate) {
-            return new ThresholdCheckResult(false, userId, "TOTAL", budgetYm, used, totalBudget, false);
+            return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
-        boolean already = notificationRepo.existsComposite(userId, typeKey, budgetYm, "TOTAL");
-        if (already) {
-            return new ThresholdCheckResult(true, userId, "TOTAL", budgetYm, used, totalBudget, false);
+        LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
+        LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
+
+// ✅ [가드 #1] THRESHOLD인데 이미 100% 초과면 바로 스킵
+        if (THRESHOLD.equals(typeKeyFull) && rate >= 1.0) {
+            return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
+        }
+
+        if (THRESHOLD.equals(typeKeyFull)) {
+            long exceedDup = notificationRepo.countByUserTypeAndPeriod(
+                    userId, SCOPE, monthFrom, monthTo
+            );
+            if (exceedDup > 0) {
+                return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
+            }
+        }
+        String typeKey = typeKeyFull; // TOTAL은 추가 식별자 불필요
+
+        long dup = notificationRepo.countByUserTypeAndPeriod(userId, typeKey, monthFrom, monthTo);
+        if (dup > 0) {
+            return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         double percent = Math.min(rate * 100.0, 999.9);
         long remaining = Math.max(totalBudget - used, 0);
 
-        // ✅ LLM 제거: fallback 메시지 그대로 사용
         String body = includeRemaining
-                ? String.format(bodyFormat, totalBudget, used, percent, remaining)
-                : String.format(bodyFormat, totalBudget, used, percent);
+                ? String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent, remaining)
+                : String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent);
 
-        String link = "toktokggubi://budget/overview?ym=" + budgetYm;
+        fcmService.sendToUser(userId, title, body);
 
-        // 필요 시 푸시 발송(현재 주석)
-        // fcmService.sendToUser(userId, title, body, link);
+        String payloadJson = toJsonSafe(Map.of(
+                "budgetYm", budgetYm,
+                "scope", "TOTAL",
+                "usedAmount", used,
+                "finalAmount", totalBudget,
+                "percent", percent
+        ));
+        notificationRepo.insertLog(userId, typeKey, title, body, payloadJson);
 
-        notificationRepo.insertLog(
-                userId, typeKey, title, body,
-                toJsonSafe(Map.of(
-                        "budgetYm", budgetYm,
-                        "scope", "TOTAL",
-                        "used", used,
-                        "finalAmount", totalBudget,
-                        "percent", percent,
-                        "link", link
-                )),
-                budgetYm, "TOTAL"
-        );
-
-        return new ThresholdCheckResult(true, userId, "TOTAL", budgetYm, used, totalBudget, true);
+        return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, true);
     }
 
     private String currentYm() { return YearMonth.now(KST).format(YM); }
 
     private String toJsonSafe(Object o) {
-        try {
-            return objectMapper.writeValueAsString(o);
-        } catch (Exception e) {
-            return null;
-        }
+        try { return objectMapper.writeValueAsString(o); }
+        catch (Exception e) { return null; }
     }
 }

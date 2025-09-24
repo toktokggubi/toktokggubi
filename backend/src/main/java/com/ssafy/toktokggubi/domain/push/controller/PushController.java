@@ -1,61 +1,45 @@
 package com.ssafy.toktokggubi.domain.push.controller;
 
-import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckRequest;
-import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResult;
-import com.ssafy.toktokggubi.domain.push.service.CategoryBudgetService;
-import com.ssafy.toktokggubi.domain.push.service.TotalBudgetService;
-import com.ssafy.toktokggubi.domain.push.service.TotalBudgetService;
-import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
+import com.ssafy.toktokggubi.domain.push.service.FcmService;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/push")
+@RequestMapping("/push/test")
+@Tag(name = "Push Test", description = "FCM 전송 테스트")
 @RequiredArgsConstructor
-@Tag(name = "AI 소비코칭", description = "AI 소비코칭 관련 API")
 public class PushController {
 
-    private final CategoryBudgetService categoryService;
-    private final TotalBudgetService totalService;
+    private final FcmService fcmService;
 
-    @PostMapping("/budget/category/threshold")
+    /** (A) 단일 토큰 전송 */
+    public record SendTokenRequest(
+            @NotBlank String token,
+            @NotBlank String title,
+            @NotBlank String body,
+            Boolean dryRun
+    ) {}
 
-    public ResponseEntity<ThresholdCheckResult> checkThresholdOnNewTx(
-            @RequestBody ThresholdCheckRequest req
-    ) {
-        Long userId = SecurityUtils.currentUserIdOrNull();
-        ThresholdCheckResult result = categoryService.checkAndMaybeNotifyForCurrentMonth(req.transactionUniqueNo());
-        return ResponseEntity.ok(result);
+    @Operation(summary = "단일 토큰으로 전송", description = "FCM 디바이스 토큰 1개에 전송합니다.")
+    @PostMapping("/send-token")
+    public ResponseEntity<?> sendToToken(@Valid @RequestBody SendTokenRequest req) throws Exception {
+        boolean dryRun = Boolean.TRUE.equals(req.dryRun());
+        String messageId = fcmService.sendToSingleToken(req.token(), req.title(), req.body(), dryRun);
+        return ResponseEntity.ok(java.util.Map.of(
+                "dryRun", dryRun,
+                "messageId", messageId
+        ));
     }
 
-    @PostMapping("/budget/category/exceed")
-    public ResponseEntity<ThresholdCheckResult> checkExceedOnNewTx(
-            @RequestBody ThresholdCheckRequest req
-    ) {
-        Long userId = SecurityUtils.currentUserIdOrNull();
-        ThresholdCheckResult result = categoryService.checkAndNotifyIfExceeded(req.transactionUniqueNo());
-        return ResponseEntity.ok(result);
-    }
 
-    @PostMapping("/budget/total/threshold")
-    public ResponseEntity<ThresholdCheckResult> checkTotalThresholdOnNewTx(
-            @RequestBody ThresholdCheckRequest req
-    ) {
-        Long userId = SecurityUtils.currentUserIdOrNull();
-        ThresholdCheckResult result =
-                totalService.checkThreshold(req.transactionUniqueNo());
-        return ResponseEntity.ok(result);
-    }
-    @PostMapping("/budget/total/exceed")
-    public ResponseEntity<ThresholdCheckResult> checkTotalExceedOnNewTx(
-            @RequestBody ThresholdCheckRequest req
-    ) {
-        Long userId = SecurityUtils.currentUserIdOrNull();
-        ThresholdCheckResult result =
-                totalService.checkExceed(req.transactionUniqueNo());
-        return ResponseEntity.ok(result);
-    }
+
+
 }
-

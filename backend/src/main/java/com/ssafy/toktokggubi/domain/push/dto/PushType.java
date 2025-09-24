@@ -1,4 +1,3 @@
-// src/main/java/com/ssafy/toktokggubi/domain/push/dto/PushType.java
 package com.ssafy.toktokggubi.domain.push.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -11,12 +10,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public enum PushType {
 
     // 임계(80%) - 전체/카테고리
-    BUDGET_THRESHOLD_TOTAL_80("BUDGET_THRESHOLD/TOTAL/80"),
-    BUDGET_THRESHOLD_CATEGORY_80("BUDGET_THRESHOLD/CATEGORY/80"),
+    BUDGET_THRESHOLD_TOTAL_80("THRESHOLD/TOTAL"),
+    BUDGET_THRESHOLD_CATEGORY_80("THRESHOLD/CATEGORY"),
 
     // 초과 - 전체/카테고리
-    BUDGET_EXCEEDED_TOTAL("BUDGET_EXCEEDED/TOTAL"),
-    BUDGET_EXCEEDED_CATEGORY("BUDGET_EXCEEDED/CATEGORY");
+    BUDGET_EXCEEDED_TOTAL("EXCEEDED/TOTAL"),
+    BUDGET_EXCEEDED_CATEGORY("EXCEEDED/CATEGORY");
 
     private final String code;
 
@@ -33,11 +32,5 @@ public enum PushType {
         return code;
     }
 
-    // 유연한 확장: 동적으로 생성하고 싶을 때
-    public static PushType dynamicThreshold(boolean categoryScope, int percent) {
-        if (categoryScope && percent == 80) return BUDGET_THRESHOLD_CATEGORY_80;
-        if (!categoryScope && percent == 80) return BUDGET_THRESHOLD_TOTAL_80;
-        // 필요하다면 여기서 다른 케이스 매핑
-        throw new IllegalArgumentException("Unsupported threshold type: scope=" + categoryScope + ", percent=" + percent);
-    }
+
 }
