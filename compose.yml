@@ -87,7 +87,6 @@ services:
   #     - POSTGRES_USER=${POSTGRES_USER}
   #     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
   #     - POSTGRES_DB=${POSTGRES_DB}
-
   # Backend Service (Spring Boot with Gradle)
   backend:
     build:
@@ -160,7 +159,7 @@ services:
     depends_on:
       # - frontend
       - backend
-      # - ai # Nginx might proxy to AI service directly too
+        #- ai # Nginx might proxy to AI service directly too
 
   # Jenkins CI/CD Server (only in development/CI environment)
   jenkins:
@@ -187,3 +186,4 @@ secrets:
     file: ./secrets/toktokggubi-sa.json
   fcm_sa_json:               
     file: ./secrets/firebase-service-account.json    
+
