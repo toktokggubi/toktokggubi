@@ -1,7 +1,7 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import Svg, { Circle } from "react-native-svg";
 import { colors } from "@/shared/constants/colors";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 
 interface CircularProgressProps {
   currentAmount: number;
@@ -19,7 +19,8 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
   const radius = (size - 20) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+  const strokeDashoffset =
+    circumference - (progressPercentage / 100) * circumference;
 
   return (
     <View style={styles.container}>
@@ -48,7 +49,9 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
       </Svg>
       <View style={styles.textContainer}>
         <Text style={styles.monthText}>{month}</Text>
-        <Text style={styles.percentageText}>{Math.round(progressPercentage)}%</Text>
+        <Text style={styles.percentageText}>
+          {Math.round(progressPercentage)}%
+        </Text>
         <Text style={styles.usedAmountText}>
           {currentAmount.toLocaleString("ko-KR")}원
         </Text>

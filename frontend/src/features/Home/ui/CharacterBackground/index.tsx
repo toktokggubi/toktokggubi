@@ -1,8 +1,7 @@
-import React from "react";
-import { View, Text, StyleSheet, Image } from "react-native";
-import { Image as ExpoImage } from "expo-image";
 import { colors } from "@/shared/constants/colors";
-
+import { Image as ExpoImage } from "expo-image";
+import React from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 interface CharacterBackgroundProps {
   message: string;
@@ -33,43 +32,39 @@ export const CharacterBackground: React.FC<CharacterBackgroundProps> = ({
   return (
     <View style={styles.container}>
       {/* Bowl 이미지 - 화면 상단에 위치 (예산 사용률에 따라 다른 물 애니메이션) */}
-      <ExpoImage 
-        source={getWaterImage()} 
+      <ExpoImage
+        source={getWaterImage()}
         style={styles.bowlImage}
         contentFit="contain"
       />
-      
+
       {/* Water 이미지 - bowl 아래에 위치, 화면 전체 가로폭 */}
-      <Image 
-        source={require("@/assets/images/illustration/water.png")} 
+      <Image
+        source={require("@/assets/images/illustration/water.png")}
         style={[
           styles.waterImage,
-          { 
+          {
             height: `${85 + (progressPercentage / 100) * 30}%`, // 높이 줄여서 탭과의 여백 줄임
-            top: "35%" // 화면 상단에서 35% 지점에서 시작 (bowl 아래)
-          }
+            top: "35%", // 화면 상단에서 35% 지점에서 시작 (bowl 아래)
+          },
         ]}
         resizeMode="stretch"
       />
-      
+
       {/* 캐릭터 - water 시작 높이에 위치 */}
-      <ExpoImage 
-        source={require("@/assets/images/character/character-jump.gif")} 
+      <ExpoImage
+        source={require("@/assets/images/character/character-jump.gif")}
         style={styles.characterImage}
         contentFit="contain"
       />
-      
+
       {/* 캐릭터 메시지 */}
       <View style={styles.messageContainer}>
         <Text style={styles.messageText}>{message}</Text>
       </View>
-      
+
       {/* 자식 컴포넌트 (CircularProgress 등) */}
-      {children && (
-        <View style={styles.childrenContainer}>
-          {children}
-        </View>
-      )}
+      {children && <View style={styles.childrenContainer}>{children}</View>}
     </View>
   );
 };

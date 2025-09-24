@@ -323,7 +323,8 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleNotificationPress = () => {
-    router.push("/notification");
+    // TODO: 알림 화면 구현 후 경로 수정
+    console.log("알림 화면으로 이동");
   };
 
   // 읽지 않은 알림 개수 계산
