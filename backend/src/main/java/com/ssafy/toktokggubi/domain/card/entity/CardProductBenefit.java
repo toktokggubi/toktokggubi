@@ -33,12 +33,7 @@ public class CardProductBenefit {
 
     @MapsId("cardUniqueNo")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(
-            name = "card_unique_no",
-            nullable = false,
-            referencedColumnName = "card_unique_no",
-            columnDefinition = "varchar(40)"
-    )
+    @JoinColumn(name = "card_unique_no", nullable = false)
     private CardProduct cardProduct;
 
     @Column(name = "discount_rate", nullable = false, precision = 5, scale = 2)
