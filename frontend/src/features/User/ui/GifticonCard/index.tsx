@@ -2,7 +2,6 @@
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import { Image as ExpoImage } from "expo-image";
-import { Image } from "react-native";
 import React, { memo } from "react";
 import {
   Platform,
@@ -13,7 +12,7 @@ import {
   type TextStyle,
 } from "react-native";
 import type { GifticonCardProps } from "./types";
-import { normalizeImageUrl, handleImageError, handleImageLoad } from "@/features/User/utils/imageUtils";
+import { handleImageError, handleImageLoad } from "@/features/User/utils/imageUtils";
 import { isGifticonExpired, calculateDDay } from "@/features/User/utils/gifticonUtils";
 
 const androidTight: TextStyle = Platform.select({
@@ -28,8 +27,7 @@ function GifticonCardImpl({
   expiresAt,
   onPress,
 }: GifticonCardProps) {
-  // 서버 이미지 URL을 절대 URL로 변환
-  const normalizedImageUrl = normalizeImageUrl(imageUrl);
+  // 이미지 URL은 어댑터에서 이미 정규화됨
   
   // 만료 상태 및 D-Day 계산
   const isExpired = isGifticonExpired(expiresAt);
@@ -65,38 +63,25 @@ function GifticonCardImpl({
           </View>
         )}
 
-        {/* React Native 기본 Image 테스트 */}
-        <Image
-          source={{ uri: normalizedImageUrl }}
-          style={[s.thumb, isExpired && s.expiredThumb]}
-          resizeMode="cover"
-          onError={(e) => handleImageError(normalizedImageUrl, e)}
-          onLoad={() => handleImageLoad(normalizedImageUrl)}
-        />
-        
-        {/* Expo Image도 테스트용으로 주석 처리 */}
-        {/*
         <ExpoImage
-          source={normalizedImageUrl}
-          style={s.thumb}
+          source={imageUrl}
+          style={[s.thumb, isExpired && s.expiredThumb]}
           contentFit="cover"
           contentPosition="top center"
           cachePolicy="disk"
           placeholder={require("@/assets/images/character/character-01.png")}
           onError={(e) => {
             console.log("❌ Expo Image Error:", {
-              url: normalizedImageUrl,
-              error: e.nativeEvent?.error,
-              event: e
+              url: imageUrl,
+              error: e,
             });
-            handleImageError(normalizedImageUrl, e);
+            handleImageError(imageUrl, e);
           }}
           onLoad={() => {
-            console.log("✅ Expo Image Success:", normalizedImageUrl);
-            handleImageLoad(normalizedImageUrl);
+        
+            handleImageLoad(imageUrl);
           }}
         />
-        */}
       </View>
 
       <Text style={[s.brand, isExpired && s.expiredText, androidTight]} numberOfLines={1}>
@@ -121,7 +106,10 @@ const s = StyleSheet.create({
     backgroundColor: colors.GRAY_LIGHT,
     position: "relative",
   },
-  thumb: { width: "100%", height: "100%" },
+  thumb: { 
+    width: "100%", 
+    height: "100%",
+  },
 
   // ⬇ 배지 스타일
   badge: {

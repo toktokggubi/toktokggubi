@@ -8,8 +8,8 @@ const PADDING_H = 16;
 const PADDING_V = 32;
 const TITLE_TOP = Math.max(84, Math.min(112, height * 0.12)); // 화면 높이에 비례한 안전값
 const TITLE_GAP = 10;
-const MASCOT_SIZE = 180;
-const TITLE_TO_MASCOT = 56;
+const MASCOT_SIZE = 400;
+const TITLE_TO_MASCOT = -110;
 
 export const FOOTER_RIGHT = 20;
 export const FOOTER_BOTTOM = PADDING_V;
@@ -46,7 +46,7 @@ export const introTemplateStyles = StyleSheet.create({
   // 마스코트
   mascot: {
     width: MASCOT_SIZE,
-    height: MASCOT_SIZE,
+    height: MASCOT_SIZE + 300, // 높이를 더 늘려서 아래 잘림 방지
     resizeMode: "contain",
     alignSelf: "center",
     marginTop: TITLE_TO_MASCOT,
