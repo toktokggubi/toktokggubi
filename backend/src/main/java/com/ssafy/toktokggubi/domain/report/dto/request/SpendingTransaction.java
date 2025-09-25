@@ -17,11 +17,6 @@ import lombok.NoArgsConstructor;
 public class SpendingTransaction {
     private String merchant;
     private String category;
-    /**
-     * 결제 수단.
-     * JSON 필드명 `payment_method`에 매핑됩니다.
-     */
-    @JsonProperty("payment_method")
     private String paymentMethod;
     private Integer amount;
 }

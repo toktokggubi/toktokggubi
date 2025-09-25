@@ -5,6 +5,10 @@ import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportRequest;
 import com.ssafy.toktokggubi.domain.report.dto.response.AiReportInformationResponse;
 import com.ssafy.toktokggubi.domain.report.service.AiReportInformationService;
 import com.ssafy.toktokggubi.domain.report.service.AiUserReportService;
+import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportGetRequest;
+import com.ssafy.toktokggubi.domain.report.dto.request.UserInfo;
+import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
+import com.ssafy.toktokggubi.domain.report.entity.AiUserReport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -50,5 +54,25 @@ public class AiReportInformationController {
     public ResponseEntity<Void> receiveAiUserReport(@RequestBody AiUserReportRequest request) {
         aiUserReportService.saveAiUserReport(request);
         return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    /**
+     * AI 사용자 리포트를 조회합니다.
+     * 사용자 ID, 닉네임, 조회할 년도 및 월을 기반으로 AI 월간 리포트 데이터를 반환합니다.
+     *
+     * @param request 사용자 ID, 닉네임, 조회할 년도 및 월을 포함하는 요청 객체
+     * @return AI 월간 사용자 리포트 정보 응답 객체
+     */
+    @PostMapping("/get")
+    @Operation(summary = "AI 사용자 리포트 조회", description = "사용자의 월간 AI 리포트 정보를 조회합니다.")
+    public UserReportResponse getAiUserReport(@RequestBody AiUserReportGetRequest request) {
+        UserInfo userInfo = UserInfo.builder()
+                .userId(request.getUserId())
+                .username(request.getUsername())
+                .year(request.getYear())
+                .month(request.getMonth())
+                .build();
+        
+        return aiUserReportService.getAiUserReport(userInfo);
     }
 }
