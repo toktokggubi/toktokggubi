@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { http } from '@/shared/api/http';
 import Constants from 'expo-constants';
+import NotificationSettingsService from './notificationSettingsService';
 
 // 알림 설정
 Notifications.setNotificationHandler({
@@ -32,6 +33,7 @@ class FCMService {
   private static instance: FCMService;
   private isInitialized = false;
   private messaging: any = null;
+  private notificationSettingsService = NotificationSettingsService.getInstance();
 
   public static getInstance(): FCMService {
     if (!FCMService.instance) {
@@ -172,7 +174,7 @@ class FCMService {
   private setupBackgroundMessageHandler(): void {
     if (!this.messaging) return;
     
-    this.messaging().setBackgroundMessageHandler(async (remoteMessage) => {
+    this.messaging().setBackgroundMessageHandler(async (remoteMessage: any) => {
       
       // 백그라운드에서는 시스템 알림만 표시됨
       // 추가 처리가 필요하면 여기에 로직 추가
@@ -185,7 +187,7 @@ class FCMService {
   private setupForegroundMessageHandler(): void {
     if (!this.messaging) return;
     
-    this.messaging().onMessage(async (remoteMessage) => {
+    this.messaging().onMessage(async (remoteMessage: any) => {
       
       // 포그라운드에서는 커스텀 알림 표시
       this.showForegroundNotification(remoteMessage);
@@ -201,14 +203,14 @@ class FCMService {
     // 앱이 종료된 상태에서 알림을 클릭했을 때
     this.messaging()
       .getInitialNotification()
-      .then((remoteMessage) => {
+      .then((remoteMessage: any) => {
         if (remoteMessage) {
           this.handleNotificationClick(remoteMessage);
         }
       });
 
     // 앱이 백그라운드에 있을 때 알림을 클릭했을 때
-    this.messaging().onNotificationOpenedApp((remoteMessage) => {
+    this.messaging().onNotificationOpenedApp((remoteMessage: any) => {
       this.handleNotificationClick(remoteMessage);
     });
   }
@@ -221,6 +223,15 @@ class FCMService {
       const { notification, data } = remoteMessage;
       
       if (notification) {
+        // 알림 타입 확인하여 설정에 따라 표시 여부 결정
+        const notificationType = data?.type || 'UNKNOWN';
+        const shouldShow = await this.notificationSettingsService.shouldSendNotification(notificationType);
+        
+        if (!shouldShow) {
+          console.log(`알림 차단됨: ${notificationType}`);
+          return;
+        }
+        
         // Expo Notifications를 사용하여 커스텀 알림 표시
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -232,6 +243,7 @@ class FCMService {
         });
       }
     } catch (error) {
+      console.error('포그라운드 알림 표시 실패:', error);
     }
   }
 
@@ -246,10 +258,12 @@ class FCMService {
         // 링크가 있으면 해당 페이지로 이동
         this.navigateToLink(data.link);
       } else if (notification) {
-        // 기본 알림 처리 (예: 예산 페이지로 이동)
-        this.navigateToBudgetPage();
+        // 기본 알림 처리 - 홈으로 이동
+        this.navigateToHome();
       }
     } catch (error) {
+      // 에러 발생 시에도 홈으로 이동
+      this.navigateToHome();
     }
   }
 
@@ -279,13 +293,13 @@ class FCMService {
   }
 
   /**
-   * 예산 페이지로 이동
+   * 홈 페이지로 이동
    */
-  private navigateToBudgetPage(): void {
+  private navigateToHome(): void {
     try {
-      router.push('/budget');
-    } catch (error) {
       router.push('/(tabs)/home');
+    } catch (error) {
+      console.error('홈 페이지 이동 실패:', error);
     }
   }
 
@@ -295,7 +309,7 @@ class FCMService {
   setupTokenRefreshListener(): void {
     if (!this.messaging) return;
     
-    this.messaging().onTokenRefresh((token) => {
+    this.messaging().onTokenRefresh((token: any) => {
       
       // 토큰이 갱신되면 서버에 새 토큰 전송
       // 이때는 사용자가 로그인되어 있는지 확인 필요

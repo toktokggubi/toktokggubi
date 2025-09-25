@@ -7,6 +7,7 @@ import React, { useEffect } from "react";
 // import FontAwesome6 from "@expo/vector-icons/FontAwesome6"; 소비 탭
 
 import { useShakeAdvanced } from "@/shared/hooks/useShake";
+import NotificationSettingsService from "@/shared/services/notificationSettingsService";
 import SvgTabBar from "@/shared/ui/SvgTabBar";
 import PaymentScreen from "../pay/payment";
 import HomeScreen from "./home/index";
@@ -26,13 +27,22 @@ const tabs = [
 
 export default function TabLayout() {
   const isFocused = useIsFocused();
+  const notificationService = NotificationSettingsService.getInstance();
 
   // 컴포넌트가 마운트될 때 흔들기 훅 초기화
   useEffect(() => {}, [isFocused]);
 
-  // 탭 화면에서만 흔들기 활성화
-  useShakeAdvanced(
-    () => {
+  // 쉐이크 핸들러 - 알림 설정 확인 후 실행
+  const handleShake = async () => {
+    try {
+      // 쉐이크 트리거 알림이 활성화되어 있는지 확인
+      const isShakeEnabled = await notificationService.isNotificationEnabled('shakeTriggerOn');
+      
+      if (!isShakeEnabled) {
+        console.log('쉐이크 트리거가 비활성화되어 있습니다.');
+        return;
+      }
+
       // 진동 효과 추가 - 더 강렬한 지지징~ 진동
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setTimeout(() => {
@@ -55,7 +65,14 @@ export default function TabLayout() {
         pathname: "/pay/payment",
         params: { source: "shake" },
       });
-    },
+    } catch (error) {
+      console.error('쉐이크 처리 중 오류:', error);
+    }
+  };
+
+  // 탭 화면에서만 흔들기 활성화
+  useShakeAdvanced(
+    handleShake,
     { 
       enabled: isFocused,
       thresholdG: 0.8, // 임계값을 낮춰서 더 민감하게 (기본값: 1.4)
