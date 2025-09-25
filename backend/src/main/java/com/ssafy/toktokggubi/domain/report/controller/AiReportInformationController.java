@@ -12,6 +12,7 @@ import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
 import com.ssafy.toktokggubi.domain.report.entity.AiUserReport;
 import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
