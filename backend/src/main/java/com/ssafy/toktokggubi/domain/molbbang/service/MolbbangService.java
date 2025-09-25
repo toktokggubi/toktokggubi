@@ -56,7 +56,7 @@ public class MolbbangService {
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public IsHostResponse checkMyHostStatus(Long userId) {
         try {
             MolbbangRoom room = getActiveRoomOfUserOrThrow(userId);
@@ -187,6 +187,10 @@ public class MolbbangService {
 
     @Transactional
     public CreateRoomResponse createRoom(CreateRoomRequest req, User hostUserEntity) {
+        memberRepo.findByUser_UserIdAndActiveTrue(hostUserEntity.getUserId())
+                .forEach(m -> memberRepo.save(m.toBuilder()
+                        .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
+
         if (!memberRepo.findByUser_UserIdAndActiveTrue(hostUserEntity.getUserId()).isEmpty()) {
             throw new IllegalStateException("이미 다른 방에 참여 중입니다.");
         }
@@ -222,6 +226,10 @@ public class MolbbangService {
 
     @Transactional
     public OkResponse joinRoom(String code, String nickname, User userEntity) {
+        memberRepo.findByUser_UserIdAndActiveTrue(userEntity.getUserId())
+                .forEach(m -> memberRepo.save(m.toBuilder()
+                        .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
+
         if (!memberRepo.findByUser_UserIdAndActiveTrue(userEntity.getUserId()).isEmpty()) {
             throw new IllegalStateException("이미 다른 방에 참여 중입니다.");
         }
