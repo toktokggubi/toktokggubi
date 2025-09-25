@@ -36,7 +36,6 @@ const saleEventResponseSchema = z.object({
   description: z.string(),
 });
 
-
 const monthResultSchema = z.object({
   events: z.array(saleEventSchema),
   merchants: z.array(
@@ -49,14 +48,16 @@ const monthResultSchema = z.object({
 });
 
 // 백엔드 API 응답을 내부 타입으로 변환하는 함수
-function transformSaleEventResponse(response: z.infer<typeof saleEventResponseSchema>) {
+function transformSaleEventResponse(
+  response: z.infer<typeof saleEventResponseSchema>
+) {
   return {
     id: response.saleEventId.toString(),
     merchantId: response.franchise.franchiseId.toString(),
     category: "cafe_snack" as Category, // 기본값, 실제로는 franchise 정보에서 매핑 필요
     title: response.title,
-    startDate: response.startsAt.split('T')[0], // "2025-10-05T00:00:00" -> "2025-10-05"
-    endDate: response.endsAt.split('T')[0], // "2025-10-19T23:59:59" -> "2025-10-19"
+    startDate: response.startsAt.split("T")[0], // "2025-10-05T00:00:00" -> "2025-10-05"
+    endDate: response.endsAt.split("T")[0], // "2025-10-19T23:59:59" -> "2025-10-19"
     note: response.description,
   };
 }
@@ -66,26 +67,26 @@ export async function fetchSalesByMonth(
   params: MonthParams
 ): Promise<MonthResult> {
   const { year, month, category } = params;
-  
-  console.log('fetchSalesByMonth 호출:', { year, month, category });
-  console.log('API URL:', `${http.defaults.baseURL}/sale-events/month`);
-  
+
+  // console.log('fetchSalesByMonth 호출:', { year, month, category });
+  // console.log('API URL:', `${http.defaults.baseURL}/sale-events/month`);
+
   try {
-    const response = await http.get('/sale-events/month', {
+    const response = await http.get("/sale-events/month", {
       params: {
         year,
         month,
         // franchiseId는 선택사항이므로 일단 제외
-      }
+      },
     });
 
-    console.log('API 응답:', response.data);
+    // console.log('API 응답:', response.data);
 
     const responseData = z.array(saleEventResponseSchema).parse(response.data);
-    
+
     // 응답 데이터를 내부 타입으로 변환
     const events = responseData.map(transformSaleEventResponse);
-    
+
     // merchants는 franchise 정보에서 추출
     const merchants: Merchant[] = responseData.map((item) => ({
       id: item.franchise.franchiseId.toString(),
@@ -94,10 +95,10 @@ export async function fetchSalesByMonth(
     }));
 
     const result = monthResultSchema.parse({ events, merchants });
-    console.log('변환된 결과:', result);
+    // console.log('변환된 결과:', result);
     return result;
   } catch (error) {
-    console.error('fetchSalesByMonth 에러:', error);
+    // console.error('fetchSalesByMonth 에러:', error);
     throw error;
   }
 }
@@ -107,20 +108,20 @@ export async function fetchSalesByPeriod(
   params: PeriodParams
 ): Promise<PeriodResult> {
   const { startDate, endDate, franchiseId } = params;
-  
-  const response = await http.get('/sale-events/period', {
+
+  const response = await http.get("/sale-events/period", {
     params: {
       startDate,
       endDate,
       ...(franchiseId && { franchiseId }),
-    }
+    },
   });
 
   const responseData = z.array(saleEventResponseSchema).parse(response.data);
-  
+
   // 응답 데이터를 내부 타입으로 변환
   const events = responseData.map(transformSaleEventResponse);
-  
+
   // merchants는 franchise 정보에서 추출
   const merchants: Merchant[] = responseData.map((item) => ({
     id: item.franchise.franchiseId.toString(),

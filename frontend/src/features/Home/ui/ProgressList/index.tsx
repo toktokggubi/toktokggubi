@@ -1,5 +1,6 @@
 import { Category } from "@/shared/constants/categories";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -124,6 +125,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
+    lineHeight: 20,
+    ...font.bold,
     color: colors.BLUE_DARKER,
     flex: 1,
   },
