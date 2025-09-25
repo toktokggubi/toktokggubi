@@ -5,6 +5,7 @@ import LoginTemplate from "~features/Auth/templates/LoginTemplate";
 import { useEmailLogin, useKakaoLogin } from "../model/useAuthQueries";
 import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
 import { hasValidToken } from "@/shared/utils/currency";
+import KakaoAuthService from "@/shared/services/kakaoAuthService";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -77,13 +78,41 @@ export default function LoginScreen() {
   // 카카오 로그인 처리
   const handleKakaoLogin = async () => {
     try {
-      // TODO: 카카오 로그인 SDK 연동
-      // const kakaoAccessToken = await getKakaoAccessToken();
-      // await kakaoLoginMutation.mutateAsync(kakaoAccessToken);
+      // 카카오 로그인 서비스 인스턴스 가져오기
+      const kakaoAuthService = KakaoAuthService.getInstance();
+
+      // 카카오 로그인 실행하여 액세스 토큰 획득
+      const kakaoAccessToken = await kakaoAuthService.login();
       
-      Alert.alert("알림", "카카오 로그인은 준비 중입니다.");
+      // 서버에 카카오 액세스 토큰 전송하여 로그인 처리
+      await kakaoLoginMutation.mutateAsync(kakaoAccessToken);
+      
+      // 로그인 성공 후 예산 설정 여부 확인
+      try {
+        await budgetStatusQuery.refetch();
+        // 예산이 설정되어 있으면 홈으로 이동
+        router.replace("/(tabs)/home");
+      } catch (budgetError: any) {
+        // 예산이 설정되지 않았으면 예산 소개 화면으로 이동
+        if (budgetError?.message === 'BUDGET_NOT_SET' || budgetError?.message === 'BUDGET_NOT_FOUND') {
+          router.replace("/budget");
+        } else {
+          // 예산 확인 실패 시에도 홈으로 이동 (fallback)
+          router.replace("/(tabs)/home");
+        }
+      }
     } catch (error: any) {
-      Alert.alert("로그인 실패", "카카오 로그인 중 오류가 발생했습니다.");
+      console.error('카카오 로그인 오류:', error);
+      
+      // 사용자가 취소한 경우는 별도 처리
+      if (error.message === '사용자가 로그인을 취소했습니다.') {
+        return; // 알림 없이 조용히 처리
+      }
+      
+      Alert.alert(
+        "로그인 실패", 
+        error?.response?.data?.message || error.message || "카카오 로그인 중 오류가 발생했습니다."
+      );
     }
   };
 

@@ -1,7 +1,11 @@
 // src/features/Lucky/api/molbbangService.ts
 import { z } from "zod";
+import * as molbbangFetchers from "./fetchers";
+import type { RoomView } from "./types";
+import * as SecureStore from "expo-secure-store";
+import { Client, IMessage } from "@stomp/stompjs";
 
-// ===== Types =====
+// ===== 기존 타입 호환성을 위한 변환 함수들 =====
 export interface MolbbangMember {
   userId: string;
   nickname: string;
@@ -14,7 +18,7 @@ export interface MolbbangMember {
 export interface MolbbangRoom {
   code: string;
   amount: number;
-  status: "lobby" | "playing" | "finished";
+  status: "lobby" | "playing" | "finished" | "cancelled";
   round: number;
   totalRounds: number;
   members: MolbbangMember[];
@@ -24,103 +28,33 @@ export interface MolbbangRoom {
 }
 
 // ===== Utils =====
-function randomCode(len: number = 6): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let out = "";
-  for (let i = 0; i < len; i++)
-    out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
-function uid(): string {
-  return `u_${Math.random().toString(36).slice(2, 10)}`;
-}
-function sortByTotalDesc(members: MolbbangMember[]): MolbbangMember[] {
-  return [...members].sort((a, b) => (b.total ?? 0) - (a.total ?? 0));
-}
 
-// ===== In-memory DB =====
-const rooms = new Map<string, MolbbangRoom>();
+// 토큰 갱신 함수
+async function refreshToken(): Promise<string | null> {
+  try {
+    const refreshToken = await SecureStore.getItemAsync("refresh_token");
+    if (!refreshToken) {
+      if (__DEV__) {
+        console.warn("🔍 리프레시 토큰이 없음");
+      }
+      return null;
+    }
 
-// 봇 제어
-const BOT_NAMES = new Set(["빵순이", "깡총이"]);
-const isBot = (m: MolbbangMember): boolean => BOT_NAMES.has(m.nickname);
+    // TODO: 실제 토큰 갱신 API 호출
+    // const response = await http.post("/auth/token/refresh", { refreshToken });
+    // await SecureStore.setItemAsync("access_token", response.data.accessToken);
+    // return response.data.accessToken;
 
-// 봇 준비 타이머(중복 방지)
-const botReadyTimers = new Map<string, ReturnType<typeof setTimeout>[]>();
-function clearBotTimers(code: string): void {
-  const arr = botReadyTimers.get(code);
-  if (arr) {
-    arr.forEach((t) => clearTimeout(t));
-    botReadyTimers.delete(code);
+    if (__DEV__) {
+      console.log("🔍 토큰 갱신 API 호출 필요");
+    }
+    return null;
+  } catch (error) {
+    if (__DEV__) {
+      console.warn("🔍 토큰 갱신 실패:", error);
+    }
+    return null;
   }
-}
-function scheduleBotsAutoReady(code: string): void {
-  const room = rooms.get(code);
-  if (!room || room.status !== "lobby") return;
-  if (botReadyTimers.has(code)) return; // 중복 스케줄 방지
-
-  const timers: ReturnType<typeof setTimeout>[] = [];
-  room.members.forEach((m) => {
-    if (!isBot(m) || m.ready) return;
-    const delay = 800 + Math.floor(Math.random() * 1200); // 0.8~2.0s
-    const t = setTimeout(() => {
-      const r = rooms.get(code);
-      if (!r || r.status !== "lobby") return;
-      const target = r.members.find((x) => x.userId === m.userId);
-      if (target) target.ready = true;
-    }, delay);
-    timers.push(t);
-  });
-  if (timers.length > 0) botReadyTimers.set(code, timers);
-}
-
-// 방 초기화(호스트+봇2)
-function seedRoom(
-  code: string,
-  amount: number,
-  hostNick: string
-): MolbbangRoom {
-  const host: MolbbangMember = {
-    userId: uid(),
-    nickname: hostNick || "호스트",
-    ready: false,
-    online: true,
-    score: 0,
-  };
-  const bot1: MolbbangMember = {
-    userId: uid(),
-    nickname: "빵순이",
-    ready: false,
-    online: true,
-    score: 0,
-  };
-  const bot2: MolbbangMember = {
-    userId: uid(),
-    nickname: "깡총이",
-    ready: false,
-    online: true,
-    score: 0,
-  };
-  return {
-    code,
-    amount,
-    status: "lobby",
-    round: 1,
-    totalRounds: 3,
-    members: [host, bot1, bot2],
-  };
-}
-
-// 상태 전이
-function toLobby(r: MolbbangRoom): void {
-  r.status = "lobby";
-  r.members.forEach((m) => (m.ready = false));
-  clearBotTimers(r.code);
-  scheduleBotsAutoReady(r.code);
-}
-function toPlaying(r: MolbbangRoom): void {
-  r.status = "playing";
-  clearBotTimers(r.code);
 }
 
 // ===== Schemas =====
@@ -131,173 +65,414 @@ const SetReadyReq = z.object({
 });
 type SetReadyReq = z.infer<typeof SetReadyReq>;
 
+// ===== 타입 변환 함수들 =====
+export function convertRoomViewToMolbbangRoom(
+  roomView: RoomView
+): MolbbangRoom {
+  const convertedMembers = roomView.members.map((member) => ({
+    userId: member.userId.toString(),
+    nickname: member.nickname,
+    ready: member.ready,
+    online: member.active,
+    score: 0, // 백엔드에서는 라운드별 점수를 별도로 관리
+    total: 0, // 백엔드에서는 총점을 별도로 관리
+  }));
+
+  // 멤버 목록 변환 완료
+
+  // 상태 변환
+  let status: "lobby" | "playing" | "finished" | "cancelled";
+  switch (roomView.status) {
+    case "LOBBY":
+      status = "lobby";
+      break;
+    case "IN_PROGRESS":
+      status = "playing";
+      break;
+    case "FINISHED":
+      status = "finished";
+      break;
+    case "CANCELLED":
+      status = "cancelled";
+      break;
+    default:
+      status = "lobby";
+  }
+
+  return {
+    code: roomView.code,
+    amount: roomView.amount,
+    status,
+    round: roomView.round || 1, // null인 경우 1로 기본값 설정
+    totalRounds: roomView.totalRounds,
+    members: convertedMembers,
+  };
+}
+
 // ===== API =====
+
 async function createRoom(dto: {
   amount: number;
   nickname: string;
 }): Promise<{ code: string }> {
-  const code = randomCode();
-  const room = seedRoom(code, dto.amount, dto.nickname);
-  rooms.set(code, room);
-  scheduleBotsAutoReady(code);
-  return { code };
+  const response = await molbbangFetchers.createRoom({
+    amount: dto.amount,
+    nickname: dto.nickname,
+    totalRounds: 3, // 기본값
+  });
+
+  return { code: response.code };
 }
 
 async function joinRoom(dto: {
   code: string;
   nickname: string;
 }): Promise<{ ok: true }> {
-  let r = rooms.get(dto.code);
-  if (!r) {
-    r = seedRoom(dto.code, 1000, "호스트");
-    rooms.set(dto.code, r);
-  }
-  const exist = r.members.find((m) => m.nickname === dto.nickname);
-  if (exist) exist.online = true;
-  else
-    r.members.push({
-      userId: uid(),
-      nickname: dto.nickname,
-      ready: false,
-      online: true,
-      score: 0,
-    });
-
-  scheduleBotsAutoReady(dto.code);
+  await molbbangFetchers.joinRoom({
+    code: dto.code,
+    nickname: dto.nickname,
+  });
   return { ok: true };
 }
 
 async function fetchRoom(code: string): Promise<MolbbangRoom> {
-  let r = rooms.get(code);
-  if (!r) {
-    r = seedRoom(code, 1000, "호스트");
-    rooms.set(code, r);
-    scheduleBotsAutoReady(code);
-  }
-  return r;
+  const roomView = await molbbangFetchers.getMyRoom();
+  return convertRoomViewToMolbbangRoom(roomView);
 }
 
 async function setReady(code: string, payload: SetReadyReq): Promise<void> {
   SetReadyReq.parse(payload);
-  const r = rooms.get(code);
-  if (!r) return;
-  const { userId, nickname, ready } = payload;
-  const target = r.members.find((m) =>
-    userId ? m.userId === userId : m.nickname === nickname
-  );
-  if (target) target.ready = ready;
+  await molbbangFetchers.setReady({
+    ready: payload.ready,
+  });
 }
 
-async function startRound(
-  code: string
-): Promise<{
+async function startRound(code: string): Promise<{
   ok: boolean;
   reason?: "not_ready";
   round?: number;
   totalRounds?: number;
 }> {
-  const r = rooms.get(code);
-  if (!r) return { ok: false };
-  const canStart = r.members.length >= 2 && r.members.every((m) => m.ready);
-  if (!canStart) return { ok: false, reason: "not_ready" };
-  toPlaying(r);
-  return { ok: true, round: r.round, totalRounds: r.totalRounds };
+  try {
+    const response = await molbbangFetchers.startGame();
+    return {
+      ok: response.ok,
+      round: response.round,
+      totalRounds: response.totalRounds,
+    };
+  } catch (error: any) {
+    if (error.response?.status === 400) {
+      return { ok: false, reason: "not_ready" };
+    }
+    throw error;
+  }
 }
 
 async function finishRound(
   code: string,
   payload?: { totals?: Record<string, number> }
-): Promise<{ ok: boolean; status?: "lobby" | "finished"; round?: number }> {
-  const r = rooms.get(code);
-  if (!r) return { ok: false };
-
-  // 1) 전달받은 점수 누적
-  if (payload?.totals) {
-    Object.entries(payload.totals).forEach(([userId, add]) => {
-      const m = r.members.find((x) => x.userId === userId);
-      if (m) {
-        m.total = (m.total ?? 0) + (add ?? 0);
-        m.score = add ?? 0;
-      }
-    });
-  }
-
-  // 2) 데모 편의: 제출 안 한 멤버(봇 포함)에게 랜덤 점수 누적
-  r.members.forEach((m) => {
-    const submitted = payload?.totals
-      ? Object.prototype.hasOwnProperty.call(payload.totals, m.userId)
-      : false;
-    if (!submitted) {
-      const add = 10 + Math.floor(Math.random() * 50); // 10~59
-      m.total = (m.total ?? 0) + add;
-      m.score = add;
-    }
-  });
-
-  // 3) 다음 라운드 or 종료
-  if (r.round < r.totalRounds) {
-    r.round += 1;
-    toLobby(r); // 다음 라운드 준비
-    return { ok: true, status: "lobby", round: r.round };
-  }
-
-  // 4) 최종 종료: 최종 랭킹/몰빵 당첨자 계산 저장
-  r.status = "finished";
-  clearBotTimers(r.code);
-
-  const ranking = sortByTotalDesc(r.members); // 내림차순: 0번이 1등, 마지막이 꼴등
-  r.finalRanking = ranking.map((m) => m.userId);
-  const last = ranking[ranking.length - 1];
-  r.jackpotUserId = last?.userId; // 규칙: 꼴등이 몰빵 당첨
-
-  return { ok: true, status: "finished", round: r.round };
+): Promise<{ ok: boolean; status?: string; round?: number }> {
+  const response = await molbbangFetchers.endRound();
+  return {
+    ok: response.ok,
+    status: response.status,
+    round: response.round,
+  };
 }
 
-// (선택) 라운드별 점수만 보내는 데모용 엔드포인트
 async function submitScore(
   code: string,
   score: number
 ): Promise<{ ok: boolean }> {
-  const r = rooms.get(code);
-  if (!r) return { ok: false };
-  // 데모: 첫 멤버에만 반영(실서비스에서는 본인 userId로 반영)
-  const someone = r.members[0];
-  if (someone) {
-    someone.score = score;
-    someone.total = (someone.total ?? 0) + score;
-  }
-  return { ok: true };
+  const response = await molbbangFetchers.submitScore({ score });
+  return { ok: response.ok };
 }
 
-// 편의: 최종 결과 조회(클라에서 /result 화면에 사용)
 async function getResults(code: string): Promise<{
   ok: boolean;
   ranking: { userId: string; nickname: string; total: number }[];
   jackpotUserId?: string;
   amount?: number;
 }> {
-  const r = rooms.get(code);
-  if (!r) return { ok: false, ranking: [] };
-  const ranking = sortByTotalDesc(r.members).map((m) => ({
-    userId: m.userId,
-    nickname: m.nickname,
-    total: m.total ?? 0,
-  }));
+  const response = await molbbangFetchers.getResults();
   return {
-    ok: true,
-    ranking,
-    jackpotUserId: r.jackpotUserId,
-    amount: r.amount,
+    ok: response.ok,
+    ranking: response.ranking.map((row) => ({
+      userId: row.userId.toString(),
+      nickname: row.nickname,
+      total: row.totalScore,
+    })),
+    jackpotUserId: response.jackpotUserId?.toString(),
+    amount: response.amount,
   };
+}
+
+// ===== 웹소켓 연결 관리 =====
+class MolbbangWebSocketManager {
+  private client: Client | null = null;
+  private roomCode: string | null = null;
+  private onRoomUpdateCallback: ((room: MolbbangRoom) => void) | null = null;
+  private debug: boolean = false;
+
+  async connect(
+    roomCode: string,
+    onRoomUpdate?: (room: MolbbangRoom) => void,
+    debug: boolean = false
+  ) {
+    if (this.client?.connected) {
+      if (__DEV__) {
+        console.log("WebSocket already connected");
+      }
+      return;
+    }
+
+    this.roomCode = roomCode;
+    this.onRoomUpdateCallback = onRoomUpdate || null;
+    this.debug = debug;
+
+    const accessToken = await SecureStore.getItemAsync("access_token");
+    if (!accessToken || accessToken.trim() === "") {
+      throw new Error("No valid access token found");
+    }
+
+    // 토큰 만료 시간 확인
+    try {
+      const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      if (__DEV__) {
+        console.log("🔍 토큰 정보:", {
+          exp: tokenPayload.exp,
+          current: currentTime,
+          remaining: tokenPayload.exp - currentTime,
+          userId: tokenPayload.sub,
+          type: tokenPayload.t,
+        });
+      }
+
+      if (tokenPayload.exp && tokenPayload.exp < currentTime) {
+        if (__DEV__) {
+          console.warn("🔍 토큰이 만료됨:", {
+            exp: tokenPayload.exp,
+            current: currentTime,
+            expired: currentTime - tokenPayload.exp,
+          });
+        }
+        throw new Error("Access token expired");
+      }
+    } catch (error) {
+      if (__DEV__) {
+        console.warn("🔍 토큰 파싱 실패:", error);
+      }
+    }
+
+    if (__DEV__) {
+      console.log("🔍 WebSocket 연결 시도 - 토큰 길이:", accessToken.length);
+    }
+
+    const wsUrl = "wss://j13b207.p.ssafy.io/api/ws";
+    // 쿼리 파라미터와 헤더 둘 다로 토큰 전달 (백엔드에서 둘 다 지원)
+    const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(accessToken)}`;
+
+    if (__DEV__) {
+      console.log(
+        "🔍 WebSocket URL:",
+        wsUrlWithToken.substring(0, 100) + "..."
+      );
+    }
+
+    this.client = new Client({
+      brokerURL: wsUrlWithToken,
+      connectHeaders: {
+        Authorization: `Bearer ${accessToken}`,
+        // 추가 헤더들
+        "User-Agent": "ReactNative",
+        Accept: "application/json",
+      },
+      reconnectDelay: 2000,
+      heartbeatIncoming: 10000,
+      heartbeatOutgoing: 10000,
+      debug: (str) => debug && console.log("[STOMP]", str), // 몰빵 웹소켓 로그만 유지
+      onConnect: () => {
+        if (__DEV__) {
+          console.log("WebSocket connected");
+        }
+        this.subscribeToRoom();
+      },
+      onStompError: (frame) => {
+        if (__DEV__) {
+          console.warn("🔍 STOMP error:", {
+            headers: frame.headers,
+            body: frame.body,
+            command: frame.command,
+          });
+        }
+      },
+      onWebSocketError: (ev) => {
+        if (__DEV__) {
+          console.warn("🔍 WebSocket error:", {
+            type: ev.type,
+            target: ev.target?.url,
+            readyState: ev.target?.readyState,
+          });
+        }
+      },
+      onDisconnect: () => {
+        if (__DEV__) {
+          console.log("WebSocket disconnected");
+        }
+      },
+    });
+
+    this.client.activate();
+  }
+
+  private subscribeToRoom() {
+    if (!this.client?.connected || !this.roomCode) return;
+
+    const destination = `/topic/molbbang.${this.roomCode}`;
+    this.client.subscribe(destination, (message: IMessage) => {
+      try {
+        const roomView = JSON.parse(message.body) as RoomView;
+        const convertedRoom = convertRoomViewToMolbbangRoom(roomView);
+        this.onRoomUpdateCallback?.(convertedRoom);
+        if (this.debug) {
+          console.log("Room update received:", convertedRoom);
+        }
+      } catch (error) {
+        console.error("Error parsing room update:", error);
+      }
+    });
+
+    if (this.debug) {
+      console.log("Subscribed to:", destination);
+    }
+  }
+
+  disconnect() {
+    if (this.client?.active) {
+      this.client.deactivate();
+    }
+    this.client = null;
+    this.roomCode = null;
+    this.onRoomUpdateCallback = null;
+  }
+
+  // 웹소켓을 통한 메시지 전송
+  sendReady(ready: boolean) {
+    if (!this.client?.connected) {
+      throw new Error("WebSocket not connected");
+    }
+    this.client.publish({
+      destination: "/app/molbbang/me/ready",
+      body: JSON.stringify({ ready }),
+    });
+    if (this.debug) {
+      console.log("Sent ready:", ready);
+    }
+  }
+
+  sendStart() {
+    if (!this.client?.connected) {
+      throw new Error("WebSocket not connected");
+    }
+    this.client.publish({
+      destination: "/app/molbbang/me/start",
+      body: "{}",
+    });
+    if (this.debug) {
+      console.log("Sent start game");
+    }
+  }
+
+  sendScore(score: number) {
+    if (!this.client?.connected) {
+      throw new Error("WebSocket not connected");
+    }
+    this.client.publish({
+      destination: "/app/molbbang/me/score",
+      body: JSON.stringify({ score }),
+    });
+    if (this.debug) {
+      console.log("Sent score:", score);
+    }
+  }
+
+  sendEnd() {
+    if (!this.client?.connected) {
+      throw new Error("WebSocket not connected");
+    }
+    this.client.publish({
+      destination: "/app/molbbang/me/end",
+      body: "{}",
+    });
+    if (this.debug) {
+      console.log("Sent end game");
+    }
+  }
+
+  get connected(): boolean {
+    return this.client?.connected ?? false;
+  }
+}
+
+// 전역 웹소켓 매니저 인스턴스
+const wsManager = new MolbbangWebSocketManager();
+
+// ===== 웹소켓 API =====
+async function connectWebSocket(
+  roomCode: string,
+  onRoomUpdate?: (room: MolbbangRoom) => void,
+  debug: boolean = false
+): Promise<void> {
+  await wsManager.connect(roomCode, onRoomUpdate, debug);
+}
+
+function disconnectWebSocket(): void {
+  wsManager.disconnect();
+}
+
+function sendWebSocketReady(ready: boolean): void {
+  wsManager.sendReady(ready);
+}
+
+function sendWebSocketStart(): void {
+  wsManager.sendStart();
+}
+
+function sendWebSocketScore(score: number): void {
+  wsManager.sendScore(score);
+}
+
+function sendWebSocketEnd(): void {
+  wsManager.sendEnd();
+}
+
+function isWebSocketConnected(): boolean {
+  return wsManager.connected;
+}
+
+async function leaveRoom(): Promise<{ ok: true }> {
+  await molbbangFetchers.leaveRoom();
+  return { ok: true };
 }
 
 export const molbbangApi = {
   createRoom,
   joinRoom,
+  leaveRoom,
   fetchRoom,
   setReady,
   startRound,
   finishRound,
-  submitScore, // 데모용
-  getResults, // 결과 화면용
+  submitScore,
+  getResults,
+  // 웹소켓 관련 API
+  connectWebSocket,
+  disconnectWebSocket,
+  sendWebSocketReady,
+  sendWebSocketStart,
+  sendWebSocketScore,
+  sendWebSocketEnd,
+  isWebSocketConnected,
 };

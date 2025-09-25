@@ -16,10 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class MonthlySpendingSummary {
     private String month;
-    @JsonProperty("total_spending")
     private Integer totalSpending;
-    @JsonProperty("budget_usage_percentage")
     private Integer budgetUsagePercentage;
-    @JsonProperty("income_usage_percentage")
     private Integer incomeUsagePercentage;
 }

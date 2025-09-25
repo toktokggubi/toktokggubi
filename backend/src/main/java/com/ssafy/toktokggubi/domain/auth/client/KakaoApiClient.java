@@ -4,9 +4,10 @@ import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
-
 
 @Component
 @RequiredArgsConstructor
@@ -22,6 +23,7 @@ public class KakaoApiClient {
                 .get().uri("/v2/user/me")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, ClientResponse::createException)
                 .bodyToMono(KakaoMe.class)
                 .block();
     }

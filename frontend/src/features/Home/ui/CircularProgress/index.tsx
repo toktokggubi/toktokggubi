@@ -1,7 +1,8 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
-import Svg, { Circle } from "react-native-svg";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 
 interface CircularProgressProps {
   currentAmount: number;
@@ -19,7 +20,8 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
   const radius = (size - 20) / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
+  const strokeDashoffset =
+    circumference - (progressPercentage / 100) * circumference;
 
   return (
     <View style={styles.container}>
@@ -48,7 +50,9 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
       </Svg>
       <View style={styles.textContainer}>
         <Text style={styles.monthText}>{month}</Text>
-        <Text style={styles.percentageText}>{Math.round(progressPercentage)}%</Text>
+        <Text style={styles.percentageText}>
+          {Math.round(progressPercentage)}%
+        </Text>
         <Text style={styles.usedAmountText}>
           {currentAmount.toLocaleString("ko-KR")}원
         </Text>
@@ -84,23 +88,27 @@ const styles = StyleSheet.create({
     textShadowColor: "transparent",
   },
   percentageText: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 24,
+    lineHeight: 26,
+    ...font.bold,
     color: colors.BLUE_NORMAL,
     marginVertical: 1,
     backgroundColor: "transparent",
     textShadowColor: "transparent",
+    marginBottom: 5,
   },
   usedAmountText: {
-    fontSize: 11,
-    fontWeight: "600",
+    fontSize: 12,
+    lineHeight: 14,
+    ...font.medium,
     color: colors.GRAY_DARKER,
     backgroundColor: "transparent",
     textShadowColor: "transparent",
   },
   totalAmountText: {
-    fontSize: 10,
-    fontWeight: "500",
+    fontSize: 12,
+    lineHeight: 14,
+    ...font.medium,
     color: colors.GRAY_NORMAL,
     backgroundColor: "transparent",
     textShadowColor: "transparent",

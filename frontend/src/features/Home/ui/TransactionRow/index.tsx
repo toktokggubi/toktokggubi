@@ -1,6 +1,7 @@
 import { CATEGORY_LABELS } from "@/shared/constants/categories";
 import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { TransactionRowProps } from "./types";
@@ -69,7 +70,8 @@ const styles = StyleSheet.create({
   },
   merchantName: {
     fontSize: 14,
-    fontWeight: "600",
+    lineHeight: 16,
+    ...font.medium,
     color: colors.BLUE_DARKER,
     marginBottom: 4,
   },
@@ -79,21 +81,24 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 12,
+    lineHeight: 14,
     color: "#666666",
-    fontWeight: "500",
+    ...font.medium,
   },
   amountContainer: {
     alignItems: "flex-end",
   },
   amount: {
     fontSize: 14,
-    fontWeight: "600",
+    lineHeight: 16,
+    ...font.medium,
     color: colors.BLUE_DARKER,
     marginBottom: 2,
   },
   paymentMethod: {
     fontSize: 11,
+    lineHeight: 13,
     color: "#999999",
-    fontWeight: "500",
+    ...font.medium,
   },
 });
