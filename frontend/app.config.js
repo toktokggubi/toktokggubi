@@ -7,6 +7,11 @@ module.exports = {
     icon: "./assets/images/favicon.png",
     scheme: "toktokggubi",
     userInterfaceStyle: "automatic",
+    splash: {
+      image: "./assets/images/app-intro.png",
+      resizeMode: "contain",
+      backgroundColor: "#288CFF",
+    },
     newArchEnabled: true,
     developmentClient: {
       silentLaunch: true,
