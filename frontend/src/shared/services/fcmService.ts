@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { http } from '@/shared/api/http';
 import Constants from 'expo-constants';
+import NotificationSettingsService from './notificationSettingsService';
 
 // 알림 설정
 Notifications.setNotificationHandler({
@@ -32,6 +33,7 @@ class FCMService {
   private static instance: FCMService;
   private isInitialized = false;
   private messaging: any = null;
+  private notificationSettingsService = NotificationSettingsService.getInstance();
 
   public static getInstance(): FCMService {
     if (!FCMService.instance) {
@@ -229,6 +231,15 @@ class FCMService {
       const { notification, data } = remoteMessage;
       
       if (notification) {
+        // 알림 타입 확인하여 설정에 따라 표시 여부 결정
+        const notificationType = data?.type || 'UNKNOWN';
+        const shouldShow = await this.notificationSettingsService.shouldSendNotification(notificationType);
+        
+        if (!shouldShow) {
+          console.log(`알림 차단됨: ${notificationType}`);
+          return;
+        }
+        
         // Expo Notifications를 사용하여 커스텀 알림 표시
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -240,6 +251,7 @@ class FCMService {
         });
       }
     } catch (error) {
+      console.error('포그라운드 알림 표시 실패:', error);
     }
   }
 
@@ -254,10 +266,12 @@ class FCMService {
         // 링크가 있으면 해당 페이지로 이동
         this.navigateToLink(data.link);
       } else if (notification) {
-        // 기본 알림 처리 (예: 예산 페이지로 이동)
-        this.navigateToBudgetPage();
+        // 기본 알림 처리 - 홈으로 이동
+        this.navigateToHome();
       }
     } catch (error) {
+      // 에러 발생 시에도 홈으로 이동
+      this.navigateToHome();
     }
   }
 
@@ -287,13 +301,13 @@ class FCMService {
   }
 
   /**
-   * 예산 페이지로 이동
+   * 홈 페이지로 이동
    */
-  private navigateToBudgetPage(): void {
+  private navigateToHome(): void {
     try {
-      router.push('/budget');
-    } catch (error) {
       router.push('/(tabs)/home');
+    } catch (error) {
+      console.error('홈 페이지 이동 실패:', error);
     }
   }
 

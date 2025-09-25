@@ -130,15 +130,6 @@ services:
     volumes:
       - ./backend/uploads:/data/uploads
 
-    # Frontend Service (React)
-    # frontend:
-    #   build:
-    #     context: ./frontend # Build from the Dockerfile in the ./frontend directory
-    #   restart: always
-
-    volumes:
-      - ./backend/uploads:/data/uploads
-
   # Frontend Service (React)
   # frontend:
   #   build:
