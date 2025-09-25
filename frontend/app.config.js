@@ -8,7 +8,7 @@ module.exports = {
     scheme: "toktokggubi",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/images/app-intro.png",
+      image: "./assets/images/favicon.png",
       resizeMode: "contain",
       backgroundColor: "#288CFF",
     },
