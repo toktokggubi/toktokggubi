@@ -5,7 +5,7 @@ module.exports = {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/favicon.png",
-    scheme: "frontend",
+    scheme: "toktokggubi",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     developmentClient: {
