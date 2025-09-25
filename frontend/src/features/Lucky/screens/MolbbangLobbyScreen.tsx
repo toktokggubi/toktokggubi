@@ -11,7 +11,13 @@ import { useMolbbangSocket } from "@/features/Lucky/hooks/useMolbbangSocket";
 import LobbyTemplate from "@/features/Lucky/templates/Molbbang/LobbyTemplate";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Alert } from "react-native";
 
 // ✅ hostId 존재 여부를 안전하게 판별하는 타입 가드
@@ -94,15 +100,69 @@ export default function MolbbangLobbyScreen() {
     getToken();
   }, []);
 
+  // WebSocket 연결 (토큰이 있을 때만)
+  const { connected, lastRoomView, sendReady, sendStart } = useMolbbangSocket({
+    wsUrl: "wss://j13b207.p.ssafy.io/api/ws",
+    accessToken: accessToken || "",
+    roomCode: code,
+    debug: false,
+    onRoomUpdate: (roomView) => {
+      setRoom(convertRoomViewToMolbbangRoom(roomView));
+    },
+  });
+
   // HTTP 폴링 (WebSocket 연결 실패 시 대체)
   useEffect(() => {
-    if (!code || connected) return; // WebSocket이 연결되면 HTTP 폴링 중단
+    if (!code || connected) {
+      return; // WebSocket이 연결되면 HTTP 폴링 중단
+    }
 
     const fetchRoomData = async () => {
       try {
         const roomData = await molbbangApi.fetchRoom(code);
+
+        // 상태나 라운드가 변경된 경우에만 로그 출력
+        if (
+          roomData?.status !== room?.status ||
+          roomData?.round !== room?.round
+        ) {
+          console.log("🔍 [대기방 폴링] 상태 변경 감지:", {
+            이전상태: room?.status,
+            새상태: roomData?.status,
+            이전라운드: room?.round,
+            새라운드: roomData?.round,
+            멤버수: roomData?.members?.length,
+          });
+
+          // 게임이 끝나고 대기방으로 돌아왔을 때 준비 상태 초기화
+          if (room?.status === "playing" && roomData?.status === "lobby") {
+            console.log(
+              "🔍 [대기방] 게임 종료 후 대기방 복귀 - 준비 상태 초기화"
+            );
+            // 모든 멤버의 준비 상태를 false로 설정
+            if (roomData.members) {
+              roomData.members = roomData.members.map((member) => ({
+                ...member,
+                ready: false,
+              }));
+            }
+          }
+
+          // 라운드가 변경되었을 때도 준비 상태 초기화
+          if (room?.round !== roomData?.round && roomData?.status === "lobby") {
+            console.log("🔍 [대기방] 라운드 변경 - 준비 상태 초기화");
+            if (roomData.members) {
+              roomData.members = roomData.members.map((member) => ({
+                ...member,
+                ready: false,
+              }));
+            }
+          }
+        }
+
         setRoom(roomData);
       } catch (error) {
+        console.log("🔍 [대기방 폴링] 에러:", error);
         // 에러 무시 (HTTP 인터셉터가 처리)
       }
     };
@@ -113,27 +173,10 @@ export default function MolbbangLobbyScreen() {
     // 5초마다 폴링
     const interval = setInterval(fetchRoomData, 5000);
 
-    return () => clearInterval(interval);
-  }, [code, connected]);
-
-  // WebSocket 연결 (토큰이 있을 때만)
-  const { connected, lastRoomView, sendReady, sendStart } = useMolbbangSocket({
-    wsUrl: "wss://j13b207.p.ssafy.io/api/ws",
-    accessToken: accessToken || "",
-    roomCode: code,
-    debug: false,
-    onRoomUpdate: (roomView) => {
-      // RoomView를 MolbbangRoom으로 변환
-      const convertedRoom = convertRoomViewToMolbbangRoom(roomView);
-      setRoom(convertedRoom);
-    },
-    onConnect: () => {
-      // WebSocket 연결됨
-    },
-    onDisconnect: () => {
-      // WebSocket 연결 끊어짐
-    },
-  });
+    return () => {
+      clearInterval(interval);
+    };
+  }, [code, connected, room?.status, room?.round]);
 
   const members: MolbbangMember[] = room?.members ?? [];
   const me = useMemo(() => {
@@ -144,14 +187,35 @@ export default function MolbbangLobbyScreen() {
   // 웹소켓 또는 HTTP API 사용
   const handleSendReady = useCallback(
     async (ready: boolean) => {
+      // 즉시 로컬 상태 업데이트 (낙관적 업데이트)
+      if (room && me) {
+        const updatedRoom = {
+          ...room,
+          members: room.members.map((member) =>
+            member.userId === me.userId ? { ...member, ready } : member
+          ),
+        };
+        setRoom(updatedRoom);
+      }
+
       if (connected) {
         // 웹소켓 연결된 경우
         try {
           sendReady(ready);
-          console.log("🔍 WebSocket 준비 상태 변경:", ready);
         } catch (error) {
-          console.log("🔍 WebSocket 준비 상태 변경 실패:", error);
           Alert.alert("준비 상태 변경 실패", String(error));
+          // 실패 시 원래 상태로 되돌리기
+          if (room && me) {
+            const revertedRoom = {
+              ...room,
+              members: room.members.map((member) =>
+                member.userId === me.userId
+                  ? { ...member, ready: !ready }
+                  : member
+              ),
+            };
+            setRoom(revertedRoom);
+          }
         }
       } else {
         // HTTP API 사용 (웹소켓 연결되지 않은 경우)
@@ -161,14 +225,24 @@ export default function MolbbangLobbyScreen() {
             nickname,
             ready,
           });
-          console.log("🔍 HTTP 준비 상태 변경:", ready);
         } catch (error) {
-          console.log("🔍 HTTP 준비 상태 변경 실패:", error);
           Alert.alert("준비 상태 변경 실패", String(error));
+          // 실패 시 원래 상태로 되돌리기
+          if (room && me) {
+            const revertedRoom = {
+              ...room,
+              members: room.members.map((member) =>
+                member.userId === me.userId
+                  ? { ...member, ready: !ready }
+                  : member
+              ),
+            };
+            setRoom(revertedRoom);
+          }
         }
       }
     },
-    [connected, sendReady, code, me?.userId, nickname]
+    [connected, sendReady, code, me?.userId, me, nickname, room]
   );
 
   const handleSendStart = useCallback(async () => {
@@ -176,9 +250,7 @@ export default function MolbbangLobbyScreen() {
       // 웹소켓 연결된 경우
       try {
         sendStart();
-        console.log("🔍 WebSocket 게임 시작 요청");
       } catch (error) {
-        console.log("🔍 WebSocket 게임 시작 실패:", error);
         Alert.alert("게임 시작 실패", String(error));
       }
     } else {
@@ -188,24 +260,75 @@ export default function MolbbangLobbyScreen() {
         if (!res.ok) {
           Alert.alert(
             "아직 시작할 수 없어요",
-            "최소 2명 이상이 모두 준비해야 합니다."
+            "모든 참가자가 준비해야 합니다."
           );
           return;
         }
-        console.log("🔍 HTTP 게임 시작 요청");
+        // 게임 시작 성공 시 즉시 게임 화면으로 이동
+        router.push(`/molbbang/room/${code}/game`);
       } catch (error) {
-        console.log("🔍 HTTP 게임 시작 실패:", error);
         Alert.alert("게임 시작 실패", String(error));
       }
     }
-  }, [connected, sendStart, code]);
+  }, [connected, sendStart, code, router]);
+
+  // 이미 게임 화면으로 이동했는지 여부를 추적하여 중복 이동 방지
+  const navigatedToGameRef = useRef(false);
+
+  // 게임 상태 변경 감지 (WebSocket으로 게임 시작 시 화면 전환)
+  useEffect(() => {
+    if (room && room.status === "playing") {
+      // 준비된 멤버가 있는지 확인
+      const readyMembers = room.members?.filter((m) => m.ready) || [];
+
+      // 준비된 멤버가 없으면 이동하지 않음
+      if (readyMembers.length === 0) {
+        console.log("🔍 [대기방] 준비된 멤버 없음 - 이동 취소");
+        return;
+      }
+
+      // 이미 이동한 경우 중복 이동 방지
+      if (navigatedToGameRef.current) {
+        return;
+      }
+      navigatedToGameRef.current = true;
+
+      console.log("🔍 [대기방] 게임 시작 - 게임 화면으로 이동");
+      router.push({
+        pathname: "/molbbang/room/[code]/game",
+        params: {
+          code,
+          nick: nickname,
+          amount,
+          host: hostFlagFromParams ? "1" : "0",
+        },
+      });
+    }
+  }, [
+    room?.status,
+    room?.round, // 라운드 변경도 감지
+    code,
+    router,
+    nickname,
+    amount,
+    hostFlagFromParams,
+    connected,
+  ]);
+
+  // 대기방 상태로 돌아오면 이동 락 해제
+  useEffect(() => {
+    if (room?.status === "lobby") {
+      navigatedToGameRef.current = false;
+    }
+  }, [room?.status]);
+
   const myReady = !!me?.ready;
 
   const presentCount = members.some((m) => typeof m.online === "boolean")
     ? members.filter((m) => m.online).length
     : members.length;
   const allReady = members.length > 0 && members.every((m) => m.ready);
-  const canStart = members.length >= 2 && allReady;
+  const canStart = members.length >= 1 && allReady;
 
   // ✅ 방장 판별: 1) hostId가 있으면 그걸로, 2) 없으면 첫 번째 멤버를 방장으로 간주(폴백)
   const isHost = useMemo(() => {
@@ -223,27 +346,12 @@ export default function MolbbangLobbyScreen() {
 
   const onToggleReady = useCallback(async () => {
     const next = !myReady;
-    console.log("🔍 준비 상태 변경 시도:", next);
     await handleSendReady(next);
   }, [myReady, handleSendReady]);
 
   const onStart = useCallback(async () => {
-    console.log("🔍 게임 시작 시도");
     await handleSendStart();
   }, [handleSendStart]);
-
-  // LobbyTemplate에 전달되는 데이터 확인 (첫 번째 렌더링 시에만)
-  if (!room) {
-    console.log("🔍 LobbyTemplate props:", {
-      members: members,
-      meNickname: nickname,
-      myReady: myReady,
-      presentCount: presentCount,
-      isHost: isHost,
-      connected: connected,
-      accessToken: accessToken ? "있음" : "없음",
-    });
-  }
 
   return (
     <LobbyTemplate
@@ -258,7 +366,6 @@ export default function MolbbangLobbyScreen() {
       allReady={allReady}
       canStart={canStart}
       onToggleReady={onToggleReady}
-      showStartButton={isHost && room?.status === "lobby"}
       onStart={onStart}
     />
   );
