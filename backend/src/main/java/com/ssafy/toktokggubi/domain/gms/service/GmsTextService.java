@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -156,6 +158,130 @@ public class GmsTextService {
                     "무료 전시·도서관 대여로 " + category + "을(를) 가볍게 즐겨봐요",
                     /*exceeded=*/false, /*maxLen=*/85
             );
+        }
+    }
+    public Map<String, Long> suggestCategoryAllocations(List<String> categoryNames, long pool) {
+        if (pool <= 0 || categoryNames == null || categoryNames.isEmpty()) {
+            return categoryNames.stream().collect(
+                    java.util.stream.Collectors.toMap(n -> n, n -> 0L, (a,b)->a, java.util.LinkedHashMap::new));
+        }
+
+        // 0) 풀 자체를 10,000원 단위로 반올림
+        long pool10 = Math.round(pool / 10_000.0) * 10_000L;
+
+        // 1) LLM에게 퍼센트 받기 (아래 B 프롬프트 개선도 함께 반영)
+        Map<String, Integer> pctByName = null;
+        try {
+            String prompt = buildBetterAllocPrompt(categoryNames, pool10);
+            String out = llm.complete(prompt, 200, 0.4);
+            pctByName = parsePercentJson(out);
+        } catch (Exception ignore) {}
+
+        // 2) 파싱 실패/부적절 시 폴백(균등 or 규칙 기반)
+        if (pctByName == null || pctByName.isEmpty()) {
+            pctByName = fallbackPercent(categoryNames); // 아래 C 참고
+        }
+
+        // 3) 금액 환산 + 만원 단위 반올림
+        Map<String, Long> amt = new java.util.LinkedHashMap<>();
+        long sum = 0L;
+        String primary = null; // 비중 가장 큰 카테고리
+        int primaryPct = -1;
+
+        for (String name : categoryNames) {
+            int pct = Math.max(0, pctByName.getOrDefault(name, 0));
+            long v = Math.round(pool10 * (pct / 100.0));
+            v = Math.round(v / 10_000.0) * 10_000L; // ★ 만원 단위 반올림
+            amt.put(name, v);
+            sum += v;
+            if (pct > primaryPct) { primaryPct = pct; primary = name; }
+        }
+
+        // 4) 잔차 보정(만원 단위 유지)
+        long delta = pool10 - sum;
+        if (delta != 0 && primary != null) {
+            long adj = Math.round(delta / 10_000.0) * 10_000L; // 만원 단위로만 조정
+            amt.put(primary, Math.max(0L, amt.get(primary) + adj));
+            sum += adj;
+        }
+
+        // 마지막 안전: 합계가 여전히 안 맞으면(이론상 드묾) 가장 앞 항목에 맞춰 클램프
+        if (sum != pool10 && !amt.isEmpty()) {
+            String first = categoryNames.get(0);
+            long need = pool10 - sum;
+            long adj = Math.round(need / 10_000.0) * 10_000L;
+            amt.put(first, Math.max(0L, amt.get(first) + adj));
+        }
+
+        return amt;
+    }
+
+    private String buildBetterAllocPrompt(List<String> names, long pool10) {
+        String cats = String.join(", ", names);
+        return """
+    역할: 예산 분배 플래너.
+    입력:
+    - 총 분배 금액(원): %,d
+    - 카테고리: %s
+    요구사항:
+    - 각 카테고리의 "percent"(정수, 합계=100)를 제안해라.
+    - 제약(해당 이름이 있을 경우 반드시 충족):
+      * "식비" > "카페" 또는 "카페/간식"
+      * ("카페" 또는 "카페/간식") > "문화"
+    - 필수/생계성은 높이고, 사치성은 낮춘다.
+    - 반환은 반드시 JSON만:
+      {"allocations":[{"name":"카테고리명","percent":정수}, ...]}
+    - 합계가 100이 아니면 마지막 항목에서 보정.
+    """.formatted(pool10, cats);
+    }
+    private Map<String, Integer> fallbackPercent(List<String> names) {
+        // 기본은 균등
+        int n = names.size();
+        int base = 100 / n, rem = 100 - base * n;
+        Map<String, Integer> map = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < n; i++) map.put(names.get(i), base + (i < rem ? 1 : 0));
+
+        // 우선순위 보정(있는 경우만)
+        String eat   = names.stream().filter(s -> s.contains("식비")).findFirst().orElse(null);
+        String cafe  = names.stream().filter(s -> s.contains("카페")).findFirst()
+                .orElseGet(() -> names.stream().filter(s -> s.contains("간식")).findFirst().orElse(null));
+        String cult  = names.stream().filter(s -> s.contains("문화")).findFirst().orElse(null);
+
+        if (eat != null)   map.put(eat, 50);
+        if (cafe != null)  map.put(cafe, 30);
+        if (cult != null)  map.put(cult, 20);
+
+        // 합계 보정
+        int sum = map.values().stream().mapToInt(Integer::intValue).sum();
+        if (sum != 100) {
+            String last = names.get(names.size()-1);
+            map.put(last, Math.max(0, map.get(last) + (100 - sum)));
+        }
+        return map;
+    }
+    @SuppressWarnings("unchecked")
+    private Map<String, Integer> parsePercentJson(String json) {
+        // 가벼운 파서(진짜 구현에서는 ObjectMapper 사용 권장)
+        try {
+            var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            var root = mapper.readTree(json);
+            var arr  = root.get("allocations");
+            Map<String, Integer> map = new java.util.LinkedHashMap<>();
+            for (var node : arr) {
+                String name = node.get("name").asText();
+                int pct     = node.get("percent").asInt();
+                map.put(name, pct);
+            }
+            // 합계 보정(100)
+            int sum = map.values().stream().mapToInt(Integer::intValue).sum();
+            if (sum != 100 && !map.isEmpty()) {
+                String lastKey = null;
+                for (String k : map.keySet()) lastKey = k;
+                map.put(lastKey, Math.max(0, map.get(lastKey) + (100 - sum)));
+            }
+            return map;
+        } catch (Exception e) {
+            return java.util.Collections.emptyMap();
         }
     }
 

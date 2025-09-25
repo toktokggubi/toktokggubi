@@ -7,6 +7,7 @@ import com.ssafy.toktokggubi.domain.budget.entity.UserMonthlyBudget;
 import com.ssafy.toktokggubi.domain.budget.repository.BudgetCategoryRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.FixedExpenseRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
+import com.ssafy.toktokggubi.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -14,19 +15,38 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 // BudgetReadService.java (추가)
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class BudgetReadService {
-
+private final CategoryRepository categoryRepository;
     private final UserMonthlyBudgetRepository umbRepo;
 private final FixedExpenseRepository fixedExpenseRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
 
+    public Map<Long, String> getCategoryNamesByIds(List<Long> ids) {
+        // JPA findAllById 결과 → 임시 맵
+        Map<Long, String> tmp = categoryRepository.findAllById(ids).stream()
+                .collect(Collectors.toMap(
+                        c -> c.getCategoryId(),            // ← 메서드 레퍼런스 대신 람다
+                        c -> c.getName(),
+                        (a, b) -> a                        // 중복 키가 있어도 첫 값 유지
+                ));
+
+        // 입력 ids 순서를 그대로 유지한 맵으로 반환 (없으면 null)
+        LinkedHashMap<Long, String> ordered = new LinkedHashMap<>();
+        for (Long id : ids) {
+            ordered.put(id, tmp.get(id));
+        }
+        return ordered;
+    }
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM");
     /** yyyyMM의 이전 달(yyyyMM) 계산 */
     private String prevYm(String ym) {
