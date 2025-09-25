@@ -2,6 +2,7 @@ import { fetchNotifications } from "@/features/Notification/api/notificationApi"
 import { Category } from "@/shared/constants/categories";
 import { colors } from "@/shared/constants/colors";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
+import { font } from "@/shared/typography/font";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -323,7 +324,8 @@ export const HomeScreen: React.FC = () => {
   };
 
   const handleNotificationPress = () => {
-    router.push("/notification");
+    // TODO: 알림 화면 구현 후 경로 수정
+    console.log("알림 화면으로 이동");
   };
 
   // 읽지 않은 알림 개수 계산
@@ -421,6 +423,7 @@ const styles = StyleSheet.create({
   testButtonText: {
     color: "white",
     fontSize: 12,
-    fontWeight: "bold",
+    lineHeight: 14,
+    ...font.bold,
   },
 });

@@ -288,7 +288,7 @@ public class MolbbangService {
             throw new IllegalStateException("Game closed");
 
         var members = memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId());
-        if (members.size() < 2) throw new IllegalStateException("not_enough_members");
+        if (members.isEmpty()) throw new IllegalStateException("not_enough_members");
         if (!members.stream().allMatch(MolbbangMember::isReady)) throw new IllegalStateException("not_ready");
 
         int nextNo = Optional.ofNullable(room.getCurrentRoundNo()).orElse(0) + 1;
