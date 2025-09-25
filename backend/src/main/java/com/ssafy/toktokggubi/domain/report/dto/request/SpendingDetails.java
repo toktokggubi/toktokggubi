@@ -21,30 +21,25 @@ public class SpendingDetails {
      * 총 거래 건수.
      * JSON 필드명 `total_transactions`에 매핑됩니다.
      */
-    @JsonProperty("total_transactions")
     private Integer totalTransactions;
     /**
      * 하루 최대 거래 건수.
      * JSON 필드명 `max_daily_transactions`에 매핑됩니다.
      */
-    @JsonProperty("max_daily_transactions")
     private Integer maxDailyTransactions;
     /**
      * 일별 거래 건수.
      * JSON 필드명 `daily_transaction_counts`에 매핑됩니다.
      */
-    @JsonProperty("daily_transaction_counts")
     private Map<String, Integer> dailyTransactionCounts;
     /**
      * 일별 지출 내역 목록.
      * JSON 필드명 `spending_per_day`에 매핑됩니다.
      */
-    @JsonProperty("spending_per_day")
     private List<SpendingPerDay> spendingPerDay;
     /**
      * 상위 지출 가맹점 목록.
      * JSON 필드명 `top_spending_merchants`에 매핑됩니다.
      */
-    @JsonProperty("top_spending_merchants")
     private List<TopSpendingMerchant> topSpendingMerchants;
 }

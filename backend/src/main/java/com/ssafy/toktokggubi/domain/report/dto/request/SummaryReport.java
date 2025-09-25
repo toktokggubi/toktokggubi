@@ -20,30 +20,25 @@ public class SummaryReport {
      * 전체 요약.
      * JSON 필드명 `overall_summary`에 매핑됩니다.
      */
-    @JsonProperty("overall_summary")
     private String overallSummary;
     /**
      * 월별 지출 요약.
      * JSON 필드명 `monthly_spending_summary`에 매핑됩니다.
      */
-    @JsonProperty("monthly_spending_summary")
     private MonthlySpendingSummary monthlySpendingSummary;
     /**
      * 카테고리별 지출 목록.
      * JSON 필드명 `spending_by_category`에 매핑됩니다.
      */
-    @JsonProperty("spending_by_category")
     private List<SpendingByCategory> spendingByCategory;
     /**
      * 이상 지출 정보.
      * JSON 필드명 `abnormal_spending`에 매핑됩니다.
      */
-    @JsonProperty("abnormal_spending")
     private AbnormalSpending abnormalSpending;
     /**
      * 예산 조정 제안.
      * JSON 필드명 `budget_adjustment`에 매핑됩니다.
      */
-    @JsonProperty("budget_adjustment")
     private BudgetAdjustment budgetAdjustment;
 }
