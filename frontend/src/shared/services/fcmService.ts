@@ -4,6 +4,7 @@ import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { http } from '@/shared/api/http';
 import Constants from 'expo-constants';
+import NotificationSettingsService from './notificationSettingsService';
 
 // 알림 설정
 Notifications.setNotificationHandler({
@@ -32,6 +33,7 @@ class FCMService {
   private static instance: FCMService;
   private isInitialized = false;
   private messaging: any = null;
+  private notificationSettingsService = NotificationSettingsService.getInstance();
 
   public static getInstance(): FCMService {
     if (!FCMService.instance) {
@@ -221,6 +223,15 @@ class FCMService {
       const { notification, data } = remoteMessage;
       
       if (notification) {
+        // 알림 타입 확인하여 설정에 따라 표시 여부 결정
+        const notificationType = data?.type || 'UNKNOWN';
+        const shouldShow = await this.notificationSettingsService.shouldSendNotification(notificationType);
+        
+        if (!shouldShow) {
+          console.log(`알림 차단됨: ${notificationType}`);
+          return;
+        }
+        
         // Expo Notifications를 사용하여 커스텀 알림 표시
         await Notifications.scheduleNotificationAsync({
           content: {
@@ -232,6 +243,7 @@ class FCMService {
         });
       }
     } catch (error) {
+      console.error('포그라운드 알림 표시 실패:', error);
     }
   }
 
