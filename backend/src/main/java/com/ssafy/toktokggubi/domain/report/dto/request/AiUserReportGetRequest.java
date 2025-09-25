@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AiUserReportGetRequest {
-    private Integer userId;
-    private String username;
     private Integer year;
     private Integer month;
 }
