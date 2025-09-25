@@ -15,7 +15,9 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
+// BudgetReadService.java (추가)
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +26,13 @@ public class BudgetReadService {
     private final UserMonthlyBudgetRepository umbRepo;
 private final FixedExpenseRepository fixedExpenseRepository;
     private final BudgetCategoryRepository budgetCategoryRepository;
+
+    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM");
+    /** yyyyMM의 이전 달(yyyyMM) 계산 */
+    private String prevYm(String ym) {
+        YearMonth cur = YearMonth.parse(ym, YM);
+        return cur.minusMonths(1).format(YM);
+    }
     @Transactional(readOnly = true)
     public TotalAmountResponseDto getTotalAmount(Long userId, String budgetYm) {
         var umb = umbRepo.findByUser_UserIdAndBudgetYm(userId, budgetYm)
@@ -95,5 +104,24 @@ private final FixedExpenseRepository fixedExpenseRepository;
                         bc.getFinalAmount() == null ? 0L : bc.getFinalAmount()
                 ))
                 .toList();
+    }
+    // ====== 🔽🔽 여기서부터 "이전 달" 전용 ======
+
+    @Transactional(readOnly = true)
+    public TotalAmountResponseDto getPreviousTotalAmount(Long userId, String currentYm) {
+        String prev = prevYm(currentYm);
+        return getTotalAmount(userId, prev);
+    }
+
+    @Transactional(readOnly = true)
+    public FixedIncludedTotalResponseDto getPreviousFixedIncludedTotal(Long userId, String currentYm) {
+        String prev = prevYm(currentYm);
+        return getFixedIncludedTotal(userId, prev);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FixedExpenseDto> getPreviousFixedList(Long userId, String currentYm) {
+        String prev = prevYm(currentYm);
+        return getFixedList(userId, prev);
     }
 }

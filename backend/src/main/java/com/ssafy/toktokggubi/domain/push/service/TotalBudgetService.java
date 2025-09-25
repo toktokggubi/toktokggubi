@@ -2,6 +2,7 @@ package com.ssafy.toktokggubi.domain.push.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
+import com.ssafy.toktokggubi.domain.gms.service.GmsTextService;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
 import com.ssafy.toktokggubi.domain.push.dto.PushType;
 import com.ssafy.toktokggubi.domain.push.dto.ThresholdCheckResponse;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Optional;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -31,7 +33,7 @@ public class TotalBudgetService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
-
+    private final Optional<GmsTextService> gmsTextService;
     private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code(); // "BUDGET_THRESHOLD/TOTAL/80"
     private static final String EXCEED    = PushType.BUDGET_EXCEEDED_TOTAL.code();     // "BUDGET_EXCEEDED/TOTAL"
     private static final String SCOPE         = "TOTAL";
@@ -90,14 +92,13 @@ public class TotalBudgetService {
         LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
         LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
 
-// ✅ [가드 #1] THRESHOLD인데 이미 100% 초과면 바로 스킵
         if (THRESHOLD.equals(typeKeyFull) && rate >= 1.0) {
             return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
         }
 
         if (THRESHOLD.equals(typeKeyFull)) {
             long exceedDup = notificationRepo.countByUserTypeAndPeriod(
-                    userId, SCOPE, monthFrom, monthTo
+                    userId, EXCEED, monthFrom, monthTo
             );
             if (exceedDup > 0) {
                 return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
@@ -106,16 +107,24 @@ public class TotalBudgetService {
         String typeKey = typeKeyFull; // TOTAL은 추가 식별자 불필요
 
         long dup = notificationRepo.countByUserTypeAndPeriod(userId, typeKey, monthFrom, monthTo);
-        if (dup > 0) {
-            return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, false);
-        }
+//        if (dup > 0) {
+//            return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, false);
+//        }
 
         double percent = Math.min(rate * 100.0, 999.9);
         long remaining = Math.max(totalBudget - used, 0);
 
-        String body = includeRemaining
+        PushType pushType = (thresholdRate >= 1.0)
+                ? PushType.BUDGET_EXCEEDED_TOTAL
+                : PushType.BUDGET_THRESHOLD_TOTAL_80;
+
+        String defaultBody = includeRemaining
                 ? String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent, remaining)
                 : String.format(Locale.KOREA, bodyFormat, totalBudget, used, percent);
+
+        String body = gmsTextService
+                .map(svc -> svc.wittyBudgetBody(pushType, totalBudget, used, percent, remaining))
+                .orElse(defaultBody);
 
         fcmService.sendToUser(userId, title, body);
 

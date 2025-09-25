@@ -129,4 +129,79 @@ public class BudgetController {
         return budgetReadService.getCategoryAllocations(userId, ym);
     }
 
+    @GetMapping("/previous/total")
+    public TotalAmountResponseDto getTotalAmountBefore() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getPreviousTotalAmount(userId, ym);
+    }
+
+    @GetMapping("/previous/fixed")
+    public FixedIncludedTotalResponseDto getFixedIncludedTotalBefore() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getPreviousFixedIncludedTotal(userId, ym);
+    }
+
+    @GetMapping("/previous/fixed/list")
+    public List<FixedExpenseDto> getFixedListBefore() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym = ymResolver.nowYm();
+        return budgetReadService.getPreviousFixedList(userId, ym);
+    }
+    @PostMapping("/all/commit")
+    public BudgetCommitResponseDto saveAllAtOnce(@RequestBody BudgetAllSaveRequestDto req) {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        String ym   = ymResolver.nowYm();
+
+        // 0) selectedCategories 보정
+        BudgetAllSaveRequestDto normalized = normalizeAllSave(req);
+
+        // 1) expectedVersion=null 로 고정하여 버전 체크 스킵
+        DraftPatchRequestDto patch = new DraftPatchRequestDto(
+                null, // ★ 버전 체크 건너뛰기
+                normalized.totalAmount(),
+                normalized.fixedExpenses(),
+                normalized.selectedCategories(),
+                normalized.categoryAllocations()
+        );
+
+        // 2) 드래프트에 병합 저장
+        draftService.mergeAndSave(userId, ym, patch);
+
+        // 3) 즉시 커밋(DB 반영)
+        var committed = commitService.commit(userId, ym, null);
+
+        // 4) 기존 응답 타입 재사용
+        return BudgetCommitResponseDto.committed(
+                committed.budgetId(),
+                userId,
+                ym,
+                committed.totalAmount(),
+                committed.fixedExpenseCount(),
+                committed.categoryCount()
+        );
+    }
+
+    private BudgetAllSaveRequestDto normalizeAllSave(BudgetAllSaveRequestDto req) {
+        if (req == null) return new BudgetAllSaveRequestDto(null, null, null, null);
+
+        var selected = req.selectedCategories();
+        var allocs   = req.categoryAllocations();
+
+        if ((selected == null || selected.isEmpty()) && allocs != null && !allocs.isEmpty()) {
+            List<Long> derived = allocs.stream()
+                    .map(CategoryAllocDto::categoryId)
+                    .distinct()
+                    .toList();
+            return new BudgetAllSaveRequestDto(
+                    req.totalAmount(),
+                    req.fixedExpenses(),
+                    derived,                 // ★ allocations에서 유도
+                    req.categoryAllocations()
+            );
+        }
+        return req;
+    }
+
 }
