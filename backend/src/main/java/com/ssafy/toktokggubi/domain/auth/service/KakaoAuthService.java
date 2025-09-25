@@ -41,8 +41,7 @@ public class KakaoAuthService {
     }
 
     @Transactional
-    public KakaoLoginResponse login(KakaoLoginRequest req) {
-        KakaoMe me = kakaoApiClient.me(req.accessToken());
+    public KakaoLoginResponse login(KakaoMe me) {
         Long kakaoId = me.id();
 
         String email = (me.kakao_account() != null && me.kakao_account().get("email") != null)
