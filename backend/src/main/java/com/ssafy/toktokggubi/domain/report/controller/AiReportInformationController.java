@@ -5,11 +5,13 @@ import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportRequest;
 import com.ssafy.toktokggubi.domain.report.dto.response.AiReportInformationResponse;
 import com.ssafy.toktokggubi.domain.report.service.AiReportInformationService;
 import com.ssafy.toktokggubi.domain.report.service.AiUserReportService;
+import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
 import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportGetRequest;
 import com.ssafy.toktokggubi.domain.report.dto.request.UserInfo;
 import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
 import com.ssafy.toktokggubi.domain.report.entity.AiUserReport;
-import io.swagger.v3.oas.annotations.Operation;
+import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
+import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,6 +29,7 @@ public class AiReportInformationController {
 
     private final AiReportInformationService service;
     private final AiUserReportService aiUserReportService;
+    private final UserProfileService userProfileService;
 
     /**
      * AI 월간 리포트 정보를 조회합니다.
@@ -66,9 +69,15 @@ public class AiReportInformationController {
     @PostMapping("/get")
     @Operation(summary = "AI 사용자 리포트 조회", description = "사용자의 월간 AI 리포트 정보를 조회합니다.")
     public UserReportResponse getAiUserReport(@RequestBody AiUserReportGetRequest request) {
+        Long userId = SecurityUtils.currentUserIdOrNull(); // Get userId from SecurityUtils
+        if (userId == null) {
+            throw new IllegalStateException("인증 필요"); // Or handle as appropriate for your application
+        }
+        String username = userProfileService.getProfile(userId).nickname(); // Get username (nickname) from UserProfileService
+
         UserInfo userInfo = UserInfo.builder()
-                .userId(request.getUserId())
-                .username(request.getUsername())
+                .userId(userId.intValue())
+                .username(username)
                 .year(request.getYear())
                 .month(request.getMonth())
                 .build();
