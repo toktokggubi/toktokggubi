@@ -38,8 +38,10 @@ public class SecurityConfig {
                         .requestMatchers("/ai/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment", "/images/**").permitAll()
-                        .requestMatchers("/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
-                                         "/auth/token/refresh", "/auth/kakao/login").permitAll()
+                        .requestMatchers(
+                                "/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
+                                "/auth/token/refresh",  "/auth/kakao/login",  "/auth/kakao/authorize-url", "/auth/kakao/callback"
+                        ).permitAll()
                         .requestMatchers("/push/test/**", "/dev/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated()
