@@ -14,7 +14,7 @@ module.exports = {
     },
     newArchEnabled: true,
     developmentClient: {
-      silentLaunch: true,
+      silentLaunch: false,
     },
     ios: {
       supportsTablet: true,
