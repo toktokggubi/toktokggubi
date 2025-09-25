@@ -5,6 +5,7 @@ import com.ssafy.toktokggubi.domain.auth.client.KakaoOAuthClient;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoLoginResponse;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
 import com.ssafy.toktokggubi.domain.auth.service.KakaoAuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +20,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/auth/kakao")
 @RequiredArgsConstructor
+@Tag(name = "카카오 로그인", description = "카카오 로그인 API")
 public class KakaoAuthController {
     private final KakaoOAuthClient oauth;
     private final KakaoApiClient kakaoApi; // /v2/user/me 호출 그대로 재사용
@@ -32,19 +34,26 @@ public class KakaoAuthController {
 
     /** 프론트가 열 수 있는 authorize URL 제공 */
     @GetMapping("/authorize-url")
-    public Map<String, String> authorizeUrl(@RequestParam(required = false) String state,
-                                            @RequestParam(required = false) String codeChallenge) {
-        String url = UriComponentsBuilder
+    public Map<String, String> authorizeUrl(
+            @RequestParam(required = false) String state,
+            @RequestParam(required = false) String codeChallenge
+    ) {
+        UriComponentsBuilder b = UriComponentsBuilder
                 .fromHttpUrl("https://kauth.kakao.com/oauth/authorize")
                 .queryParam("client_id", kakaoRestKey)
                 .queryParam("redirect_uri", kakaoRedirectUri)
                 .queryParam("response_type", "code")
-                .queryParam("scope", "openid profile_nickname email")
-                .queryParamIfPresent("code_challenge", java.util.Optional.ofNullable(codeChallenge))
-                .queryParamIfPresent("code_challenge_method",
-                        codeChallenge != null ? java.util.Optional.of("S256") : java.util.Optional.empty())
-                .queryParamIfPresent("state", java.util.Optional.ofNullable(state))
-                .build(true).toUriString();
+                .queryParam("scope", "openid profile_nickname email");
+
+        if (codeChallenge != null && !codeChallenge.isBlank()) {
+            b.queryParam("code_challenge", codeChallenge)
+                    .queryParam("code_challenge_method", "S256");
+        }
+        if (state != null && !state.isBlank()) {
+            b.queryParam("state", state);
+        }
+
+        String url = b.encode().toUriString();
         return Map.of("url", url);
     }
 
@@ -62,10 +71,8 @@ public class KakaoAuthController {
         String accessToken = token.get("access_token").toString();
         KakaoMe me = kakaoApi.me(accessToken);
 
-        // ★ 서비스 시그니처에 맞게 호출 (loginWithKakaoMe -> login 으로 통일)
         KakaoLoginResponse res = service.login(me);
 
-        // 앱 딥링크로 리다이렉트
         URI deep = UriComponentsBuilder.fromUriString("toktokggubi://oauth/kakao")
                 .queryParam("message", res.message())
                 .queryParam("userId", res.userId())
