@@ -47,10 +47,6 @@ public class MolbbangRound {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 594363fc6b901eff6ec894e30947ffedd2307354
     // 연관관계
     @Builder.Default
     @OneToMany(mappedBy = "round", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
