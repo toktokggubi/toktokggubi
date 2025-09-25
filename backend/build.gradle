@@ -53,7 +53,7 @@ dependencies {
     // ─────────────────────────────────────────────────────────────
     // AI 연동
     // ─────────────────────────────────────────────────────────────
-    implementation 'org.springframework.ai:spring-ai-starter-model-openai'                // Spring AI(OpenAI 모델 연동)
+   // implementation 'org.springframework.ai:spring-ai-starter-model-openai'                // Spring AI(OpenAI 모델 연동)
 
     // ─────────────────────────────────────────────────────────────
     // Database Drivers (런타임 드라이버)

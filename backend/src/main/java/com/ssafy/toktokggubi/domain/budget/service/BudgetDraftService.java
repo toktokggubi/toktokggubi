@@ -14,11 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static com.ssafy.toktokggubi.domain.budget.exception.BudgetErrorCode.VERSION_MISMATCH;
 
@@ -159,5 +155,20 @@ public class BudgetDraftService {
                 && Objects.equals(cur.fixedExpenses(), fixedExpenses)
                 && Objects.equals(cur.selectedCategories(), selectedCategories)
                 && Objects.equals(cur.categoryAllocations(), categoryAllocations);
+    }
+    private static String draftKey(Long userId, String ym) {
+        return "budget:draft:%d:%s".formatted(userId, ym);
+    }
+
+    public Optional<DraftSnapshotDto> findSnapshot(Long userId, String ym) {
+        String key = draftKey(userId, ym);
+        String json = redis.opsForValue().get(key);
+        if (json == null) return Optional.empty();
+        try {
+            return Optional.of(objectMapper.readValue(json, DraftSnapshotDto.class));
+        } catch (Exception e) {
+            // 역직렬화 실패 시 안전하게 빈값 반환 (로그만 남김)
+            return Optional.empty();
+        }
     }
 }
