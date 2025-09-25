@@ -47,11 +47,6 @@ public class MolbbangRound {
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
 
-    // 편의: 라운드 생성 시각(DDL엔 없지만, 필요 없다면 제거 가능)
-    @CreationTimestamp
-    @Column(name = "created_at", insertable = true, updatable = false)
-    private LocalDateTime createdAt;
-
     // 연관관계
     @Builder.Default
     @OneToMany(mappedBy = "round", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)

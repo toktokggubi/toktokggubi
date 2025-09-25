@@ -3,7 +3,8 @@ import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
-import React, { useEffect, useState } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import React, { useCallback, useEffect, useState } from "react";
 import { Platform, Text, TextInput } from "react-native";
 import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -12,6 +13,9 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import FCMService from "@/shared/services/fcmService";
 import NotificationHandler from "@/shared/components/NotificationHandler";
 
+// 스플래시 스크린을 수동으로 제어하도록 설정
+SplashScreen.preventAutoHideAsync();
+
 export default function RootLayout() {
   const [loaded] = useFonts({
     NotoSansKR_Light: require("@/assets/fonts/NotoSansKR-Light.ttf"),
@@ -19,6 +23,8 @@ export default function RootLayout() {
     NotoSansKR_Medium: require("@/assets/fonts/NotoSansKR-Medium.ttf"),
     NotoSansKR_Bold: require("@/assets/fonts/NotoSansKR-Bold.ttf"),
   });
+
+  const [appIsReady, setAppIsReady] = useState(false);
 
   const [queryClient] = useState(
     () =>
@@ -52,7 +58,22 @@ export default function RootLayout() {
       }
     };
 
-    initializeFCM();
+    const prepareApp = async () => {
+      try {
+        // FCM 초기화
+        await initializeFCM();
+        
+        // 스플래시 스크린을 2초간 표시 (충분히 볼 수 있도록)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        setAppIsReady(true);
+      } catch (error) {
+        console.error('앱 초기화 실패:', error);
+        setAppIsReady(true); // 에러가 발생해도 앱은 실행
+      }
+    };
+
+    prepareApp();
 
     // 전역 기본값 (필요시 숫자만 조절)
     const BASE_FONT_SIZE = 16;
@@ -109,7 +130,21 @@ export default function RootLayout() {
     ];
   }, [loaded]);
 
-  if (!loaded) return null; // 폰트 로딩 전엔 null로
+  // 앱이 준비되면 스플래시 스크린 숨기기
+  useEffect(() => {
+    if (appIsReady) {
+      const hideSplash = async () => {
+        try {
+          await SplashScreen.hideAsync();
+        } catch (error) {
+          console.log('스플래시 스크린 숨기기 실패:', error);
+        }
+      };
+      hideSplash();
+    }
+  }, [appIsReady]);
+
+  if (!loaded || !appIsReady) return null; // 폰트 로딩 전이나 앱 준비 전엔 null로
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
