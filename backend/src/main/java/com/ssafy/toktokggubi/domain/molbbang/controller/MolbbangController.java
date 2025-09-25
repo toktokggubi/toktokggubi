@@ -4,6 +4,7 @@ import com.ssafy.toktokggubi.domain.molbbang.dto.request.*;
 import com.ssafy.toktokggubi.domain.molbbang.dto.response.*;
 import com.ssafy.toktokggubi.domain.molbbang.service.MolbbangService;
 import com.ssafy.toktokggubi.domain.user.entity.User;
+import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import java.security.Principal;
 public class MolbbangController {
 
     private final MolbbangService service;
-    private final com.ssafy.toktokggubi.domain.user.repository.UserRepository userRepo;
+    private final UserRepository userRepo;
 
     private Long uid(Principal p) {
         return Long.valueOf(p.getName());
@@ -52,6 +53,11 @@ public class MolbbangController {
     @PatchMapping("/me/leave")
     public OkResponse leaveMe(Principal principal) {
         return service.leaveMyRoom(uid(principal));
+    }
+
+    @GetMapping("/me/host")
+    public IsHostResponse amIHost(Principal principal) {
+        return service.checkMyHostStatus(uid(principal));
     }
 
     @PostMapping("/me/start")

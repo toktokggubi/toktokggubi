@@ -56,6 +56,32 @@ public class MolbbangService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public IsHostResponse checkMyHostStatus(Long userId) {
+        try {
+            MolbbangRoom room = getActiveRoomOfUserOrThrow(userId);
+
+            var member = memberRepo.findByRoom_RoomIdAndUser_UserId(room.getRoomId(), userId)
+                    .orElse(null);
+
+            boolean isHost = (member != null) && member.isHost();
+
+            return IsHostResponse.builder()
+                    .inRoom(true)
+                    .isHost(isHost)
+                    .roomCode(room.getRoomCode())
+                    .build();
+
+        } catch (IllegalStateException e) {
+            // 방이 없거나(“현재 참가 중인 방이 없습니다.”) 정리 로직 이전에 중복 등으로 예외가 난 경우
+            return IsHostResponse.builder()
+                    .inRoom(false)
+                    .isHost(false)
+                    .roomCode(null)
+                    .build();
+        }
+    }
+
     private String generateCode() {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         StringBuilder sb = new StringBuilder(6);
@@ -71,7 +97,11 @@ public class MolbbangService {
     private MolbbangRoom getActiveRoomOfUserOrThrow(Long userId) {
         var list = memberRepo.findByUser_UserIdAndActiveTrue(userId);
         if (list.isEmpty()) throw new IllegalStateException("현재 참가 중인 방이 없습니다.");
-        if (list.size() > 1) throw new IllegalStateException("여러 방에 동시에 참가 중입니다.");
+        if (list.size() > 1) {
+            list.stream().skip(1).forEach(m ->
+                    memberRepo.save(m.toBuilder().active(false).leftAt(LocalDateTime.now()).build())
+            );
+        }
         return list.get(0).getRoom();
     }
 
@@ -157,6 +187,10 @@ public class MolbbangService {
 
     @Transactional
     public CreateRoomResponse createRoom(CreateRoomRequest req, User hostUserEntity) {
+        if (!memberRepo.findByUser_UserIdAndActiveTrue(hostUserEntity.getUserId()).isEmpty()) {
+            throw new IllegalStateException("이미 다른 방에 참여 중입니다.");
+        }
+
         int totalRounds = Optional.ofNullable(req.totalRounds()).orElse(3);
         String code;
         do {
@@ -188,8 +222,9 @@ public class MolbbangService {
 
     @Transactional
     public OkResponse joinRoom(String code, String nickname, User userEntity) {
-        if (!memberRepo.findByUser_UserIdAndActiveTrue(userEntity.getUserId()).isEmpty())
+        if (!memberRepo.findByUser_UserIdAndActiveTrue(userEntity.getUserId()).isEmpty()) {
             throw new IllegalStateException("이미 다른 방에 참여 중입니다.");
+        }
 
         MolbbangRoom room = getRoomByCodeOrThrow(code);
         if (room.getStatus() != RoomStatus.LOBBY) throw new IllegalStateException("Room not joinable");
@@ -226,6 +261,12 @@ public class MolbbangService {
                     .status(RoomStatus.CANCELLED)
                     .endedAt(LocalDateTime.now())
                     .build());
+            memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId())
+                    .forEach(m -> memberRepo.save(m.toBuilder()
+                            .active(false)
+                            .ready(false)
+                            .leftAt(LocalDateTime.now())
+                            .build()));
         }
 
         broadcastRoom(code);
@@ -267,12 +308,17 @@ public class MolbbangService {
         if (Objects.equals(cur, room.getTotalRounds())) {
             roomRepo.save(room.toBuilder().status(RoomStatus.FINISHED).endedAt(LocalDateTime.now()).build());
             status = "finished";
+            memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId())
+                    .forEach(m -> memberRepo.save(m.toBuilder()
+                            .active(false)
+                            .ready(false)
+                            .leftAt(LocalDateTime.now())
+                            .build()));
         } else {
             status = "lobby";
+            memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId())
+                    .forEach(m -> memberRepo.save(m.toBuilder().ready(false).build()));
         }
-
-        memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId())
-                .forEach(m -> memberRepo.save(m.toBuilder().ready(false).build()));
 
         broadcastRoom(room.getRoomCode());
         return new RoundTransitionResponse(true, status, cur);
