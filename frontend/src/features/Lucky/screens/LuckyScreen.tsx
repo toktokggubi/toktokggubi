@@ -25,36 +25,48 @@ export default function LuckyScreen() {
 
   // 훅에 state 사용
   const { data, isLoading, error } = useSalesByMonth(year, month, category);
-  
+
   // 디버깅용 로그
-  console.log('LuckyScreen - API 상태:', { isLoading, error, data: data ? '데이터 있음' : '데이터 없음' });
+  // console.log('LuckyScreen - API 상태:', { isLoading, error, data: data ? '데이터 있음' : '데이터 없음' });
 
   const eventsForDay = useMemo((): SaleEventListItem[] => {
     if (!data || selectedDay == null) return [];
-    
+
     // 달력과 동일한 색상 할당 로직 - 전체 이벤트 기준으로 색상 할당
-    const availableColors: ("yellow" | "blue" | "green" | "purple" | "orange" | "pink")[] = 
-      ["yellow", "blue", "green", "purple", "orange", "pink"];
+    const availableColors: (
+      | "yellow"
+      | "blue"
+      | "green"
+      | "purple"
+      | "orange"
+      | "pink"
+    )[] = ["yellow", "blue", "green", "purple", "orange", "pink"];
     const usedColors = new Set<string>();
-    
+
     // 전체 이벤트에 대해 달력과 동일한 순서로 색상 할당
-    const colorMap = new Map<string, "yellow" | "blue" | "green" | "purple" | "orange" | "pink">();
+    const colorMap = new Map<
+      string,
+      "yellow" | "blue" | "green" | "purple" | "orange" | "pink"
+    >();
     data.events.forEach((e, index) => {
       let colorIndex = index;
-      while (usedColors.has(availableColors[colorIndex % availableColors.length])) {
+      while (
+        usedColors.has(availableColors[colorIndex % availableColors.length])
+      ) {
         colorIndex++;
       }
-      const selectedColor = availableColors[colorIndex % availableColors.length];
+      const selectedColor =
+        availableColors[colorIndex % availableColors.length];
       usedColors.add(selectedColor);
       colorMap.set(e.id, selectedColor);
     });
-    
+
     const filteredEvents = data.events.filter((e) => {
       const s = Number(e.startDate.slice(8, 10));
       const en = Number(e.endDate.slice(8, 10));
       return selectedDay >= s && selectedDay <= en;
     });
-    
+
     return filteredEvents.map((e) => {
       const s = new Date(e.startDate);
       const en = new Date(e.endDate);
@@ -66,7 +78,7 @@ export default function LuckyScreen() {
           : `${s.getMonth() + 1}/${s.getDate()} ~ ${
               en.getMonth() + 1
             }/${en.getDate()}`;
-      
+
       return {
         id: e.id,
         merchant,
@@ -104,7 +116,7 @@ export default function LuckyScreen() {
   if (error) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ color: 'red' }}>에러 발생: {error.message}</Text>
+        <Text style={{ color: "red" }}>에러 발생: {error.message}</Text>
       </View>
     );
   }

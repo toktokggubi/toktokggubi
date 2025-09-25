@@ -1,6 +1,7 @@
 import { CharacterBackground } from "@/features/Home/ui/CharacterBackground";
 import NotificationIcon from "@/shared/components/NotificationIcon";
 import { colors } from "@/shared/constants/colors";
+import { font } from "@/shared/typography/font";
 import React from "react";
 import {
   Dimensions,
@@ -169,7 +170,8 @@ const styles = StyleSheet.create({
   },
   noBudgetTitle: {
     fontSize: 24,
-    fontWeight: "bold",
+    lineHeight: 26,
+    ...font.bold,
     color: colors.GRAY_DARKER,
     marginBottom: 16,
     textAlign: "center",
@@ -198,7 +200,8 @@ const styles = StyleSheet.create({
   budgetSetupButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
+    lineHeight: 18,
+    ...font.bold,
   },
   characterImage: {
     width: 200,
@@ -214,7 +217,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    fontWeight: "bold",
+    lineHeight: 20,
+    ...font.bold,
     color: colors.GRAY_DARKER,
     marginBottom: 8,
     textAlign: "center",
@@ -236,8 +240,9 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: 16,
+    lineHeight: 18,
     color: colors.BLUE_NORMAL,
-    fontWeight: "bold",
+    ...font.bold,
     textDecorationLine: "underline",
   },
   refreshButton: {
@@ -248,7 +253,8 @@ const styles = StyleSheet.create({
   },
   refreshButtonText: {
     fontSize: 16,
+    lineHeight: 18,
     color: "#FFFFFF",
-    fontWeight: "bold",
+    ...font.bold,
   },
 });
