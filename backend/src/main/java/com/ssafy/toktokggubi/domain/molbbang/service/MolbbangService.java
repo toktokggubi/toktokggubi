@@ -179,8 +179,21 @@ public class MolbbangService {
 
     @Transactional(readOnly = true)
     public ResultsResponse resultsForMe(Long userId) {
-        MolbbangRoom room = getActiveRoomOfUserOrThrow(userId);
+        MolbbangRoom room;
+        try {
+            room = getLatestFinishedRoomOfUserOrThrow(userId);
+        } catch (IllegalStateException e) {
+            room = getActiveRoomOfUserOrThrow(userId);
+        }
+        if (room.getStatus() != RoomStatus.FINISHED) {
+            throw new IllegalStateException("not_finished");
+        }
         return getResultsInTx(room);
+    }
+
+    private MolbbangRoom getLatestFinishedRoomOfUserOrThrow(Long userId) {
+        return roomRepo.findTopByMembers_User_UserIdAndStatusOrderByEndedAtDesc(userId, RoomStatus.FINISHED)
+                .orElseThrow(() -> new IllegalStateException("최근 종료된 방이 없습니다."));
     }
 
     // ===== 생성/입장/퇴장 =====
