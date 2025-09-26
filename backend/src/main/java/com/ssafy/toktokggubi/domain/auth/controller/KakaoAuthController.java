@@ -7,6 +7,7 @@ import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
 import com.ssafy.toktokggubi.domain.auth.service.KakaoAuthService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -78,11 +79,20 @@ public class KakaoAuthController {
                 .build(true).toUri();
 
         // Android용 intent:// 보조(패키지명 꼭 맞추기)
+        String html = getHtml(deep);
+
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                .body(html);
+    }
+
+    @NotNull
+    private static String getHtml(URI deep) {
         String intentUrl =
                 "intent://oauth/kakao" +
                         "#Intent;scheme=toktokggubi;package=com.technologia.toktokggubi;end";
 
-        String html = """
+        return """
             <!doctype html><html><head><meta charset="utf-8">
             <meta http-equiv="refresh" content="0; url=%s">
             <script>
@@ -93,9 +103,5 @@ public class KakaoAuthController {
             <p>앱으로 이동 중… 이동하지 않으면 <a href="%s">여기</a>를 누르세요.</p>
             </body></html>
             """.formatted(deep.toString(), intentUrl, deep.toString());
-
-        return ResponseEntity.ok()
-                .contentType(org.springframework.http.MediaType.TEXT_HTML)
-                .body(html);
     }
 }
