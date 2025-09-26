@@ -83,15 +83,13 @@ export default function MolbbangResultScreen() {
   }, [code]);
 
   const myRank = useMemo(() => {
-    // 먼저 URL 파라미터의 닉네임으로 찾기
-    let idx = ranking.findIndex((x) => x.nickname === nickname);
+    // TODO: 실제로는 사용자 인증 정보(userId)로 찾아야 함
+    // 현재는 임시로 첫 번째 순위를 사용 (백엔드에서 사용자별로 정렬되어 있다고 가정)
+    let idx = 0;
 
-    // 찾지 못했으면 서버에서 받은 실제 닉네임으로 찾기
-    if (idx === -1 && ranking.length > 0) {
-      // 임시로 첫 번째 순위를 사용 (실제로는 사용자 ID로 찾아야 함)
-      idx = 0;
+    if (ranking.length > 0) {
       console.log(
-        "🔍 [결과 화면] URL 닉네임으로 찾기 실패, 서버 닉네임 사용:",
+        "🔍 [결과 화면] 서버에서 받은 실제 닉네임 사용:",
         ranking[0]?.nickname
       );
     }

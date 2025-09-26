@@ -245,16 +245,35 @@ export function useGameLogic({
 
         // endRound API 응답에 따라 대기방으로 이동 (라운드 완료 상태 전달)
         console.log("🔍 [대기방 이동] endRound 응답 기반:", res.status);
-        router.replace({
-          pathname: "/molbbang/room/[code]",
-          params: {
-            code,
-            nick: nickname,
-            amount,
-            host: hostFlagFromParams ? "1" : "0",
-            roundStatus: res.status, // "lobby" 또는 "finished"
-          },
-        });
+
+        // in_progress일 때는 모달이 보이도록 지연 후 이동
+        if (res.status === "in_progress") {
+          console.log("🔍 [모달 지연] in_progress 상태 - 3초 후 대기방 이동");
+          setTimeout(() => {
+            router.replace({
+              pathname: "/molbbang/room/[code]",
+              params: {
+                code,
+                nick: nickname,
+                amount,
+                host: hostFlagFromParams ? "1" : "0",
+                roundStatus: "lobby", // in_progress를 lobby로 변환하여 전달
+              },
+            });
+          }, 3000); // 3초 지연
+        } else {
+          // lobby 또는 finished일 때는 즉시 이동
+          router.replace({
+            pathname: "/molbbang/room/[code]",
+            params: {
+              code,
+              nick: nickname,
+              amount,
+              host: hostFlagFromParams ? "1" : "0",
+              roundStatus: res.status,
+            },
+          });
+        }
       } else {
         // 실패 시 대기방으로 이동
         router.replace({

@@ -15,6 +15,9 @@ export function useGameState() {
   const [remainingSeconds, setRemainingSeconds] = useState<number>(10);
   const [currentScore, setCurrentScore] = useState<number>(0);
   const [rankModalVisible, setRankModalVisible] = useState<boolean>(false);
+
+  // 모달 상태 디버깅
+  console.log("🔍 [모달 상태] rankModalVisible:", rankModalVisible);
   const [rankModalData, setRankModalData] = useState<any[]>([]);
   const [isFinalRound, setIsFinalRound] = useState<boolean>(false);
 
@@ -50,5 +53,3 @@ export function useGameState() {
     gameStateRef,
   };
 }
-
-

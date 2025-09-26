@@ -180,14 +180,15 @@ export default function MolbbangLobbyScreen() {
 
   const members: MolbbangMember[] = room?.members ?? [];
   const me = useMemo(() => {
-    // 서버에서 받은 실제 닉네임으로 me 객체 찾기 (URL 파라미터 무시)
+    // 서버에서 받은 실제 닉네임으로 me 객체 찾기
+    // TODO: 실제로는 사용자 인증 정보(userId)로 찾아야 함
+    // 현재는 임시로 첫 번째 멤버를 사용 (백엔드에서 사용자별로 정렬되어 있다고 가정)
     let found = null;
     if (room?.members && room.members.length > 0) {
-      // 임시로 첫 번째 멤버를 사용 (실제로는 사용자 인증 정보로 찾아야 함)
       found = members[0];
+      console.log("🔍 [me 객체] 서버에서 받은 실제 닉네임:", found.nickname);
     }
 
-    // me 객체 변경 시에만 로그 출력
     return found ?? null;
   }, [members, room?.members]);
 
@@ -463,21 +464,55 @@ export default function MolbbangLobbyScreen() {
     }
   }, [roundStatusFromParams]);
 
+  // 닉네임 변경 알림 처리
+  useEffect(() => {
+    if (me?.nickname && nickname && me.nickname !== nickname) {
+      console.log(
+        "🔍 [닉네임 변경] 서버 닉네임과 URL 파라미터 닉네임이 다름:",
+        {
+          serverNickname: me.nickname,
+          urlNickname: nickname,
+        }
+      );
+      // TODO: 사용자에게 닉네임 변경 알림 표시
+      // Alert.alert("닉네임 변경", `닉네임이 "${me.nickname}"으로 변경되었습니다.`);
+    }
+  }, [me?.nickname, nickname]);
+
   // 라운드 번호 계산 (사용자 친화적으로 +1 표시)
   const displayRound = useMemo(() => {
     if (!room) return 1;
 
-    const serverRound = room.round || 0; // 게임 시작 전에는 0
+    // 백엔드 버그 보정: 방 생성 시 room.round가 1로 설정되는 문제
+    // lobby 상태이고 round가 1이면 실제로는 게임 시작 전이므로 0으로 처리
+    let serverRound = room.round || 0;
+    if (room.status === "lobby" && serverRound === 1) {
+      serverRound = 0; // 게임 시작 전 상태로 보정
+    }
+
+    console.log("🔍 [라운드 계산] 디버깅:", {
+      originalRound: room.round,
+      correctedServerRound: serverRound,
+      roundCompletionStatus,
+      roomStatus: room.status,
+      totalRounds: room.totalRounds,
+    });
 
     if (roundCompletionStatus === "lobby") {
       // 라운드 완료, 다음 라운드 대기: serverRound + 1
-      return Math.min(serverRound + 1, room.totalRounds || 3);
+      const result = Math.min(serverRound + 1, room.totalRounds || 3);
+      console.log("🔍 [라운드 계산] lobby 상태:", result);
+      return result;
     } else if (roundCompletionStatus === "finished") {
       // 게임 완전 종료: 현재 라운드 + 1
-      return Math.min(serverRound + 1, room.totalRounds || 3);
+      const result = Math.min(serverRound + 1, room.totalRounds || 3);
+      console.log("🔍 [라운드 계산] finished 상태:", result);
+      return result;
     } else {
       // 게임 진행 중 또는 게임 시작 전: serverRound + 1
-      return Math.min(serverRound + 1, room.totalRounds || 3);
+      const result = Math.min(serverRound + 1, room.totalRounds || 3);
+      console.log("🔍 [라운드 계산] 기본 상태:", result);
+      return result;
     }
   }, [room, roundCompletionStatus]);
 
@@ -521,7 +556,7 @@ export default function MolbbangLobbyScreen() {
       totalRounds={room?.totalRounds ?? 3}
       members={members}
       presentCount={presentCount}
-      meNickname={nickname}
+      meNickname={me?.nickname || nickname}
       myReady={myReady}
       allReady={allReady}
       canStart={canStart}
