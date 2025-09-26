@@ -323,7 +323,7 @@ public class MolbbangService {
                             .leftAt(LocalDateTime.now())
                             .build()));
         } else {
-            status = "lobby";
+            status = "in_progress";
             memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId())
                     .forEach(m -> memberRepo.save(m.toBuilder().ready(false).build()));
         }
