@@ -1,11 +1,10 @@
+import { queryClient } from "@/shared/lib/queryClient";
 import axios, {
   AxiosError,
-  InternalAxiosRequestConfig,
   AxiosHeaders,
+  InternalAxiosRequestConfig,
 } from "axios";
-import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import { queryClient } from "@/shared/lib/queryClient";
 
 // ─────────────────────────────────────────────────────────────
 // 1) 공용 axios 인스턴스
@@ -22,7 +21,7 @@ export const http = axios.create({
 const AUTH_FREE = [
   "/auth/signup",
   "/auth/login",
-  "/auth/kakao/login",
+  // "/auth/kakao/login",
   "/auth/password/reset",
   "/auth/token/refresh",
 ];

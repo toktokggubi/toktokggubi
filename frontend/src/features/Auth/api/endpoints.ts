@@ -1,5 +1,5 @@
 export const AUTH_ENDPOINTS = {
-  kakaoLogin: "/auth/kakao/login", // UM-6, UM-5
+  // kakaoLogin: "/auth/kakao/login", // UM-6, UM-5
   signup: "/auth/signup", // UM-1
   signupComplete: "/auth/signup/complete", // UM-10
   login: "/auth/login", // UM-4
