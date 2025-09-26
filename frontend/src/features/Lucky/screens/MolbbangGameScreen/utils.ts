@@ -1,6 +1,15 @@
 // src/features/Lucky/screens/MolbbangGameScreen/utils.ts
 import type { MolbbangRoom } from "@/features/Lucky/api/molbbangService";
 
+// 전역 변수 타입 선언
+declare global {
+  interface Window {
+    __gameParamsLogged?: boolean;
+    __lobbyParamsLogged?: boolean;
+    __resultParamsLogged?: boolean;
+  }
+}
+
 // 타입 가드
 export function isRoom(v: unknown): v is MolbbangRoom {
   return (
@@ -39,6 +48,18 @@ export function parseGameParams(params: {
       ? parseInt(params.amount[0])
       : 0;
 
+  // URL 파라미터 디버깅 (한 번만 출력)
+  if (typeof window !== "undefined" && !window.__gameParamsLogged) {
+    console.log("🔍 [게임 화면] URL 파라미터 받기:", {
+      rawParams: params,
+      parsedCode: code,
+      parsedNickname: nickname,
+      parsedAmount: amount,
+      hostFlag: params.host,
+    });
+    window.__gameParamsLogged = true;
+  }
+
   const hostFlagFromParams =
     typeof params.host === "string"
       ? params.host === "1" || params.host === "true"
@@ -61,4 +82,3 @@ export const GAME_CONSTANTS = {
   INITIAL_SCORE: 0,
   POLLING_INTERVAL: 3000,
 } as const;
-

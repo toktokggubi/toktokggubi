@@ -15,9 +15,16 @@ export default function MolbbangJoinScreen() {
     const res = await molbbangApi.joinRoom({ code: upper, nickname });
     if (!res.ok) return Alert.alert("입장 실패");
 
+    const lobbyParams = { code: upper, nick: nickname };
+
+    console.log("🔍 [방 참가] 대기방으로 파라미터 전달:", {
+      pathname: "/molbbang/room/[code]",
+      params: lobbyParams,
+    });
+
     router.replace({
       pathname: "/molbbang/room/[code]",
-      params: { code: upper, nick: nickname },
+      params: lobbyParams,
     });
   }, [code, nickname]);
 

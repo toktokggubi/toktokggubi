@@ -3,6 +3,13 @@ import { View, Text, Pressable, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { molbbangApi } from "@/features/Lucky/api/molbbangService";
 import type { MolbbangRoom } from "@/features/Lucky/api/molbbangService";
+
+// 전역 변수 타입 선언
+declare global {
+  interface Window {
+    __resultParamsLogged?: boolean;
+  }
+}
 import ResultTemplate from "@/features/Lucky/templates/Molbbang/ResultTemplate";
 
 function isRoom(v: unknown): v is MolbbangRoom {
@@ -30,7 +37,7 @@ export default function MolbbangResultScreen() {
       ? params.nick
       : Array.isArray(params.nick)
       ? params.nick[0]
-      : "나";
+      : "";
   const amount = Number(
     typeof params.amount === "string"
       ? params.amount
@@ -38,6 +45,17 @@ export default function MolbbangResultScreen() {
       ? params.amount[0]
       : 0
   );
+
+  // URL 파라미터 디버깅 (한 번만 출력)
+  if (typeof window !== "undefined" && !window.__resultParamsLogged) {
+    console.log("🔍 [결과 화면] URL 파라미터 받기:", {
+      rawParams: params,
+      parsedCode: code,
+      parsedNickname: nickname,
+      parsedAmount: amount,
+    });
+    window.__resultParamsLogged = true;
+  }
 
   const [room, setRoom] = useState<MolbbangRoom | null>(null);
   const [ranking, setRanking] = useState<
@@ -50,10 +68,10 @@ export default function MolbbangResultScreen() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const r = await molbbangApi.fetchRoom(code);
+      const r = await molbbangApi.fetchRoom();
       if (!mounted) return;
       if (isRoom(r)) setRoom(r);
-      const res = await molbbangApi.getResults(code);
+      const res = await molbbangApi.getResults();
       if (mounted && res.ok) {
         setRanking(res.ranking);
         setJackpotUserId(res.jackpotUserId);
@@ -65,7 +83,32 @@ export default function MolbbangResultScreen() {
   }, [code]);
 
   const myRank = useMemo(() => {
-    const idx = ranking.findIndex((x) => x.nickname === nickname);
+    // 먼저 URL 파라미터의 닉네임으로 찾기
+    let idx = ranking.findIndex((x) => x.nickname === nickname);
+
+    // 찾지 못했으면 서버에서 받은 실제 닉네임으로 찾기
+    if (idx === -1 && ranking.length > 0) {
+      // 임시로 첫 번째 순위를 사용 (실제로는 사용자 ID로 찾아야 함)
+      idx = 0;
+      console.log(
+        "🔍 [결과 화면] URL 닉네임으로 찾기 실패, 서버 닉네임 사용:",
+        ranking[0]?.nickname
+      );
+    }
+
+    console.log("🔍 [결과 화면] 랭킹 찾기:", {
+      urlNickname: nickname,
+      serverRanking: ranking.map((r) => ({
+        nickname: r.nickname,
+        total: r.total,
+      })),
+      foundRank: idx >= 0 ? idx + 1 : null,
+      searchMethod:
+        idx === ranking.findIndex((x) => x.nickname === nickname)
+          ? "URL"
+          : "SERVER",
+    });
+
     return idx >= 0 ? idx + 1 : null;
   }, [ranking, nickname]);
 

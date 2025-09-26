@@ -44,7 +44,10 @@ export function useShake({
       setMagnitude(next);
 
       if (next > shakeThreshold) {
-        setShakeValue((v) => v + next); // 필요시 +1 이벤트 카운트로 교체 가능
+        // 더 안정적인 점수 계산: magnitude 기반으로 점수 증가
+        // 하지만 너무 빠르게 증가하지 않도록 제한
+        const scoreIncrement = Math.min(next * 2, 1); // 최대 1점씩만 증가
+        setShakeValue((v) => v + scoreIncrement);
       }
     });
 

@@ -15,6 +15,7 @@ interface UseModalHandlersProps {
   setRankModalData: (data: any[]) => void;
   setIsFinalRound: (isFinal: boolean) => void;
   stopGame: () => void;
+  resetSensor?: () => void; // 센서 리셋 함수 추가
 }
 
 export function useModalHandlers({
@@ -29,6 +30,7 @@ export function useModalHandlers({
   setRankModalData,
   setIsFinalRound,
   stopGame,
+  resetSensor,
 }: UseModalHandlersProps) {
   const router = useRouter();
 
@@ -46,6 +48,9 @@ export function useModalHandlers({
     gameStateRef.current.isTimerRunning = false;
     gameStateRef.current.isProcessingFinish = false;
     gameStateRef.current.isStartingGame = false;
+
+    // 센서 리셋은 게임 종료 시점에서 이미 수행됨
+    // resetSensor?.(); // 제거 - 중복 리셋 방지
 
     // 게임 종료
     stopGame();
@@ -91,18 +96,28 @@ export function useModalHandlers({
     gameStateRef.current.isProcessingFinish = false;
     gameStateRef.current.isStartingGame = false;
 
+    // 센서 리셋은 게임 종료 시점에서 이미 수행됨
+    // resetSensor?.(); // 제거 - 중복 리셋 방지
+
     // 게임 종료
     stopGame();
 
     // 결과 화면으로 이동
+    const resultParams = {
+      code,
+      nick: nickname,
+      amount,
+      host: hostFlagFromParams ? "1" : "0",
+    };
+
+    console.log("🔍 [게임 화면] 결과 화면으로 파라미터 전달:", {
+      pathname: "/molbbang/room/[code]/result",
+      params: resultParams,
+    });
+
     router.replace({
       pathname: "/molbbang/room/[code]/result",
-      params: {
-        code,
-        nick: nickname,
-        amount,
-        host: hostFlagFromParams ? "1" : "0",
-      },
+      params: resultParams,
     });
   }, [
     stopGame,

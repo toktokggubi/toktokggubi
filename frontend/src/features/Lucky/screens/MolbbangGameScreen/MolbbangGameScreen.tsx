@@ -40,7 +40,7 @@ export default function MolbbangGameScreen() {
   } = useGameState();
 
   // 게임 로직
-  const { room, magnitude, handleFinishRound, stopGame } = useGameLogic({
+  const { room, magnitude, handleFinishRound, stopGame, reset } = useGameLogic({
     code,
     nickname,
     amount,
@@ -53,6 +53,7 @@ export default function MolbbangGameScreen() {
     setRankModalVisible,
     setRankModalData,
     setIsFinalRound,
+    currentScore, // 현재 점수 상태 전달
   });
 
   // 모달 핸들러
@@ -68,6 +69,7 @@ export default function MolbbangGameScreen() {
     setRankModalData,
     setIsFinalRound,
     stopGame,
+    resetSensor: reset, // 센서 리셋 함수 전달
   });
 
   return (

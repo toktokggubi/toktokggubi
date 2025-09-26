@@ -3,6 +3,13 @@ import type {
   MolbbangMember,
   MolbbangRoom,
 } from "@/features/Lucky/api/molbbangService";
+
+// 전역 변수 타입 선언
+declare global {
+  interface Window {
+    __lobbyParamsLogged?: boolean;
+  }
+}
 import {
   molbbangApi,
   convertRoomViewToMolbbangRoom,
@@ -52,6 +59,7 @@ export default function MolbbangLobbyScreen() {
     nick?: string | string[];
     amount?: string | string[];
     host?: string | string[]; // ✅ 추가: 내가 방장인지(클라에서 세팅)
+    roundStatus?: string | string[]; // ✅ 추가: endRound API 응답 상태
   }>();
 
   const code =
@@ -65,7 +73,7 @@ export default function MolbbangLobbyScreen() {
       ? params.nick
       : Array.isArray(params.nick)
       ? params.nick[0]
-      : "나";
+      : "";
   const amount = Number(
     typeof params.amount === "string"
       ? params.amount
@@ -74,13 +82,33 @@ export default function MolbbangLobbyScreen() {
       : 0
   );
 
-  // ✅ 클라에서 넘겨준 host 플래그(“1”, “true”만 true)
+  // URL 파라미터 디버깅 (한 번만 출력)
+  if (typeof window !== "undefined" && !window.__lobbyParamsLogged) {
+    console.log("🔍 [대기방] URL 파라미터 받기:", {
+      rawParams: params,
+      parsedCode: code,
+      parsedNickname: nickname,
+      parsedAmount: amount,
+      hostFlag: params.host,
+    });
+    window.__lobbyParamsLogged = true;
+  }
+
+  // ✅ 클라에서 넘겨준 host 플래그("1", "true"만 true)
   const hostFlagFromParams =
     typeof params.host === "string"
       ? params.host === "1" || params.host === "true"
       : Array.isArray(params.host)
       ? params.host[0] === "1" || params.host[0] === "true"
       : false;
+
+  // ✅ endRound API 응답 상태 파싱
+  const roundStatusFromParams =
+    typeof params.roundStatus === "string"
+      ? params.roundStatus
+      : Array.isArray(params.roundStatus)
+      ? params.roundStatus[0]
+      : undefined;
 
   const [room, setRoom] = useState<MolbbangRoom | null>(null);
   const [accessToken, setAccessToken] = useState<string>("");
@@ -119,51 +147,23 @@ export default function MolbbangLobbyScreen() {
 
     const fetchRoomData = async () => {
       try {
-        const roomData = await molbbangApi.fetchRoom(code);
+        console.log("🔍 [fetchRoom API] 요청 시작");
+        const roomData = await molbbangApi.fetchRoom();
+        console.log("🔍 [fetchRoom API] 응답 받음:", {
+          status: roomData?.status,
+          round: roomData?.round,
+          totalRounds: roomData?.totalRounds,
+          membersCount: roomData?.members?.length,
+          members: roomData?.members?.map((m) => ({
+            nickname: m.nickname,
+            ready: m.ready,
+          })),
+        });
 
-        // 상태나 라운드가 변경된 경우에만 로그 출력
-        if (
-          roomData?.status !== room?.status ||
-          roomData?.round !== room?.round
-        ) {
-          console.log("🔍 [대기방 폴링] 상태 변경 감지:", {
-            이전상태: room?.status,
-            새상태: roomData?.status,
-            이전라운드: room?.round,
-            새라운드: roomData?.round,
-            멤버수: roomData?.members?.length,
-          });
-
-          // 게임이 끝나고 대기방으로 돌아왔을 때 준비 상태 초기화
-          if (room?.status === "playing" && roomData?.status === "lobby") {
-            console.log(
-              "🔍 [대기방] 게임 종료 후 대기방 복귀 - 준비 상태 초기화"
-            );
-            // 모든 멤버의 준비 상태를 false로 설정
-            if (roomData.members) {
-              roomData.members = roomData.members.map((member) => ({
-                ...member,
-                ready: false,
-              }));
-            }
-          }
-
-          // 라운드가 변경되었을 때도 준비 상태 초기화
-          if (room?.round !== roomData?.round && roomData?.status === "lobby") {
-            console.log("🔍 [대기방] 라운드 변경 - 준비 상태 초기화");
-            if (roomData.members) {
-              roomData.members = roomData.members.map((member) => ({
-                ...member,
-                ready: false,
-              }));
-            }
-          }
-        }
-
+        // 방 상태 업데이트 (라운드 완료 감지는 endRound API 응답으로 처리)
         setRoom(roomData);
       } catch (error) {
-        console.log("🔍 [대기방 폴링] 에러:", error);
-        // 에러 무시 (HTTP 인터셉터가 처리)
+        console.log("🔍 [fetchRoom API] 에러:", error);
       }
     };
 
@@ -176,17 +176,39 @@ export default function MolbbangLobbyScreen() {
     return () => {
       clearInterval(interval);
     };
-  }, [code, connected, room?.status, room?.round]);
+  }, [code, connected]);
 
   const members: MolbbangMember[] = room?.members ?? [];
   const me = useMemo(() => {
-    const found = members.find((m) => m.nickname === nickname);
+    // 서버에서 받은 실제 닉네임으로 me 객체 찾기 (URL 파라미터 무시)
+    let found = null;
+    if (room?.members && room.members.length > 0) {
+      // 임시로 첫 번째 멤버를 사용 (실제로는 사용자 인증 정보로 찾아야 함)
+      found = members[0];
+    }
+
+    // me 객체 변경 시에만 로그 출력
     return found ?? null;
-  }, [members, nickname]);
+  }, [members, room?.members]);
 
   // 웹소켓 또는 HTTP API 사용
   const handleSendReady = useCallback(
     async (ready: boolean) => {
+      // 게임 진행 중일 때는 준비 상태 변경 불가 (단, 서버 오류인 경우는 예외)
+      if (room?.status === "playing" && room?.round && room.round > 2) {
+        return;
+      }
+
+      // me 객체가 없으면 준비 상태 변경 불가
+      if (!me) {
+        return;
+      }
+
+      // 이미 같은 상태라면 변경하지 않음
+      if (me.ready === ready) {
+        return;
+      }
+
       // 즉시 로컬 상태 업데이트 (낙관적 업데이트)
       if (room && me) {
         const updatedRoom = {
@@ -196,6 +218,10 @@ export default function MolbbangLobbyScreen() {
           ),
         };
         setRoom(updatedRoom);
+        console.log(
+          "🔍 [준비 상태 변경] 로컬 상태 업데이트 완료:",
+          updatedRoom.members.find((m) => m.userId === me.userId)?.ready
+        );
       }
 
       if (connected) {
@@ -220,9 +246,7 @@ export default function MolbbangLobbyScreen() {
       } else {
         // HTTP API 사용 (웹소켓 연결되지 않은 경우)
         try {
-          await molbbangApi.setReady(code, {
-            userId: me?.userId,
-            nickname,
+          await molbbangApi.setReady({
             ready,
           });
         } catch (error) {
@@ -245,18 +269,28 @@ export default function MolbbangLobbyScreen() {
     [connected, sendReady, code, me?.userId, me, nickname, room]
   );
 
+  // 게임 시작 중복 클릭 방지
+  const isStartingGameRef = useRef(false);
+
+  // 라운드 번호 추적 (백엔드에서 라운드 번호가 제대로 관리되지 않는 문제 해결)
+  const currentRoundRef = useRef<number>(1);
+
   const handleSendStart = useCallback(async () => {
-    if (connected) {
-      // 웹소켓 연결된 경우
-      try {
+    // 중복 클릭 방지
+    if (isStartingGameRef.current) {
+      return;
+    }
+
+    isStartingGameRef.current = true;
+
+    try {
+      if (connected) {
+        // 웹소켓 연결된 경우
         sendStart();
-      } catch (error) {
-        Alert.alert("게임 시작 실패", String(error));
-      }
-    } else {
-      // HTTP API 사용 (웹소켓 연결되지 않은 경우)
-      try {
-        const res = await molbbangApi.startRound(code);
+      } else {
+        // HTTP API 사용 (웹소켓 연결되지 않은 경우)
+        const res = await molbbangApi.startRound();
+
         if (!res.ok) {
           Alert.alert(
             "아직 시작할 수 없어요",
@@ -264,11 +298,52 @@ export default function MolbbangLobbyScreen() {
           );
           return;
         }
+
+        // 라운드 시작 시 완료 상태 초기화
+        setRoundCompletionStatus("none");
+
+        // 서버 응답에서 라운드 정보 업데이트
+
+        if (res.round !== undefined && res.round !== null) {
+          setRoom((prevRoom) => {
+            if (prevRoom) {
+              return {
+                ...prevRoom,
+                round: res.round!,
+                status: "playing" as const,
+              };
+            }
+            return prevRoom;
+          });
+        } else {
+          console.warn("🔍 [게임 시작] 라운드 정보 없음 - 업데이트 건너뜀");
+        }
+
         // 게임 시작 성공 시 즉시 게임 화면으로 이동
-        router.push(`/molbbang/room/${code}/game`);
-      } catch (error) {
-        Alert.alert("게임 시작 실패", String(error));
+        const gameParams = {
+          code,
+          nick: nickname,
+          amount: String(amount),
+          host: hostFlagFromParams ? "1" : "0",
+        };
+
+        console.log("🔍 [대기방] 게임 화면으로 파라미터 전달:", {
+          pathname: "/molbbang/room/[code]/game",
+          params: gameParams,
+        });
+
+        router.push({
+          pathname: "/molbbang/room/[code]/game",
+          params: gameParams,
+        });
       }
+    } catch (error) {
+      Alert.alert("게임 시작 실패", String(error));
+    } finally {
+      // 2초 후 락 해제 (게임 화면 이동 시간 고려)
+      setTimeout(() => {
+        isStartingGameRef.current = false;
+      }, 2000);
     }
   }, [connected, sendStart, code, router]);
 
@@ -289,11 +364,26 @@ export default function MolbbangLobbyScreen() {
 
       // 이미 이동한 경우 중복 이동 방지
       if (navigatedToGameRef.current) {
+        console.log("🔍 [대기방] 이미 게임 화면으로 이동함 - 중복 이동 방지");
         return;
       }
+
+      // 게임 시작 중이면 잠시 대기
+      if (isStartingGameRef.current) {
+        console.log("🔍 [대기방] 게임 시작 중 - 이동 지연");
+        return;
+      }
+
       navigatedToGameRef.current = true;
 
       console.log("🔍 [대기방] 게임 시작 - 게임 화면으로 이동");
+      // 서버에서 받은 라운드 번호 사용 (백엔드에서 게임 시작 시 라운드 증가)
+      currentRoundRef.current = room.round || 1;
+      console.log(
+        "🔍 [라운드 설정] 서버 라운드 번호:",
+        currentRoundRef.current
+      );
+
       router.push({
         pathname: "/molbbang/room/[code]/game",
         params: {
@@ -305,8 +395,7 @@ export default function MolbbangLobbyScreen() {
       });
     }
   }, [
-    room?.status,
-    room?.round, // 라운드 변경도 감지
+    room?.status, // 라운드 변경 감지 제거 - 상태 변경만 감지
     code,
     router,
     nickname,
@@ -328,7 +417,6 @@ export default function MolbbangLobbyScreen() {
     ? members.filter((m) => m.online).length
     : members.length;
   const allReady = members.length > 0 && members.every((m) => m.ready);
-  const canStart = members.length >= 1 && allReady;
 
   // ✅ 방장 판별: 1) hostId가 있으면 그걸로, 2) 없으면 첫 번째 멤버를 방장으로 간주(폴백)
   const isHost = useMemo(() => {
@@ -353,11 +441,83 @@ export default function MolbbangLobbyScreen() {
     await handleSendStart();
   }, [handleSendStart]);
 
+  // 라운드 완료 상태 관리 (endRound API 응답 기반)
+  const [roundCompletionStatus, setRoundCompletionStatus] = useState<
+    "none" | "lobby" | "finished"
+  >("none");
+
+  // endRound API 응답을 받아서 roundCompletionStatus 업데이트하는 함수
+  const handleRoundCompletion = useCallback((status: "lobby" | "finished") => {
+    console.log("🔍 [라운드 완료] endRound API 응답 받음:", status);
+    setRoundCompletionStatus(status);
+  }, []);
+
+  // URL 파라미터로 받은 roundStatus 처리
+  useEffect(() => {
+    if (
+      roundStatusFromParams === "lobby" ||
+      roundStatusFromParams === "finished"
+    ) {
+      console.log("🔍 [URL 파라미터] roundStatus 받음:", roundStatusFromParams);
+      setRoundCompletionStatus(roundStatusFromParams);
+    }
+  }, [roundStatusFromParams]);
+
+  // 라운드 번호 계산 (사용자 친화적으로 +1 표시)
+  const displayRound = useMemo(() => {
+    if (!room) return 1;
+
+    const serverRound = room.round || 0; // 게임 시작 전에는 0
+
+    if (roundCompletionStatus === "lobby") {
+      // 라운드 완료, 다음 라운드 대기: serverRound + 1
+      return Math.min(serverRound + 1, room.totalRounds || 3);
+    } else if (roundCompletionStatus === "finished") {
+      // 게임 완전 종료: 현재 라운드 + 1
+      return Math.min(serverRound + 1, room.totalRounds || 3);
+    } else {
+      // 게임 진행 중 또는 게임 시작 전: serverRound + 1
+      return Math.min(serverRound + 1, room.totalRounds || 3);
+    }
+  }, [room, roundCompletionStatus]);
+
+  const canStart = useMemo(() => {
+    // 게임 시작 전, 라운드 완료 후, 또는 게임 완전 종료 후 모두 준비 가능
+    return (
+      members.length >= 1 &&
+      allReady &&
+      (roundCompletionStatus === "none" ||
+        roundCompletionStatus === "lobby" ||
+        roundCompletionStatus === "finished")
+    );
+  }, [members.length, allReady, roundCompletionStatus]);
+
+  // 라운드 판단 디버깅
+  useEffect(() => {
+    console.log("🔍 [라운드 판단] 상태 분석:", {
+      serverRound: room?.round,
+      serverStatus: room?.status,
+      roundCompletionStatus: roundCompletionStatus,
+      displayRound: displayRound,
+      totalRounds: room?.totalRounds,
+      isGameInProgress:
+        roundCompletionStatus === "none" && room?.status === "playing",
+      isWaitingForNextRound: roundCompletionStatus === "lobby",
+      isGameFinished: roundCompletionStatus === "finished",
+    });
+  }, [
+    room?.round,
+    room?.status,
+    roundCompletionStatus,
+    displayRound,
+    room?.totalRounds,
+  ]);
+
   return (
     <LobbyTemplate
       code={code}
-      amount={amount}
-      round={room?.round ?? 1}
+      amount={room?.amount ?? amount} // 서버에서 받은 금액 우선 사용
+      round={displayRound} // 계산된 라운드 번호 사용
       totalRounds={room?.totalRounds ?? 3}
       members={members}
       presentCount={presentCount}

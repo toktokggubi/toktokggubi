@@ -23,14 +23,21 @@ export default function MolbbangCreateScreen() {
       setLoading(true);
       const res = await molbbangApi.createRoom({ amount: money, nickname });
       // 방 코드로 라우팅
+      const lobbyParams = {
+        code: res.code,
+        amount: String(money),
+        nick: nickname,
+        host: "1",
+      };
+
+      console.log("🔍 [방 생성] 대기방으로 파라미터 전달:", {
+        pathname: "/molbbang/room/[code]",
+        params: lobbyParams,
+      });
+
       router.replace({
         pathname: "/molbbang/room/[code]",
-        params: {
-          code: res.code,
-          amount: String(money),
-          nick: nickname,
-          host: "1",
-        },
+        params: lobbyParams,
       });
     } catch (err: any) {
       Alert.alert(

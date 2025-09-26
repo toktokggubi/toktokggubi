@@ -2,8 +2,8 @@
 import { z } from "zod";
 import * as molbbangFetchers from "./fetchers";
 import type { RoomView } from "./types";
-import * as SecureStore from "expo-secure-store";
 import { Client, IMessage } from "@stomp/stompjs";
+import * as SecureStore from "expo-secure-store";
 
 // ===== 기존 타입 호환성을 위한 변환 함수들 =====
 export interface MolbbangMember {
@@ -29,38 +29,10 @@ export interface MolbbangRoom {
 
 // ===== Utils =====
 
-// 토큰 갱신 함수
-async function refreshToken(): Promise<string | null> {
-  try {
-    const refreshToken = await SecureStore.getItemAsync("refresh_token");
-    if (!refreshToken) {
-      if (__DEV__) {
-        console.warn("🔍 리프레시 토큰이 없음");
-      }
-      return null;
-    }
-
-    // TODO: 실제 토큰 갱신 API 호출
-    // const response = await http.post("/auth/token/refresh", { refreshToken });
-    // await SecureStore.setItemAsync("access_token", response.data.accessToken);
-    // return response.data.accessToken;
-
-    if (__DEV__) {
-      console.log("🔍 토큰 갱신 API 호출 필요");
-    }
-    return null;
-  } catch (error) {
-    if (__DEV__) {
-      console.warn("🔍 토큰 갱신 실패:", error);
-    }
-    return null;
-  }
-}
+// 토큰 갱신은 http.ts의 자동 갱신 로직에 의존
 
 // ===== Schemas =====
 const SetReadyReq = z.object({
-  userId: z.string().optional(),
-  nickname: z.string().optional(),
   ready: z.boolean(),
 });
 type SetReadyReq = z.infer<typeof SetReadyReq>;
@@ -135,19 +107,19 @@ async function joinRoom(dto: {
   return { ok: true };
 }
 
-async function fetchRoom(code: string): Promise<MolbbangRoom> {
+async function fetchRoom(): Promise<MolbbangRoom> {
   const roomView = await molbbangFetchers.getMyRoom();
   return convertRoomViewToMolbbangRoom(roomView);
 }
 
-async function setReady(code: string, payload: SetReadyReq): Promise<void> {
+async function setReady(payload: SetReadyReq): Promise<void> {
   SetReadyReq.parse(payload);
   await molbbangFetchers.setReady({
     ready: payload.ready,
   });
 }
 
-async function startRound(code: string): Promise<{
+async function startRound(): Promise<{
   ok: boolean;
   reason?: "not_ready";
   round?: number;
@@ -168,10 +140,9 @@ async function startRound(code: string): Promise<{
   }
 }
 
-async function finishRound(
-  code: string,
-  payload?: { totals?: Record<string, number> }
-): Promise<{ ok: boolean; status?: string; round?: number }> {
+async function finishRound(payload?: {
+  totals?: Record<string, number>;
+}): Promise<{ ok: boolean; status?: string; round?: number }> {
   const response = await molbbangFetchers.endRound();
   return {
     ok: response.ok,
@@ -180,31 +151,73 @@ async function finishRound(
   };
 }
 
-async function submitScore(
-  code: string,
-  score: number
-): Promise<{ ok: boolean }> {
-  const response = await molbbangFetchers.submitScore({ score });
-  return { ok: response.ok };
+async function submitScore(score: number): Promise<{ ok: boolean }> {
+  try {
+    const response = await molbbangFetchers.submitScore({ score });
+    return { ok: response.ok };
+  } catch (error: any) {
+    // 백엔드 에러 코드에 따른 처리
+    if (error.response?.status === 400) {
+      const errorMessage = error.response?.data?.message || error.message;
+      if (errorMessage.includes("already_submitted")) {
+        console.log("🔍 [점수 제출] 이미 제출된 점수");
+        return { ok: true }; // 이미 제출된 경우 성공으로 처리
+      } else if (errorMessage.includes("not_in_round")) {
+        console.log("🔍 [점수 제출] 라운드가 활성 상태가 아님");
+        throw new Error("라운드가 종료되었습니다");
+      } else if (errorMessage.includes("no_active_round")) {
+        console.log("🔍 [점수 제출] 활성 라운드가 없음");
+        throw new Error("게임이 시작되지 않았습니다");
+      }
+    }
+    throw error;
+  }
 }
 
-async function getResults(code: string): Promise<{
+async function getResults(): Promise<{
   ok: boolean;
   ranking: { userId: string; nickname: string; total: number }[];
   jackpotUserId?: string;
   amount?: number;
 }> {
-  const response = await molbbangFetchers.getResults();
-  return {
-    ok: response.ok,
-    ranking: response.ranking.map((row) => ({
-      userId: row.userId.toString(),
-      nickname: row.nickname,
-      total: row.totalScore,
-    })),
-    jackpotUserId: response.jackpotUserId?.toString(),
-    amount: response.amount,
-  };
+  console.log("🔍 [getResults] API 호출 시작");
+
+  try {
+    const response = await molbbangFetchers.getResults();
+    console.log("🔍 [getResults] API 호출 성공:", {
+      ok: response.ok,
+      rankingCount: response.ranking.length,
+      jackpotUserId: response.jackpotUserId,
+      amount: response.amount,
+      firstRanking: response.ranking[0],
+    });
+
+    return {
+      ok: response.ok,
+      ranking: response.ranking.map((row) => ({
+        userId: row.userId.toString(),
+        nickname: row.nickname,
+        total: row.totalScore,
+      })),
+      jackpotUserId: response.jackpotUserId?.toString(),
+      amount: response.amount,
+    };
+  } catch (error: any) {
+    console.error("🔍 [getResults] API 호출 실패 - 상세 정보:", {
+      error: error,
+      message: error.message,
+      response: error.response,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      responseHeaders: error.response?.headers,
+      config: error.config,
+      url: error.config?.url,
+      method: error.config?.method,
+      requestHeaders: error.config?.headers,
+    });
+    throw error;
+  }
 }
 
 // ===== 웹소켓 연결 관리 =====
@@ -389,6 +402,12 @@ class MolbbangWebSocketManager {
     if (!this.client?.connected) {
       throw new Error("WebSocket not connected");
     }
+
+    // 점수 유효성 검사
+    if (typeof score !== "number" || score < 0) {
+      throw new Error("유효하지 않은 점수입니다");
+    }
+
     this.client.publish({
       destination: "/app/molbbang/me/score",
       body: JSON.stringify({ score }),
