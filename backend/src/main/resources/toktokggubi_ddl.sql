@@ -73,9 +73,9 @@ CREATE TABLE `category` (
 ) ENGINE=InnoDB;
 
 CREATE TABLE `franchise` (
-                             `franchise_id`  BIGINT        NOT NULL AUTO_INCREMENT,
-                             `merchant_name` VARCHAR(150)  NOT NULL,
-                             `image_url`     VARCHAR(255)  NULL,
+                             `franchise_id`   BIGINT        NOT NULL AUTO_INCREMENT,
+                             `franchise_name` VARCHAR(150)  NOT NULL,
+                             `image_url`      VARCHAR(255)  NULL,
                              CONSTRAINT `PK_FRANCHISE` PRIMARY KEY (`franchise_id`)
 ) ENGINE=InnoDB;
 

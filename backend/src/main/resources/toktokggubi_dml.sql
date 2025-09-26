@@ -1,8 +1,6 @@
 -- =========================================
 -- 1) 기초 데이터
 -- =========================================
-
--- ========== category ==========
 INSERT INTO `category` (`name`, `description`, `sort_order`) VALUES
                                                                  ('식비',       NULL, 1),
                                                                  ('카페/간식',   NULL, 2),
@@ -16,95 +14,139 @@ INSERT INTO `category` (`name`, `description`, `sort_order`) VALUES
                                                                  ('문화',       NULL, 10),
                                                                  ('기타',       NULL, 11);
 
+INSERT INTO franchise (franchise_name, image_url) SELECT '스타벅스', '/images/franchise/starbucks.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='스타벅스');
+INSERT INTO franchise (franchise_name, image_url) SELECT '메가박스', '/images/franchise/megabox.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='메가박스');
+INSERT INTO franchise (franchise_name, image_url) SELECT '파리바게뜨', '/images/franchise/paris_baguette.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='파리바게뜨');
+INSERT INTO franchise (franchise_name, image_url) SELECT '이디야커피', '/images/franchise/ediya.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='이디야커피');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'CGV', '/images/franchise/cgv.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='CGV');
+INSERT INTO franchise (franchise_name, image_url) SELECT '롯데시네마', '/images/franchise/lotte_cinema.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='롯데시네마');
+INSERT INTO franchise (franchise_name, image_url) SELECT '맥도날드', '/images/franchise/mcdonalds.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='맥도날드');
+INSERT INTO franchise (franchise_name, image_url) SELECT '롯데리아', '/images/franchise/lotteria.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='롯데리아');
+INSERT INTO franchise (franchise_name, image_url) SELECT '교촌치킨', '/images/franchise/kyochon.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='교촌치킨');
+INSERT INTO franchise (franchise_name, image_url) SELECT '올리브영', '/images/franchise/oliveyoung.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='올리브영');
+INSERT INTO franchise (franchise_name, image_url) SELECT '버거킹', '/images/franchise/burgerking.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='버거킹');
+INSERT INTO franchise (franchise_name, image_url) SELECT '세븐일레븐', '/images/franchise/7eleven.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='세븐일레븐');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'GS25', '/images/franchise/gs25.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='GS25');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'CU', '/images/franchise/cu.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='CU');
+INSERT INTO franchise (franchise_name, image_url) SELECT '이마트24', '/images/franchise/emart24.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='이마트24');
+INSERT INTO franchise (franchise_name, image_url) SELECT '투썸플레이스', '/images/franchise/twosome.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='투썸플레이스');
+INSERT INTO franchise (franchise_name, image_url) SELECT '컴포즈커피', '/images/franchise/compose.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='컴포즈커피');
+INSERT INTO franchise (franchise_name, image_url) SELECT '맘스터치', '/images/franchise/momstouch.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='맘스터치');
+INSERT INTO franchise (franchise_name, image_url) SELECT '굽네치킨', '/images/franchise/goobne.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='굽네치킨');
+INSERT INTO franchise (franchise_name, image_url) SELECT '다이소', '/images/franchise/daiso.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='다이소');
+INSERT INTO franchise (franchise_name, image_url) SELECT '파스쿠찌', '/images/franchise/pascucci.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='파스쿠찌');
+INSERT INTO franchise (franchise_name, image_url) SELECT '엔제리너스', '/images/franchise/angelinus.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='엔제리너스');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'KFC', '/images/franchise/kfc.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='KFC');
+INSERT INTO franchise (franchise_name, image_url) SELECT '메가MGC커피', '/images/franchise/mega.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='메가MGC커피');
+INSERT INTO franchise (franchise_name, image_url) SELECT '한솥도시락', '/images/franchise/hansot.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='한솥도시락');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'BHC', '/images/franchise/bhc.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='BHC');
+INSERT INTO franchise (franchise_name, image_url) SELECT '배스킨라빈스', '/images/franchise/baskin.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='배스킨라빈스');
+INSERT INTO franchise (franchise_name, image_url) SELECT '쿠팡', '/images/franchise/coupang.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='쿠팡');
+INSERT INTO franchise (franchise_name, image_url) SELECT '우아한형제들', '/images/franchise/baemin.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='우아한형제들');
+INSERT INTO franchise (franchise_name, image_url) SELECT '할리스', '/images/franchise/hollys.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='할리스');
+INSERT INTO franchise (franchise_name, image_url) SELECT '공차', '/images/franchise/gongcha.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='공차');
+INSERT INTO franchise (franchise_name, image_url) SELECT '탐앤탐스', '/images/franchise/tomntoms.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='탐앤탐스');
+INSERT INTO franchise (franchise_name, image_url) SELECT '성심당', '/images/franchise/sungsimdang.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='성심당');
+INSERT INTO franchise (franchise_name, image_url) SELECT '아웃백', '/images/franchise/outback.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='아웃백');
+INSERT INTO franchise (franchise_name, image_url) SELECT '본죽', '/images/franchise/bonjuk.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='본죽');
+INSERT INTO franchise (franchise_name, image_url) SELECT '이케아', '/images/franchise/ikea.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='이케아');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'NC백화점', '/images/franchise/nc.png' FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='NC백화점');
+INSERT INTO franchise (franchise_name, image_url) SELECT '티머니', NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='티머니');
+INSERT INTO franchise (franchise_name, image_url) SELECT '마이비', NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='마이비');
+INSERT INTO franchise (franchise_name, image_url) SELECT '이비', NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='이비');
+INSERT INTO franchise (franchise_name, image_url) SELECT '한국철도공사', NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='한국철도공사');
+INSERT INTO franchise (franchise_name, image_url) SELECT '코레일유통', NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='코레일유통');
+INSERT INTO franchise (franchise_name, image_url) SELECT 'SRT', NULL FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM franchise WHERE franchise_name='SRT');
 
--- ========== franchise ==========
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('스타벅스', '/images/franchise/starbucks.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('메가박스', '/images/franchise/megabox.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('파리바게뜨', '/images/franchise/paris_baguette.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('이디야커피', '/images/franchise/ediya.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('CGV', '/images/franchise/cgv.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('롯데시네마', '/images/franchise/lotte_cinema.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('맥도날드', '/images/franchise/mcdonalds.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('롯데리아', '/images/franchise/lotteria.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('교촌치킨', '/images/franchise/kyochon.png');
-INSERT INTO `franchise` (`merchant_name`, `image_url`) VALUES ('올리브영', '/images/franchise/oliveyoung.png');
-
--- ========== merchant ==========
--- 스타벅스
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
                                                                                         (14844, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
-                                                                                         (SELECT category_id FROM category WHERE name='카페/간식'),
-                                                                                         '스타벅스 대전중앙로R점'),
+                                                                                         (SELECT category_id FROM category WHERE name='카페/간식'), '스타벅스 대전중앙로R점'),
                                                                                         (14845, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
-                                                                                         (SELECT category_id FROM category WHERE name='카페/간식'),
-                                                                                         '스타벅스 대전노은점'),
+                                                                                         (SELECT category_id FROM category WHERE name='카페/간식'), '스타벅스 대전노은점'),
                                                                                         (14846, (SELECT franchise_id FROM franchise WHERE merchant_name='스타벅스'),
-                                                                                         (SELECT category_id FROM category WHERE name='카페/간식'),
-                                                                                         '스타벅스 대전시청역점');
+                                                                                         (SELECT category_id FROM category WHERE name='카페/간식'), '스타벅스 대전시청역점');
 
--- 메가박스
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
                                                                                         (14847, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         '메가박스 대전'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), '메가박스 대전'),
                                                                                         (14848, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         '메가박스 대전중앙로'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), '메가박스 대전중앙로'),
                                                                                         (14849, (SELECT franchise_id FROM franchise WHERE merchant_name='메가박스'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         '메가박스 대전신세계 아트&사이언스');
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), '메가박스 대전신세계 아트&사이언스');
 
--- CGV
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
                                                                                         (14850, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         'CGV 대전'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), 'CGV 대전'),
                                                                                         (14851, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         'CGV 대전가수원'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), 'CGV 대전가수원'),
                                                                                         (14852, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         'CGV 대전가오'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), 'CGV 대전가오'),
                                                                                         (14853, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         'CGV 대전탄방'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), 'CGV 대전탄방'),
                                                                                         (14854, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         'CGV 대전터미널'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), 'CGV 대전터미널'),
                                                                                         (14855, (SELECT franchise_id FROM franchise WHERE merchant_name='CGV'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         'CGV 유성노은');
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), 'CGV 유성노은');
 
--- 롯데시네마
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
                                                                                         (14856, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         '롯데시네마 대전'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), '롯데시네마 대전'),
                                                                                         (14857, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         '롯데시네마 대전둔산'),
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), '롯데시네마 대전둔산'),
                                                                                         (14858, (SELECT franchise_id FROM franchise WHERE merchant_name='롯데시네마'),
-                                                                                         (SELECT category_id FROM category WHERE name='문화'),
-                                                                                         '롯데시네마 대전센트럴');
+                                                                                         (SELECT category_id FROM category WHERE name='문화'), '롯데시네마 대전센트럴');
 
--- 올리브영
 INSERT INTO `merchant` (`merchant_id`,`franchise_id`,`category_id`,`merchant_name`) VALUES
                                                                                         (14859, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
-                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'),
-                                                                                         '올리브영 대전상대점'),
+                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'), '올리브영 대전상대점'),
                                                                                         (14860, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
-                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'),
-                                                                                         '올리브영 대전터미널점'),
+                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'), '올리브영 대전터미널점'),
                                                                                         (14861, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
-                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'),
-                                                                                         '올리브영 대전송촌점'),
+                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'), '올리브영 대전송촌점'),
                                                                                         (14862, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
-                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'),
-                                                                                         '올리브영 대전역점'),
+                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'), '올리브영 대전역점'),
                                                                                         (14863, (SELECT franchise_id FROM franchise WHERE merchant_name='올리브영'),
-                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'),
-                                                                                         '올리브영 대전중앙(은행동)');
--- ========== card_issuer ==========
+                                                                                         (SELECT category_id FROM category WHERE name='뷰티/미용'), '올리브영 대전중앙(은행동)');
+
+INSERT INTO sale_event (franchise_id, title, starts_at, ends_at, description)
+SELECT
+    f.franchise_id,
+    se.title,
+    se.starts_at,
+    se.ends_at,
+    se.description
+FROM (
+         SELECT '스타벅스'     AS franchise_name, '봄맞이 벚꽃 시즌 메뉴 10% 할인'   AS title, '2025-03-10 00:00:00' AS starts_at, '2025-03-24 23:59:59' AS ends_at, '지정 시즌 음료 및 푸드 10% 할인' AS description
+         UNION ALL SELECT '메가박스',     '스프링 무비 위크 1+1(요일 한정)',   '2025-03-15 00:00:00', '2025-03-31 23:59:59', '월/화 한정 동반 1인 무료(지정작)'
+         UNION ALL SELECT 'CGV',          '봄 영화 페스티벌 패키지 특가',      '2025-04-05 00:00:00', '2025-04-14 23:59:59', 'CGV 콤보+예매 패키지 묶음 할인'
+         UNION ALL SELECT '파리바게뜨',   '봄맞이 케이크/샌드위치 15% 세일',   '2025-04-10 00:00:00', '2025-04-20 23:59:59', '지정 케이크/샌드위치 15%'
+         UNION ALL SELECT '맥도날드',     '패밀리 위크 세트 2천원 할인',       '2025-05-01 00:00:00', '2025-05-12 23:59:59', '빅맥/맥스파이시 세트 포함'
+         UNION ALL SELECT '올리브영',     '초여름 빅세일 최대 30% OFF',        '2025-05-20 00:00:00', '2025-05-31 23:59:59', '뷰티/헬스 인기템 기획전'
+         UNION ALL SELECT '버거킹',       '초여름 버거 페스티벌 1+1 쿠폰',     '2025-06-01 00:00:00', '2025-06-14 23:59:59', '앱 전용 한정 쿠폰 제공'
+         UNION ALL SELECT 'GS25',         '편의점 원플원 모음전',               '2025-06-05 00:00:00', '2025-06-18 23:59:59', '냉음료/스낵 1+1/2+1'
+         UNION ALL SELECT 'CU',           '여름맞이 도시락/음료 프로모션',      '2025-06-10 00:00:00', '2025-06-23 23:59:59', '도시락/컵커피 균일가'
+         UNION ALL SELECT '이디야커피',   '쿨서머 아이스드링크 20% 세일',       '2025-06-15 00:00:00', '2025-06-28 23:59:59', '아이스 커피류 20%'
+         UNION ALL SELECT '이마트24',     '바캉스 간편식/아이스크림 특가',      '2025-07-01 00:00:00', '2025-07-14 23:59:59', '냉동 간편식/아이스크림 기획'
+         UNION ALL SELECT '파리바게뜨',   '썸머 스페셜 디저트 15% 할인',        '2025-07-05 00:00:00', '2025-07-19 23:59:59', '케이크 조각/라떼류 포함'
+         UNION ALL SELECT '맘스터치',     '치킨/버거 콤보 여름 특가',           '2025-07-15 00:00:00', '2025-07-29 23:59:59', '세트 업사이즈 무료'
+         UNION ALL SELECT '다이소',       '여름 대방출 생활용품 균일가전',      '2025-08-05 00:00:00', '2025-08-20 23:59:59', '수납/문구/여행용품 기획'
+         UNION ALL SELECT 'KFC',          '핫서머 치킨버켓 20% 할인',           '2025-08-10 00:00:00', '2025-08-24 23:59:59', '앱/키오스크 한정'
+         UNION ALL SELECT '배스킨라빈스', '가을시즌 아이스크림 패밀리팩 특가',  '2025-09-10 00:00:00', '2025-09-24 23:59:59', '가을 신메뉴 출시 기념'
+         UNION ALL SELECT '쿠팡',         '가을 특가전(리빙/가전/식품) 주간',   '2025-09-15 00:00:00', '2025-09-30 23:59:59', '쿠폰 중복할인 적용'
+         UNION ALL SELECT '우아한형제들', '배달의민족 가을쿠폰 페스티벌',       '2025-10-05 00:00:00', '2025-10-19 23:59:59', '전지역 즉시할인/중복쿠폰'
+         UNION ALL SELECT '아웃백',       '스테이크&파스타 위크 15% OFF',       '2025-10-10 00:00:00', '2025-10-24 23:59:59', '런치/디너 공통 적용'
+         UNION ALL SELECT '서브웨이',     '홀리데이 서브 세트 2천원 할인',      '2025-12-12 00:00:00', '2025-12-31 23:59:59', '샌드위치 세트/쿠키 포함'
+     ) AS se
+         JOIN franchise f
+              ON f.franchise_name = se.franchise_name
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM sale_event x
+    WHERE x.franchise_id = f.franchise_id
+      AND x.title        = se.title
+      AND x.starts_at    = se.starts_at
+);
+
 INSERT INTO `card_issuer` (`card_issuer_code`, `card_issuer_name`) VALUES
                                                                        ('1001','KB국민카드'),
                                                                        ('1002','삼성카드'),
@@ -3668,12 +3710,10 @@ FROM JSON_TABLE(
                  cardName       VARCHAR(200) PATH '$.cardName'
                  )
      ) AS jt
-/* 중복키 대비 (card_unique_no PK) — 같은 키가 이미 있으면 이름/발급사 갱신 */
 ON DUPLICATE KEY UPDATE
                      card_issuer_code = VALUES(card_issuer_code),
                      card_name        = VALUES(card_name);
 
--- card_product 동기화 (staging 에 데이터가 있을 경우만 반영)
 INSERT IGNORE INTO card_product (
     card_unique_no, card_issuer_code, card_name, card_type_name, image_url, card_description
 )
@@ -3698,7 +3738,7 @@ INSERT IGNORE INTO card_product_benefit (franchise_id, card_unique_no, discount_
 SELECT r.franchise_id, r.card_unique_no, r.discount_rate
 FROM (
          SELECT
-             (SELECT franchise_id FROM franchise f WHERE f.merchant_name = bm.merchant_name) AS franchise_id,
+             (SELECT franchise_id FROM franchise f WHERE f.franchise_name = bm.franchise_name) AS franchise_id,
              c.card_unique_no,
              COALESCE(
                      CAST(NULLIF(
@@ -3706,7 +3746,7 @@ FROM (
                                      REGEXP_SUBSTR(
                                              REGEXP_SUBSTR(
                                                      c.card_description,
-                                                     CONCAT(bm.merchant_name, '[^%]{0,30}[0-9]+(?:\\.[0-9]+)?%')
+                                                     CONCAT(bm.franchise_name, '[^%]{0,30}[0-9]+(?:\\.[0-9]+)?%')
                                              ),
                                              '[0-9]+(?:\\.[0-9]+)?%'
                                      ), '%',''
@@ -3719,7 +3759,7 @@ FROM (
              ) AS discount_rate
          FROM card_product c
                   JOIN (
-             SELECT '스타벅스' AS merchant_name, '스타벅스' AS term UNION ALL
+             SELECT '스타벅스' AS franchise_name, '스타벅스' AS term UNION ALL
              SELECT '스타벅스','사이렌오더' UNION ALL
              SELECT 'CGV','CGV' UNION ALL
              SELECT '롯데시네마','롯데시네마' UNION ALL
@@ -3735,4 +3775,3 @@ WHERE r.discount_rate IS NOT NULL
 ON DUPLICATE KEY UPDATE
     card_product_benefit.discount_rate =
         GREATEST(card_product_benefit.discount_rate, VALUES(discount_rate));
-
