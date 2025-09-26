@@ -27,6 +27,8 @@ export interface ExpenseReportTemplateProps {
   year: number;
   month: number;
   totalAmount: number;
+  fixedExpenseAmount?: number;
+  variableExpenseAmount?: number;
 
   // 차트 데이터
   chartData: DonutChartData[];

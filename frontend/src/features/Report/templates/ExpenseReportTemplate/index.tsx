@@ -20,6 +20,8 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   year,
   month,
   totalAmount,
+  fixedExpenseAmount = 0,
+  variableExpenseAmount = 0,
   chartData,
   categoryData,
   onCategoryPress,
@@ -78,15 +80,21 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
             <Text style={styles.totalAmount}>
               {totalAmount.toLocaleString()}원
             </Text>
-            <Text
-              style={styles.summaryText}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              <Text style={styles.statsText}>
-                예산의 <Text style={styles.boldText}>89%</Text>, 월소득의{" "}
-                <Text style={styles.boldText}>23%</Text>를 사용했어요
-              </Text>
+          </View>
+        </View>
+
+        {/* 고정지출/변동지출 정보 */}
+        <View style={styles.expenseBreakdown}>
+          <View style={styles.expenseItem}>
+            <Text style={styles.expenseLabel}>고정지출</Text>
+            <Text style={styles.expenseAmount}>
+              {fixedExpenseAmount.toLocaleString()}원
+            </Text>
+          </View>
+          <View style={styles.expenseItem}>
+            <Text style={styles.expenseLabel}>변동지출</Text>
+            <Text style={styles.expenseAmount}>
+              {variableExpenseAmount.toLocaleString()}원
             </Text>
           </View>
         </View>
@@ -522,6 +530,30 @@ const styles = StyleSheet.create({
   vipVisitCountText: {
     fontSize: 14,
     color: "#6B7280",
+  },
+  // 고정지출/변동지출 스타일
+  expenseBreakdown: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#F8FAFC",
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  expenseItem: {
+    alignItems: "center",
+  },
+  expenseLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  expenseAmount: {
+    fontSize: 16,
+    ...font.bold,
+    color: colors.BLUE_DARKER,
   },
   // 구분선 스타일
   sectionDivider: {

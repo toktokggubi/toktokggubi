@@ -17,6 +17,7 @@ import type { DonutChartData } from "../ui/ExpenseDonutChart/types";
 import { fetchCurrentUserReport } from "../api/reportApi";
 import { useProfileQuery } from "@/features/Auth/model/useAuthQueries";
 import type { UserReportResponse } from "../api/reportApi";
+import { fetchFixedIncludedTotal, fetchFixedExpenseList } from "@/features/Budget/api/fetchers";
 
 // 샘플 데이터 (실제로는 API에서 가져올 데이터)
 const sampleData: DonutChartData[] = [
@@ -183,6 +184,8 @@ export default function ReportScreen() {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
+  const [fixedExpenseAmount, setFixedExpenseAmount] = useState(0);
+  const [variableExpenseAmount, setVariableExpenseAmount] = useState(0);
 
   // 토큰 존재 여부 확인 (간단한 검증)
   const validateToken = useCallback(async () => {
@@ -226,9 +229,23 @@ export default function ReportScreen() {
     setError(null);
     
     try {
-      const data = await fetchCurrentUserReport(currentYear, currentMonth);
+      // 리포트 데이터와 고정지출 데이터를 병렬로 가져오기
+      const [data, fixedExpenseResponse] = await Promise.all([
+        fetchCurrentUserReport(currentYear, currentMonth),
+        fetchFixedIncludedTotal().catch(() => ({ fixedIncludedTotal: 0 }))
+      ]);
+      
       setReportData(data);
       setRetryCount(0); // 성공 시 재시도 카운트 리셋
+      
+      // 고정지출 금액 설정
+      const fixedAmount = fixedExpenseResponse.fixedIncludedTotal || 0;
+      setFixedExpenseAmount(fixedAmount);
+      
+      // 변동지출 금액 계산 (총 지출 - 고정지출)
+      const totalSpending = data.summaryReport.monthlySpendingSummary?.totalSpending || 0;
+      const variableAmount = Math.max(0, totalSpending - fixedAmount);
+      setVariableExpenseAmount(variableAmount);
       
       // API 데이터를 차트 데이터로 변환
       const chartData: DonutChartData[] = data.summaryReport.spendingByCategory.map((item, index) => {
@@ -436,6 +453,8 @@ export default function ReportScreen() {
       year={currentYear}
       month={currentMonth}
       totalAmount={totalAmount}
+      fixedExpenseAmount={fixedExpenseAmount}
+      variableExpenseAmount={variableExpenseAmount}
       chartData={expenseDataWithPercentage}
       categoryData={expenseDataWithPercentage}
       onCategoryPress={handleCategoryPress}
