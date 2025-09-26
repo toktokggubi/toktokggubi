@@ -57,7 +57,7 @@ public class WalletService {
                 .stream()
                 .map(b -> new CardBenefitsResponse.BenefitItem(
                         b.getFranchise().getFranchiseId(),
-                        b.getFranchise().getMerchantName(),   // Franchise 엔티티에 상호명 필드가 있다고 가정
+                        b.getFranchise().getFranchiseName(),   // Franchise 엔티티에 상호명 필드가 있다고 가정
                         b.getDiscountRate()
                 ))
                 .toList();
