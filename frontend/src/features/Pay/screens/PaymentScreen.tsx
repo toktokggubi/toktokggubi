@@ -24,6 +24,7 @@ import BenefitsList from "@/features/User/ui/BenefitsList";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useGifticonsQuery } from "@/features/User/model/gifticon/queries";
 import { pushLocation } from "../api/fetchers";
+import NotificationSettingsService from "@/shared/services/notificationSettingsService";
 
 import { colors } from "@/shared/constants/colors";
 
@@ -192,9 +193,20 @@ export default function PaymentScreen() {
   // 위치 정보를 서버로 전송하는 함수
   const sendLocationToServer = useCallback(async (place: KakaoPlace) => {
     try {
+      // 위치기반 알림 설정 확인
+      const notificationService = NotificationSettingsService.getInstance();
+      const isLocationNotificationEnabled = await notificationService.isNotificationEnabled('locationBasedOn');
+      
+      if (!isLocationNotificationEnabled) {
+        console.log('위치기반 알림이 비활성화되어 있습니다.');
+        return;
+      }
+
       const categoryId = getCategoryIdFromPlace(place);
       await pushLocation(categoryId);
+      console.log('위치기반 알림 요청 전송:', place.place_name, '카테고리:', categoryId);
     } catch (error) {
+      console.error('위치기반 알림 전송 실패:', error);
       // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
     }
   }, []);
