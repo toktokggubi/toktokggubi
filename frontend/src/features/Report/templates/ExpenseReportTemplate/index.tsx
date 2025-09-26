@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AnomalyDetectionSection } from "../../ui/AnomalyDetectionSection";
 import { ExpenseDonutChart } from "../../ui/ExpenseDonutChart";
 import { MonthlySummarySection } from "../../ui/MonthlySummarySection";
+import { PaymentDetailsSlider } from "../../ui/PaymentDetailsSlider";
 import { PaymentLineChart } from "../../ui/PaymentLineChart";
 import { ExpenseReportTemplateProps } from "./types";
 
@@ -27,9 +28,7 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   categoryData,
   onCategoryPress,
   dailyPaymentData,
-  maxPaymentDay,
-  maxPaymentDayDetails,
-  onMoreDetailsPress,
+  allDaysPaymentDetails,
   vipStores,
   onVIPStorePress,
   anomalyData,
@@ -204,39 +203,8 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
             maxCount={Math.max(...dailyPaymentData.map((item) => item.count))}
           />
 
-          {/* 최대 결제일 상세 내역 */}
-          <View style={styles.maxPaymentDaySection}>
-            <Text style={styles.maxPaymentDayTitle}>
-              {maxPaymentDay}의 결제 내역
-            </Text>
-            <View style={styles.paymentDetailsList}>
-              {maxPaymentDayDetails.map((detail, index) => (
-                <View key={detail.id}>
-                  <View style={styles.paymentDetailItem}>
-                    <View style={styles.paymentDetailLeft}>
-                      <Text style={styles.storeName}>{detail.store}</Text>
-                      <Text style={styles.paymentInfo}>
-                        {detail.category} | {detail.paymentMethod}
-                      </Text>
-                    </View>
-                    <Text style={styles.paymentAmount}>
-                      -{detail.amount.toLocaleString()}원
-                    </Text>
-                  </View>
-                  {index < maxPaymentDayDetails.length - 1 && (
-                    <View style={styles.separator} />
-                  )}
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={styles.moreDetailsButton}
-              onPress={onMoreDetailsPress}
-            >
-              <Text style={styles.moreDetailsText}>더보기</Text>
-            </TouchableOpacity>
-          </View>
+          {/* 결제 내역 슬라이더 */}
+          <PaymentDetailsSlider allDaysData={allDaysPaymentDetails} />
         </View>
 
         {/* 구분선 */}

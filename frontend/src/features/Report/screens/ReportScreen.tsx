@@ -340,32 +340,41 @@ export default function ReportScreen() {
     count: dayData.transactions.length,
   })) || sampleDailyPaymentData;
 
-  // API 데이터에서 최대 결제일 상세 내역 변환
-  const maxPaymentDayDetails: PaymentDetail[] = (() => {
-    if (!reportData?.spendingDetails.spendingPerDay.length) return sampleMaxPaymentDayDetails;
+  // API 데이터에서 가장 많은 결제 건수를 가진 날들만 변환
+  const allDaysPaymentDetails = (() => {
+    if (!reportData?.spendingDetails.spendingPerDay.length) {
+      return [{
+        date: "9월 25일",
+        details: sampleMaxPaymentDayDetails
+      }];
+    }
     
-    const maxDay = reportData.spendingDetails.spendingPerDay.reduce((max, day) => 
-      day.transactions.length > max.transactions.length ? day : max
-    );
+    const daysWithTransactions = reportData.spendingDetails.spendingPerDay
+      .filter(day => day.transactions.length > 0); // 결제 내역이 있는 날만
     
-    return maxDay.transactions.map((transaction, index) => ({
-      id: index.toString(),
-      store: transaction.merchant,
-      category: transaction.category,
-      paymentMethod: transaction.paymentMethod,
-      amount: transaction.amount,
+    if (daysWithTransactions.length === 0) {
+      return [{
+        date: "9월 25일",
+        details: sampleMaxPaymentDayDetails
+      }];
+    }
+    
+    // 가장 많은 결제 건수 찾기
+    const maxTransactionCount = Math.max(...daysWithTransactions.map(day => day.transactions.length));
+    
+    // 가장 많은 결제 건수를 가진 날들만 필터링
+    const maxDays = daysWithTransactions.filter(day => day.transactions.length === maxTransactionCount);
+    
+    return maxDays.map(day => ({
+      date: day.date,
+      details: day.transactions.map((transaction, index) => ({
+        id: `${day.date}-${index}`,
+        store: transaction.merchant,
+        category: transaction.category,
+        paymentMethod: transaction.paymentMethod,
+        amount: transaction.amount,
+      }))
     }));
-  })();
-
-  // 최대 결제일 계산
-  const maxPaymentDay = (() => {
-    if (!reportData?.spendingDetails.spendingPerDay.length) return "9월 25일";
-    
-    const maxDay = reportData.spendingDetails.spendingPerDay.reduce((max, day) => 
-      day.transactions.length > max.transactions.length ? day : max
-    );
-    
-    return maxDay.date; // 이미 "9월 2일" 형식으로 되어 있음
   })();
 
   // VIP 매장 클릭 핸들러
@@ -459,9 +468,7 @@ export default function ReportScreen() {
       categoryData={expenseDataWithPercentage}
       onCategoryPress={handleCategoryPress}
       dailyPaymentData={dailyPaymentData}
-      maxPaymentDay={maxPaymentDay}
-      maxPaymentDayDetails={maxPaymentDayDetails}
-      onMoreDetailsPress={handleMoreDetailsPress}
+      allDaysPaymentDetails={allDaysPaymentDetails}
       vipStores={vipStores}
       onVIPStorePress={handleVIPStorePress}
       anomalyData={anomalyData}

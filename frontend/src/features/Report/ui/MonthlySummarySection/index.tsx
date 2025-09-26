@@ -79,14 +79,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     borderRadius: 20,
     padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 4,
   },
   header: {
     marginTop: 8,

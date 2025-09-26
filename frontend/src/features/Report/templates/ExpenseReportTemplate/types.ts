@@ -39,9 +39,10 @@ export interface ExpenseReportTemplateProps {
 
   // 결제 내역 데이터
   dailyPaymentData: DailyPaymentData[];
-  maxPaymentDay: string;
-  maxPaymentDayDetails: PaymentDetail[];
-  onMoreDetailsPress: () => void;
+  allDaysPaymentDetails: Array<{
+    date: string;
+    details: PaymentDetail[];
+  }>;
 
   // VIP 매장 데이터
   vipStores: VIPStore[];
