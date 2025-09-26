@@ -217,8 +217,8 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
           {/* VIP 매장 요약 */}
           <View style={styles.vipSummary}>
             <Text style={styles.statsText}>
-              <Text style={styles.boldText}>{vipStores[0]?.name}</Text>에서 가장
-              많은 지출을 했어요
+              <Text style={styles.boldText}>{vipStores[0]?.name}</Text>에서{"\n"}가장
+              많은 결제를 했어요
             </Text>
           </View>
 

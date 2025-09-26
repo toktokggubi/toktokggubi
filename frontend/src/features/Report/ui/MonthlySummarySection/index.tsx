@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 22,
     color: colors.GRAY_DARKER,
-    marginBottom: 6,
+    marginBottom: 12,
     ...font.regular,
   },
   footer: {

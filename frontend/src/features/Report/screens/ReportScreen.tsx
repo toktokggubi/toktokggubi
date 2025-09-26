@@ -299,13 +299,50 @@ export default function ReportScreen() {
     paymentMethod: "알 수 없음", // 백엔드에서 제공하지 않음
   })) || sampleAnomalyData;
 
-  // API 데이터에서 VIP 매장 데이터 변환
-  const vipStores: VIPStore[] = reportData?.spendingDetails.topSpendingMerchants.map((merchant, index) => ({
-    id: index.toString(),
-    name: merchant.merchant,
-    visitCount: merchant.transactionsCount,
-    totalAmount: 0, // 백엔드에서 총 금액 정보를 제공하지 않음
-  })) || sampleVIPStores;
+  // API 데이터에서 VIP 매장 데이터 변환 (지출 금액 계산 포함)
+  const vipStores: VIPStore[] = (() => {
+    if (!reportData?.spendingDetails.topSpendingMerchants.length) {
+      return sampleVIPStores;
+    }
+
+    // 모든 거래 내역에서 매장별 지출 금액 계산
+    const merchantAmounts: Record<string, number> = {};
+    
+    reportData.spendingDetails.spendingPerDay.forEach(day => {
+      day.transactions.forEach(transaction => {
+        // TODO: 임시 하드코딩 - 송금 내역 제외 (나중에 제거 예정)
+        if (transaction.merchant.includes('송금') || 
+            transaction.merchant.includes('이체') ||
+            transaction.merchant.includes('계좌이체') ||
+            transaction.merchant.includes('ATM') ||
+            transaction.merchant.includes('입금')) {
+          return; // 송금 관련 거래는 제외
+        }
+        
+        const merchant = transaction.merchant;
+        if (!merchantAmounts[merchant]) {
+          merchantAmounts[merchant] = 0;
+        }
+        merchantAmounts[merchant] += transaction.amount;
+      });
+    });
+
+    return reportData.spendingDetails.topSpendingMerchants
+      .filter(merchant => {
+        // TODO: 임시 하드코딩 - 송금 관련 매장 제외 (나중에 제거 예정)
+        return !merchant.merchant.includes('송금') && 
+               !merchant.merchant.includes('이체') &&
+               !merchant.merchant.includes('계좌이체') &&
+               !merchant.merchant.includes('ATM') &&
+               !merchant.merchant.includes('입금');
+      })
+      .map((merchant, index) => ({
+        id: index.toString(),
+        name: merchant.merchant,
+        visitCount: merchant.transactionsCount,
+        totalAmount: merchantAmounts[merchant.merchant] || 0,
+      }));
+  })();
 
   // 총 이상탐지 금액 계산
   const totalAnomalyAmount = reportData?.summaryReport.abnormalSpending.totalAbnormalSpending || 
