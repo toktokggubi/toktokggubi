@@ -72,13 +72,19 @@ public class KakaoAuthController {
             KakaoMe me = kakaoApi.me(accessToken);
             KakaoLoginResponse res = service.login(me);
 
-            URI deep = UriComponentsBuilder.fromUriString("toktokggubi://oauth/kakao")
+            UriComponentsBuilder deepB = UriComponentsBuilder.fromUriString("toktokggubi://oauth/kakao")
                     .queryParam("message", res.message())
-                    .queryParam("userId", res.userId())
-                    .queryParam("token", res.token() != null ? res.token().accessToken() : null)
-                    .queryParam("signupToken", res.signupToken())
-                    .build()
-                    .toUri();
+                    .queryParam("userId", res.userId());
+
+            if (res.token() != null && res.token().accessToken() != null) {
+                deepB.queryParam("token", res.token().accessToken());
+            }
+            if (res.signupToken() != null) {
+                deepB.queryParam("signupToken", res.signupToken());
+            }
+
+            URI deep = deepB.build().toUri();
+
             String html = deepLinkHtml(deep);
             return ResponseEntity.ok().contentType(org.springframework.http.MediaType.TEXT_HTML).body(html);
         } catch (WebClientResponseException e) {
