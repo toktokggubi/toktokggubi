@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -76,11 +77,11 @@ public class KakaoAuthController {
                     .queryParam("userId", res.userId())
                     .queryParam("token", res.token() != null ? res.token().accessToken() : null)
                     .queryParam("signupToken", res.signupToken())
-                    .build(true).toUri();
-
+                    .build()
+                    .toUri();
             String html = deepLinkHtml(deep);
             return ResponseEntity.ok().contentType(org.springframework.http.MediaType.TEXT_HTML).body(html);
-        } catch (org.springframework.web.reactive.function.client.WebClientResponseException e) {
+        } catch (WebClientResponseException e) {
             log.warn("Kakao token exchange failed: status={}, body={}", e.getRawStatusCode(), e.getResponseBodyAsString());
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
                     .contentType(org.springframework.http.MediaType.TEXT_PLAIN)
