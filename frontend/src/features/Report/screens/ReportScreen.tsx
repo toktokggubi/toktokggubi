@@ -17,6 +17,7 @@ import type { DonutChartData } from "../ui/ExpenseDonutChart/types";
 import { fetchCurrentUserReport } from "../api/reportApi";
 import { useProfileQuery } from "@/features/Auth/model/useAuthQueries";
 import type { UserReportResponse } from "../api/reportApi";
+import { fetchFixedIncludedTotal, fetchFixedExpenseList } from "@/features/Budget/api/fetchers";
 
 // 샘플 데이터 (실제로는 API에서 가져올 데이터)
 const sampleData: DonutChartData[] = [
@@ -183,6 +184,8 @@ export default function ReportScreen() {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
+  const [fixedExpenseAmount, setFixedExpenseAmount] = useState(0);
+  const [variableExpenseAmount, setVariableExpenseAmount] = useState(0);
 
   // 토큰 존재 여부 확인 (간단한 검증)
   const validateToken = useCallback(async () => {
@@ -226,9 +229,23 @@ export default function ReportScreen() {
     setError(null);
     
     try {
-      const data = await fetchCurrentUserReport(currentYear, currentMonth);
+      // 리포트 데이터와 고정지출 데이터를 병렬로 가져오기
+      const [data, fixedExpenseResponse] = await Promise.all([
+        fetchCurrentUserReport(currentYear, currentMonth),
+        fetchFixedIncludedTotal().catch(() => ({ fixedIncludedTotal: 0 }))
+      ]);
+      
       setReportData(data);
       setRetryCount(0); // 성공 시 재시도 카운트 리셋
+      
+      // 고정지출 금액 설정
+      const fixedAmount = fixedExpenseResponse.fixedIncludedTotal || 0;
+      setFixedExpenseAmount(fixedAmount);
+      
+      // 변동지출 금액 계산 (총 지출 - 고정지출)
+      const totalSpending = data.summaryReport.monthlySpendingSummary?.totalSpending || 0;
+      const variableAmount = Math.max(0, totalSpending - fixedAmount);
+      setVariableExpenseAmount(variableAmount);
       
       // API 데이터를 차트 데이터로 변환
       const chartData: DonutChartData[] = data.summaryReport.spendingByCategory.map((item, index) => {
@@ -282,13 +299,50 @@ export default function ReportScreen() {
     paymentMethod: "알 수 없음", // 백엔드에서 제공하지 않음
   })) || sampleAnomalyData;
 
-  // API 데이터에서 VIP 매장 데이터 변환
-  const vipStores: VIPStore[] = reportData?.spendingDetails.topSpendingMerchants.map((merchant, index) => ({
-    id: index.toString(),
-    name: merchant.merchant,
-    visitCount: merchant.transactionsCount,
-    totalAmount: 0, // 백엔드에서 총 금액 정보를 제공하지 않음
-  })) || sampleVIPStores;
+  // API 데이터에서 VIP 매장 데이터 변환 (지출 금액 계산 포함)
+  const vipStores: VIPStore[] = (() => {
+    if (!reportData?.spendingDetails.topSpendingMerchants.length) {
+      return sampleVIPStores;
+    }
+
+    // 모든 거래 내역에서 매장별 지출 금액 계산
+    const merchantAmounts: Record<string, number> = {};
+    
+    reportData.spendingDetails.spendingPerDay.forEach(day => {
+      day.transactions.forEach(transaction => {
+        // TODO: 임시 하드코딩 - 송금 내역 제외 (나중에 제거 예정)
+        if (transaction.merchant.includes('송금') || 
+            transaction.merchant.includes('이체') ||
+            transaction.merchant.includes('계좌이체') ||
+            transaction.merchant.includes('ATM') ||
+            transaction.merchant.includes('입금')) {
+          return; // 송금 관련 거래는 제외
+        }
+        
+        const merchant = transaction.merchant;
+        if (!merchantAmounts[merchant]) {
+          merchantAmounts[merchant] = 0;
+        }
+        merchantAmounts[merchant] += transaction.amount;
+      });
+    });
+
+    return reportData.spendingDetails.topSpendingMerchants
+      .filter(merchant => {
+        // TODO: 임시 하드코딩 - 송금 관련 매장 제외 (나중에 제거 예정)
+        return !merchant.merchant.includes('송금') && 
+               !merchant.merchant.includes('이체') &&
+               !merchant.merchant.includes('계좌이체') &&
+               !merchant.merchant.includes('ATM') &&
+               !merchant.merchant.includes('입금');
+      })
+      .map((merchant, index) => ({
+        id: index.toString(),
+        name: merchant.merchant,
+        visitCount: merchant.transactionsCount,
+        totalAmount: merchantAmounts[merchant.merchant] || 0,
+      }));
+  })();
 
   // 총 이상탐지 금액 계산
   const totalAnomalyAmount = reportData?.summaryReport.abnormalSpending.totalAbnormalSpending || 
@@ -323,32 +377,41 @@ export default function ReportScreen() {
     count: dayData.transactions.length,
   })) || sampleDailyPaymentData;
 
-  // API 데이터에서 최대 결제일 상세 내역 변환
-  const maxPaymentDayDetails: PaymentDetail[] = (() => {
-    if (!reportData?.spendingDetails.spendingPerDay.length) return sampleMaxPaymentDayDetails;
+  // API 데이터에서 가장 많은 결제 건수를 가진 날들만 변환
+  const allDaysPaymentDetails = (() => {
+    if (!reportData?.spendingDetails.spendingPerDay.length) {
+      return [{
+        date: "9월 25일",
+        details: sampleMaxPaymentDayDetails
+      }];
+    }
     
-    const maxDay = reportData.spendingDetails.spendingPerDay.reduce((max, day) => 
-      day.transactions.length > max.transactions.length ? day : max
-    );
+    const daysWithTransactions = reportData.spendingDetails.spendingPerDay
+      .filter(day => day.transactions.length > 0); // 결제 내역이 있는 날만
     
-    return maxDay.transactions.map((transaction, index) => ({
-      id: index.toString(),
-      store: transaction.merchant,
-      category: transaction.category,
-      paymentMethod: transaction.paymentMethod,
-      amount: transaction.amount,
+    if (daysWithTransactions.length === 0) {
+      return [{
+        date: "9월 25일",
+        details: sampleMaxPaymentDayDetails
+      }];
+    }
+    
+    // 가장 많은 결제 건수 찾기
+    const maxTransactionCount = Math.max(...daysWithTransactions.map(day => day.transactions.length));
+    
+    // 가장 많은 결제 건수를 가진 날들만 필터링
+    const maxDays = daysWithTransactions.filter(day => day.transactions.length === maxTransactionCount);
+    
+    return maxDays.map(day => ({
+      date: day.date,
+      details: day.transactions.map((transaction, index) => ({
+        id: `${day.date}-${index}`,
+        store: transaction.merchant,
+        category: transaction.category,
+        paymentMethod: transaction.paymentMethod,
+        amount: transaction.amount,
+      }))
     }));
-  })();
-
-  // 최대 결제일 계산
-  const maxPaymentDay = (() => {
-    if (!reportData?.spendingDetails.spendingPerDay.length) return "9월 25일";
-    
-    const maxDay = reportData.spendingDetails.spendingPerDay.reduce((max, day) => 
-      day.transactions.length > max.transactions.length ? day : max
-    );
-    
-    return maxDay.date; // 이미 "9월 2일" 형식으로 되어 있음
   })();
 
   // VIP 매장 클릭 핸들러
@@ -436,17 +499,18 @@ export default function ReportScreen() {
       year={currentYear}
       month={currentMonth}
       totalAmount={totalAmount}
+      fixedExpenseAmount={fixedExpenseAmount}
+      variableExpenseAmount={variableExpenseAmount}
       chartData={expenseDataWithPercentage}
       categoryData={expenseDataWithPercentage}
       onCategoryPress={handleCategoryPress}
       dailyPaymentData={dailyPaymentData}
-      maxPaymentDay={maxPaymentDay}
-      maxPaymentDayDetails={maxPaymentDayDetails}
-      onMoreDetailsPress={handleMoreDetailsPress}
+      allDaysPaymentDetails={allDaysPaymentDetails}
       vipStores={vipStores}
       onVIPStorePress={handleVIPStorePress}
       anomalyData={anomalyData}
       totalAnomalyAmount={totalAnomalyAmount}
+      overallSummary={reportData?.summaryReport.overallSummary}
       onNotificationPress={handleNotificationPress}
       unreadNotificationCount={unreadNotificationCount}
     />
