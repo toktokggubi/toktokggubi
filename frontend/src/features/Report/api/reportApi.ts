@@ -36,19 +36,16 @@ export interface SpendingByCategory {
 }
 
 export interface MonthlySpendingSummary {
-  totalSpent: number;
-  totalBudget: number;
-  budgetUtilization: number;
+  month: string;
+  totalSpending: number;
+  budgetUsagePercentage: number;
+  incomeUsagePercentage: number;
 }
 
 export interface TransactionDetail {
-  merchant: string;
-  category: string;
-  paymentMethod: string;
   amount: number;
+  location: string;
   date: string;
-  latitude?: number;
-  longitude?: number;
 }
 
 export interface AbnormalSpending {
@@ -57,8 +54,10 @@ export interface AbnormalSpending {
 }
 
 export interface BudgetAdjustment {
-  suggestedAdjustments: string[];
-  reasoning: string;
+  category: string;
+  currentSpending: number;
+  budget: number;
+  recommendation: string;
 }
 
 export interface SummaryReport {
@@ -79,7 +78,6 @@ export interface SpendingTransaction {
 export interface SpendingPerDay {
   date: string;
   transactions: SpendingTransaction[];
-  totalAmount: number;
 }
 
 export interface TopSpendingMerchant {
@@ -136,8 +134,11 @@ export const fetchAiUserReport = async (
     );
     console.log("fetchAiUserReport 성공:", response.data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("fetchAiUserReport 실패:", error);
+    console.error("에러 상태:", error.response?.status);
+    console.error("에러 데이터:", error.response?.data);
+    console.error("에러 헤더:", error.response?.headers);
     throw error;
   }
 };
