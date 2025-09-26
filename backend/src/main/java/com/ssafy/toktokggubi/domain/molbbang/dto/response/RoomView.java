@@ -1,13 +1,13 @@
 package com.ssafy.toktokggubi.domain.molbbang.dto.response;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record RoomView(
-        String code,
+        String roomCode,
         Long amount,
         String status,
-        Integer round,
-        Integer totalRounds,
+        LocalDateTime startedAt,
         List<MemberView> members
 ) {
     public record MemberView(
@@ -17,5 +17,5 @@ public record RoomView(
             boolean ready,
             boolean host,
             boolean active
-    ) { }
+    ) {}
 }

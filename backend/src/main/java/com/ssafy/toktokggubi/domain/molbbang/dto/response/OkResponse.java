@@ -1,3 +1,8 @@
 package com.ssafy.toktokggubi.domain.molbbang.dto.response;
 
-public record OkResponse(boolean ok) { }
+import lombok.Builder;
+
+@Builder
+public record OkResponse(boolean ok, String message) {
+    public OkResponse(boolean ok) { this(ok, null); }
+}
