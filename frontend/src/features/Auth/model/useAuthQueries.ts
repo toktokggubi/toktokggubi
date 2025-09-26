@@ -1,8 +1,8 @@
+import FCMService from "@/shared/services/fcmService";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as SecureStore from "expo-secure-store";
-import { login, kakaoLogin, fetchProfile, logout, signup, signupComplete, updateProfile } from "../api/fetchers";
+import { fetchProfile, login, logout, signup, signupComplete, updateProfile } from "../api/fetchers";
 import type { SignupRequest } from "../types/signup.types";
-import FCMService from "@/shared/services/fcmService";
 
 export const authKeys = {
   all: ["auth"] as const,
@@ -44,27 +44,6 @@ export const useEmailLogin = () => {
     onSuccess: async (res) => {
       const at = res.token?.accessToken;
       const rt = res.token?.refreshToken;
-      if (at) await SecureStore.setItemAsync("access_token", at);
-      if (rt) await SecureStore.setItemAsync("refresh_token", rt);
-      
-      // FCM 토큰을 서버에 전송
-      if (at) {
-        await sendFCMTokenToServer(at);
-      }
-      
-      qc.invalidateQueries({ queryKey: authKeys.me() });
-    },
-  });
-};
-
-// 카카오 로그인
-export const useKakaoLogin = () => {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (kakaoAccessToken: string) => kakaoLogin(kakaoAccessToken),
-    onSuccess: async (res) => {
-      const at = res?.token?.accessToken;
-      const rt = res?.token?.refreshToken;
       if (at) await SecureStore.setItemAsync("access_token", at);
       if (rt) await SecureStore.setItemAsync("refresh_token", rt);
       

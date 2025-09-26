@@ -17,10 +17,5 @@ import lombok.NoArgsConstructor;
 public class TopSpendingMerchant {
     private Integer rank;
     private String merchant;
-    /**
-     * 거래 횟수.
-     * JSON 필드명 `transactions_count`에 매핑됩니다.
-     */
-    @JsonProperty("transactions_count")
     private Integer transactionsCount;
 }

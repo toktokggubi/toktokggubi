@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
  * 사용자 정보를 담는 DTO.
@@ -14,8 +15,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserInfo {
-    private Long userId;
+
+    @Field("userId")
+    private Integer userId;
+    
+    @Field("username")
     private String username;
+    
+    @Field("year")
     private Integer year;
+    
+    @Field("month")
     private Integer month;
 }
