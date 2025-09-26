@@ -76,12 +76,18 @@ public class KakaoAuthController {
                     .queryParam("message", res.message())
                     .queryParam("userId", res.userId());
 
-            if (res.token() != null && res.token().accessToken() != null) {
-                deepB.queryParam("token", res.token().accessToken());
+            if (res.token() != null) {
+                if (res.token().accessToken() != null) {
+                    deepB.queryParam("token", res.token().accessToken());
+                }
+                if (res.token().refreshToken() != null) {
+                    deepB.queryParam("refreshToken", res.token().refreshToken());
+                }
             }
             if (res.signupToken() != null) {
                 deepB.queryParam("signupToken", res.signupToken());
             }
+
 
             URI deep = deepB.build().toUri();
 
