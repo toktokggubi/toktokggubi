@@ -13,13 +13,23 @@ module.exports = {
       backgroundColor: "#288CFF",
     },
     newArchEnabled: true,
-    developmentClient: {
-      silentLaunch: false,
-    },
-    ios: {
-      supportsTablet: true,
-    },
+    developmentClient: { silentLaunch: true },
+    ios: { supportsTablet: true },
     android: {
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: false,
+          category: ["BROWSABLE", "DEFAULT"],
+          data: [{ scheme: "toktokggubi", host: "oauth", pathPrefix: "/kakao" }],
+        },
+        {
+          action: "VIEW",
+          autoVerify: false,
+          category: ["BROWSABLE", "DEFAULT"],
+          data: [{ scheme: "toktokggubi" }],
+        },
+      ],
       adaptiveIcon: {
         foregroundImage: "./assets/images/favicon.png",
         backgroundColor: "#ffffff",
@@ -46,20 +56,19 @@ module.exports = {
       [
         "@react-native-firebase/app",
         {
-          android: {
-            googleServicesFile: "./google-services.json",
-          },
-          ios: {
-            googleServicesFile: "./ios/GoogleService-Info.plist",
-          },
+          android: { googleServicesFile: "./google-services.json" },
+          ios: { googleServicesFile: "./ios/GoogleService-Info.plist" },
         },
       ],
+      // Dev Client 빌드
+      "expo-dev-client",
     ],
-    experiments: {
-      typedRoutes: true,
-    },
+    experiments: { typedRoutes: true },
     extra: {
       router: {},
+      eas: {
+        projectId: "7d72ba27-6998-452f-9ec7-631b1eda0015", // ← 이 줄 추가
+      },
     },
   },
 };

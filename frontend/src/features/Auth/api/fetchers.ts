@@ -26,22 +26,6 @@ export async function login(dto: { email: string; password: string }) {
   };
 }
 
-// UM-6 카카오 로그인
-export async function kakaoLogin(accessToken: string) {
-  const { data } = await http.post(AUTH_ENDPOINTS.kakaoLogin, { accessToken });
-  return data as {
-    message: string;
-    userId: number;
-    token?: {
-      accessToken: string;
-      refreshToken: string;
-      expiresIn: number;
-      refreshExpiresIn: number;
-      tokenType: string;
-    };
-  };
-}
-
 // UM-10 가입 완료(Authorization: Bearer <signupToken>)
 export async function signupComplete(payload: {
   nickname: string;
