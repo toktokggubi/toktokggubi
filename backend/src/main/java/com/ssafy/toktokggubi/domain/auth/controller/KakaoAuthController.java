@@ -62,15 +62,12 @@ public class KakaoAuthController {
     public ResponseEntity<String> callback(@RequestParam String code,
                                            @RequestParam(required = false) String state,
                                            @RequestParam(required = false, name = "code_verifier") String codeVerifier) {
-
         Map<String, Object> token = oauth.exchangeCodeForToken(code, codeVerifier).block();
         if (token == null || token.get("access_token") == null) {
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("Failed to exchange token with Kakao");
         }
-
         String accessToken = token.get("access_token").toString();
         KakaoMe me = kakaoApi.me(accessToken);
-
         KakaoLoginResponse res = service.login(me);
 
         URI deep = UriComponentsBuilder.fromUriString("toktokggubi://oauth/kakao")
@@ -80,8 +77,25 @@ public class KakaoAuthController {
                 .queryParam("signupToken", res.signupToken())
                 .build(true).toUri();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setLocation(deep);
-        return new ResponseEntity<>(headers, HttpStatus.FOUND);
+        // Android용 intent:// 보조(패키지명 꼭 맞추기)
+        String intentUrl =
+                "intent://oauth/kakao" +
+                        "#Intent;scheme=toktokggubi;package=com.technologia.toktokggubi;end";
+
+        String html = """
+            <!doctype html><html><head><meta charset="utf-8">
+            <meta http-equiv="refresh" content="0; url=%s">
+            <script>
+              // 일부 브라우저에서 커스텀 스킴 자동 이동이 막히는 경우 intent를 보조로 시도
+              setTimeout(function(){ location.href = '%s'; }, 150);
+            </script>
+            </head><body>
+            <p>앱으로 이동 중… 이동하지 않으면 <a href="%s">여기</a>를 누르세요.</p>
+            </body></html>
+            """.formatted(deep.toString(), intentUrl, deep.toString());
+
+        return ResponseEntity.ok()
+                .contentType(org.springframework.http.MediaType.TEXT_HTML)
+                .body(html);
     }
 }
