@@ -3721,8 +3721,8 @@ SELECT
     f.card_unique_no,
     f.card_issuer_code,
     f.card_name,
-    CASE WHEN f.card_name LIKE '%체크%' THEN 'CHECK' ELSE 'CREDIT' END AS card_type_name,
-    CASE WHEN sc.image_file IS NOT NULL THEN CONCAT(@card_image_base, sc.image_file) ELSE NULL END AS image_url,
+    IF(f.card_name LIKE '%체크%', 'CHECK', 'CREDIT') AS card_type_name,
+    CASE WHEN sc.image_file IS NOT NULL THEN CONCAT(@card_image_base, sc.image_file) END AS image_url,
     sc.card_description
 FROM staging_fin_card_api f
          LEFT JOIN card_issuer ci
@@ -3771,7 +3771,6 @@ FROM (
                            AND c.card_description LIKE CONCAT('%', bm.term, '%')
      ) AS r
 WHERE r.discount_rate IS NOT NULL
-  AND r.franchise_id IS NOT NULL
 ON DUPLICATE KEY UPDATE
     card_product_benefit.discount_rate =
         GREATEST(card_product_benefit.discount_rate, VALUES(discount_rate));
