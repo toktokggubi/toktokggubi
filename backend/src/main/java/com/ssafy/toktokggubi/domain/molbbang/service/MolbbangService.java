@@ -9,6 +9,7 @@ import com.ssafy.toktokggubi.domain.molbbang.repository.MolbbangScoreRepository;
 import com.ssafy.toktokggubi.domain.user.entity.User;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -96,6 +97,17 @@ public class MolbbangService {
             candidate = head + sfx;
         }
         return candidate;
+    }
+
+    private MolbbangRoom getLatestFinishedRoomOfUserOrThrow(Long userId) {
+        var rooms = roomRepo.findRecentRoomsByUserAndStatus(
+                userId,
+                RoomStatus.FINISHED,
+                PageRequest.of(0, 1) // 최신 1건
+        );
+        return rooms.stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("최근 종료된 방이 없습니다."));
     }
 
     /* ===== 상태 조회 ===== */
@@ -272,8 +284,7 @@ public class MolbbangService {
     public ResultsResponse resultsForMe(Long userId) {
         MolbbangRoom room;
         try {
-            room = roomRepo.findTopByMembers_User_UserIdAndStatusOrderByEndedAtDesc(userId, RoomStatus.FINISHED)
-                    .orElseThrow(() -> new IllegalStateException("최근 종료된 방이 없습니다."));
+            room = getLatestFinishedRoomOfUserOrThrow(userId);
         } catch (IllegalStateException e) {
             room = getActiveRoomOfUserOrThrow(userId);
         }
