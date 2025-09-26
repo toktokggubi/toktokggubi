@@ -8,14 +8,14 @@ import React, {
   useLayoutEffect,
   useState,
 } from "react";
-import { Alert, Pressable, StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as Notifications from 'expo-notifications';
 import {
   deleteNotifications,
   fetchNotifications,
   markNotificationsAsRead,
 } from "../api/notificationApi";
-import { mockNotificationData } from "../data/mockData";
 import type { NotificationItem } from "../templates/NotificationTemplate/types";
 import NotificationList from "../ui/NotificationList";
 
@@ -29,13 +29,72 @@ export default function NotificationScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // 현재 월을 저장할 상태
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth()}`;
+  });
+
   const handleNotificationPress = useCallback(
-    (notification: NotificationItem) => {
-      // TODO: 알림 상세 화면으로 이동하거나 특정 동작 수행
-      console.log("알림 클릭:", notification.title);
+    async (notification: NotificationItem) => {
+      try {
+        // 1. 시스템 알림창에서 해당 알림 제거
+        await Notifications.dismissNotificationAsync(notification.notificationId.toString());
+        
+        // 2. 읽지 않은 알림이면 읽음 처리
+        if (!notification.readAt) {
+          await markNotificationsAsRead();
+          // 로컬 상태 업데이트
+          setNotifications(prev => 
+            prev.map(item => 
+              item.notificationId === notification.notificationId 
+                ? { ...item, readAt: new Date().toISOString() }
+                : item
+            )
+          );
+        }
+        
+        // 3. 알림 타입에 따른 페이지 이동
+        switch (notification.type) {
+          case 'THRESHOLD/TOTAL':
+          case 'THRESHOLD/CATEGORY':
+          case 'EXCEEDED/TOTAL':
+          case 'EXCEEDED/CATEGORY':
+          case 'LOCATION':
+          default:
+            router.push('/(tabs)/home');
+        }
+        
+        console.log("알림 클릭 처리 완료:", notification.title);
+      } catch (error) {
+        console.error("알림 클릭 처리 실패:", error);
+        // 에러가 발생해도 기본적으로 홈으로 이동
+        router.push('/(tabs)/home');
+      }
     },
     []
   );
+
+  // 월이 바뀌었는지 확인하고 이전 달 알림 자동 삭제
+  const checkAndDeletePreviousMonthNotifications = useCallback(async () => {
+    const now = new Date();
+    const newMonth = `${now.getFullYear()}-${now.getMonth()}`;
+
+    // 월이 바뀌었는지 확인
+    if (currentMonth !== newMonth) {
+      try {
+        console.log(`월이 바뀌었습니다: ${currentMonth} → ${newMonth}`);
+        // 이전 달 알림 삭제
+        await deleteNotifications();
+        // 현재 월 업데이트
+        setCurrentMonth(newMonth);
+        // 삭제 후 알림 목록 다시 로드
+        await loadNotifications();
+      } catch (error) {
+        console.error("이전 달 알림 삭제 실패:", error);
+      }
+    }
+  }, [currentMonth]);
 
   // 알림 개수 업데이트를 위한 콜백 (다른 페이지에서 사용)
   const updateNotificationCount = useCallback(() => {
@@ -44,69 +103,67 @@ export default function NotificationScreen() {
   }, []);
 
   // 알림 데이터 로드 및 읽음 처리
-  const loadNotifications = useCallback(async (isRefresh = false) => {
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+  const loadNotifications = useCallback(
+    async (isRefresh = false) => {
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
 
-      // 1. 알림 목록 조회
-      const notificationData = await fetchNotifications();
-      setNotifications(notificationData.items);
+        // 월 변경 확인 및 이전 달 알림 자동 삭제
+        await checkAndDeletePreviousMonthNotifications();
 
-      // 2. 읽지 않은 알림이 있으면 읽음 처리
-      const unreadCount = notificationData.items.filter(
-        (notification) => notification.readAt === null
-      ).length;
+        // 1. 알림 목록 조회
+        const notificationData = await fetchNotifications();
+        setNotifications(notificationData.items);
 
-      if (unreadCount > 0) {
-        await markNotificationsAsRead();
+        // 2. 읽지 않은 알림이 있으면 읽음 처리
+        const unreadCount = notificationData.items.filter(
+          (notification) => notification.readAt === null
+        ).length;
+
+        if (unreadCount > 0) {
+          await markNotificationsAsRead();
+          // 시스템 알림창의 모든 알림도 제거
+          await Notifications.dismissAllNotificationsAsync();
+        }
+      } catch (error) {
+        console.error("알림 로드 실패:", error);
+        // 에러 시 빈 배열로 설정
+        setNotifications([]);
+      } finally {
+        if (isRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
       }
-    } catch (error) {
-      console.error("알림 로드 실패:", error);
-      // 에러 시 목업 데이터 사용
-      setNotifications(mockNotificationData.items);
-    } finally {
-      if (isRefresh) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
-      }
-    }
-  }, []);
+    },
+    [checkAndDeletePreviousMonthNotifications]
+  );
 
   const handleRefresh = useCallback(() => {
     loadNotifications(true);
   }, [loadNotifications]);
 
-  // 알림 삭제 핸들러
-  const handleDeleteNotifications = useCallback(() => {
-    Alert.alert("알림 삭제", "알림을 삭제하시겠습니까?", [
-      {
-        text: "취소",
-        style: "cancel",
-      },
-      {
-        text: "확인",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteNotifications();
-            // 삭제 후 알림 목록 다시 로드
-            loadNotifications();
-          } catch (error) {
-            console.error("알림 삭제 실패:", error);
-          }
-        },
-      },
-    ]);
-  }, [loadNotifications]);
-
   // 컴포넌트 마운트 시 알림 로드
   useEffect(() => {
     loadNotifications();
+  }, [loadNotifications]);
+
+  // 실시간 알림 업데이트를 위한 리스너
+  useEffect(() => {
+    // 새로운 알림이 올 때마다 알림 목록 새로고침
+    const subscription = Notifications.addNotificationReceivedListener(() => {
+      console.log('새로운 알림 수신됨, 목록 새로고침');
+      loadNotifications(true);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, [loadNotifications]);
 
   useLayoutEffect(() => {
@@ -126,16 +183,8 @@ export default function NotificationScreen() {
           <Ionicons name="chevron-back" size={24} color={TXT} />
         </Pressable>
       ),
-      headerRight: () => (
-        <Pressable
-          onPress={handleDeleteNotifications}
-          style={{ paddingHorizontal: 12, paddingVertical: 6 }}
-        >
-          <Ionicons name="trash-outline" size={24} color={TXT} />
-        </Pressable>
-      ),
     });
-  }, [navigation, handleDeleteNotifications]);
+  }, [navigation]);
 
   return (
     <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>

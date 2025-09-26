@@ -12,6 +12,7 @@ export interface MyPageTemplateProps {
   onPressGifticon?: () => void;
   onPressLogout?: () => void;
   onPressSettings?: () => void;
+  onPressProfileEdit?: () => void;
   onPressBudgetSetup?: () => void; // 예산 설정 프로세스 테스트용
   onPressAIBudgetSetup?: () => void; // AI 추천 예산 설정 테스트용
   cardImage: ImageSourcePropType;

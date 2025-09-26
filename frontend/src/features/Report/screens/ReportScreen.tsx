@@ -254,7 +254,6 @@ export default function ReportScreen() {
       year={currentYear}
       month={currentMonth}
       totalAmount={totalAmount}
-      summaryText="예산의 89%, 월소득의 23%를 사용하셨어요"
       chartData={expenseDataWithPercentage}
       categoryData={expenseDataWithPercentage}
       onCategoryPress={handleCategoryPress}

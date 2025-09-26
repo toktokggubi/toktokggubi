@@ -31,7 +31,7 @@ export default function BudgetSummaryTemplate({
       {/* 캐릭터 이미지와 완료 문구 */}
       <View style={styles.header}>
         <Image
-          source={require("@/assets/images/character/big-character-02.png")}
+          source={require("@/assets/images/character/character-paticle.png")}
           style={styles.characterImage}
           resizeMode="contain"
         />
