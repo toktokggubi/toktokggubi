@@ -13,6 +13,9 @@ import com.ssafy.toktokggubi.domain.report.entity.AiUserReport;
 import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -41,6 +44,10 @@ public class AiReportInformationController {
      */
     @PostMapping("/information")
     @Operation(summary = "AI 예산, 지출 데이터 조회", description = "사용자의 월간 예산 설정 및 실제 지출 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "관련 데이터 없음")
+    })
     public AiReportInformationResponse getReportInformation(@RequestBody AiReportInformationRequest request) {
         return service.getInformation(request);
     }
@@ -55,6 +62,9 @@ public class AiReportInformationController {
      */
     @PostMapping("/save")
     @Operation(summary = "AI 사용자 리포트 저장", description = "AI 분석을 통해 생성된 사용자별 월간 리포트 데이터를 저장합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "리포트 저장 성공")
+    })
     public ResponseEntity<Void> receiveAiUserReport(@RequestBody AiUserReportRequest request) {
         aiUserReportService.saveAiUserReport(request);
         return new ResponseEntity<>(HttpStatus.CREATED);
@@ -64,16 +74,26 @@ public class AiReportInformationController {
      * AI 사용자 리포트를 조회합니다.
      * 사용자 ID, 닉네임, 조회할 년도 및 월을 기반으로 AI 월간 리포트 데이터를 반환합니다.
      *
-     * @param request 사용자 ID, 닉네임, 조회할 년도 및 월을 포함하는 요청 객체
+     * @param request 
      * @return AI 월간 사용자 리포트 정보 응답 객체
      */
     @PostMapping("/get")
     @Operation(summary = "AI 사용자 리포트 조회", description = "사용자의 월간 AI 리포트 정보를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 필요"),
+            @ApiResponse(responseCode = "404", description = "리포트 없음")
+    })
+    @SecurityRequirement(name = "Authorization")
     public UserReportResponse getAiUserReport(@RequestBody AiUserReportGetRequest request) {
         Long userId = SecurityUtils.currentUserIdOrNull(); // Get userId from SecurityUtils
+
+        // add log of token,
+
         if (userId == null) {
             throw new IllegalStateException("인증 필요"); // Or handle as appropriate for your application
         }
+
         String username = userProfileService.getProfile(userId).nickname(); // Get username (nickname) from UserProfileService
 
         UserInfo userInfo = UserInfo.builder()
