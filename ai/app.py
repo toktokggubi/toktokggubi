@@ -642,6 +642,13 @@ def combined_anomaly_detection():
         adjustment = None
 
         if llm_adjustment_str:
+            # Robustly extract JSON from LLM response, stripping markdown code block delimiters
+            llm_adjustment_str = llm_adjustment_str.strip()
+            if llm_adjustment_str.startswith('```json') and llm_adjustment_str.endswith('```'):
+                llm_adjustment_str = llm_adjustment_str[len('```json'):-len('```')].strip()
+            elif llm_adjustment_str.startswith('```') and llm_adjustment_str.endswith('```'):
+                llm_adjustment_str = llm_adjustment_str[len('```'):-len('```')].strip()
+
             try:
                 # The model sometimes returns extra text after the JSON object.
                 # We use raw_decode to parse only the first valid JSON object from the string.
@@ -898,9 +905,9 @@ def analyze_user_data():
 
             monthly_spending_summary = {
                 "month": f"{month}월",
-                "total_spending": total_spending_this_month,
-                "budget_usage_percentage": budget_usage_percentage,
-                "income_usage_percentage": income_usage_percentage
+                "totalSpending": total_spending_this_month,
+                "budgetUsagePercentage": budget_usage_percentage,
+                "incomeUsagePercentage": income_usage_percentage
             }
 
             spending_by_category_list = []
@@ -917,23 +924,23 @@ def analyze_user_data():
             spending_by_category_list = sorted(spending_by_category_list, key=lambda x: x['amount'], reverse=True)
 
             abnormal_spending = {
-                "total_abnormal_spending": 0,
+                "totalAbnormalSpending": 0,
                 "transactions": []
             }
 
             budget_adjustment = {
                 "category": "",
-                "current_spending": 0,
+                "currentSpending": 0,
                 "budget": 0,
                 "recommendation": "현재 이상 소비가 없어 예산 조정이 필요하지 않습니다."
             }
 
             summary_report = {
-                "overall_summary": overall_summary,
-                "monthly_spending_summary": monthly_spending_summary,
-                "spending_by_category": spending_by_category_list,
-                "abnormal_spending": abnormal_spending,
-                "budget_adjustment": budget_adjustment
+                "overallSummary": str(overall_summary),
+                "monthlySpendingSummary": monthly_spending_summary,
+                "spendingByCategory": spending_by_category_list,
+                "abnormalSpending": abnormal_spending,
+                "budgetAdjustment": budget_adjustment
             }
 
             total_transactions_count = len(analysis_df)
@@ -955,7 +962,7 @@ def analyze_user_data():
                     transactions_for_day.append({
                         "merchant": transaction_row['내용'],
                         "category": transaction_row['대분류'],
-                        "payment_method": "미정",
+                        "paymentMethod": "미정",
                         "amount": int(transaction_row['금액'])
                     })
                 spending_per_day_list.append({
@@ -965,27 +972,27 @@ def analyze_user_data():
             spending_per_day_list = sorted(spending_per_day_list, key=lambda x: datetime.strptime(x['date'], '%m월 %d일'))
 
             top_spending_merchants_df = analysis_df['내용'].value_counts().reset_index()
-            top_spending_merchants_df.columns = ['merchant', 'transactions_count']
+            top_spending_merchants_df.columns = ['merchant', 'transactionsCount']
             top_spending_merchants = []
             for rank, (_, row) in enumerate(top_spending_merchants_df.head(5).iterrows()):
                 top_spending_merchants.append({
                     "rank": rank + 1,
                     "merchant": row['merchant'],
-                    "transactions_count": int(row['transactions_count'])
+                    "transactionsCount": int(row['transactionsCount'])
                 })
 
             spending_details = {
-                "total_transactions": total_transactions_count,
-                "max_daily_transactions": max_daily_transactions,
-                "daily_transaction_counts": daily_transaction_counts_formatted,
-                "spending_per_day": spending_per_day_list,
-                "top_spending_merchants": top_spending_merchants
+                "totalTransactions": total_transactions_count,
+                "maxDailyTransactions": max_daily_transactions,
+                "dailyTransactionCounts": daily_transaction_counts_formatted,
+                "spendingPerDay": spending_per_day_list,
+                "topSpendingMerchants": top_spending_merchants
             }
 
             return jsonify({
-                "user_info": user_info,
-                "summary_report": summary_report,
-                "spending_details": spending_details
+                "userInfo": user_info,
+                "summaryReport": summary_report,
+                "spendingDetails": spending_details
             })
 
         # --- Generate JSON Response using LLM ---
@@ -1114,9 +1121,9 @@ def analyze_user_data():
 
         monthly_spending_summary = {
             "month": f"{month}월",
-            "total_spending": total_spending_this_month,
-            "budget_usage_percentage": budget_usage_percentage,
-            "income_usage_percentage": income_usage_percentage
+            "totalSpending": total_spending_this_month,
+            "budgetUsagePercentage": budget_usage_percentage,
+            "incomeUsagePercentage": income_usage_percentage
         }
 
         # Spending by Category
@@ -1148,7 +1155,7 @@ def analyze_user_data():
             })
         
         abnormal_spending = {
-            "total_abnormal_spending": total_abnormal_spending,
+            "totalAbnormalSpending": total_abnormal_spending,
             "transactions": abnormal_spending_transactions
         }
 
@@ -1156,11 +1163,11 @@ def analyze_user_data():
         budget_adjustment = adjustment
 
         summary_report = {
-            "overall_summary": overall_summary,
-            "monthly_spending_summary": monthly_spending_summary,
-            "spending_by_category": spending_by_category_list,
-            "abnormal_spending": abnormal_spending,
-            "budget_adjustment": budget_adjustment
+            "overallSummary": str(overall_summary),
+            "monthlySpendingSummary": monthly_spending_summary,
+            "spendingByCategory": spending_by_category_list,
+            "abnormalSpending": abnormal_spending,
+            "budgetAdjustment": budget_adjustment
         }
 
         # Spending Details
@@ -1190,7 +1197,7 @@ def analyze_user_data():
                 transactions_for_day.append({
                     "merchant": transaction_row['내용'],
                     "category": transaction_row['대분류'],
-                    "payment_method": "미정", # Payment method not available in current data
+                    "paymentMethod": "미정", # Payment method not available in current data
                     "amount": int(transaction_row['금액'])
                 })
             spending_per_day_list.append({
@@ -1203,27 +1210,27 @@ def analyze_user_data():
 
         # Top Spending Merchants
         top_spending_merchants_df = analysis_df['내용'].value_counts().reset_index()
-        top_spending_merchants_df.columns = ['merchant', 'transactions_count']
+        top_spending_merchants_df.columns = ['merchant', 'transactionsCount']
         top_spending_merchants = []
         for rank, (_, row) in enumerate(top_spending_merchants_df.head(5).iterrows()): # Top 5 merchants
             top_spending_merchants.append({
                 "rank": rank + 1,
                 "merchant": row['merchant'],
-                "transactions_count": int(row['transactions_count'])
+                "transactionsCount": int(row['transactionsCount'])
             })
 
         spending_details = {
-            "total_transactions": total_transactions_count,
-            "max_daily_transactions": max_daily_transactions,
-            "daily_transaction_counts": daily_transaction_counts_formatted,
-            "spending_per_day": spending_per_day_list,
-            "top_spending_merchants": top_spending_merchants
+            "totalTransactions": total_transactions_count,
+            "maxDailyTransactions": max_daily_transactions,
+            "dailyTransactionCounts": daily_transaction_counts_formatted,
+            "spendingPerDay": spending_per_day_list,
+            "topSpendingMerchants": top_spending_merchants
         }
 
         response_data = {
-            "user_info": user_info,
-            "summary_report": summary_report,
-            "spending_details": spending_details
+            "userInfo": user_info,
+            "summaryReport": summary_report,
+            "spendingDetails": spending_details
         }
 
         logger.info(f"Analysis for user '{user_id}' complete. Found {anomaly_count} anomalies.")
@@ -1414,7 +1421,6 @@ def send_monthly_report():
             report_response.raise_for_status()
 
             report_data = report_response.json()
-            logger.info(f"Report data: {report_data}")
 
             if "error" in report_data:
                 logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_data['error']}")
@@ -1423,12 +1429,11 @@ def send_monthly_report():
             else:
                 logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
                 # Save the generated report to the backend database.
-                save_report_url = "http://j13b207.p.ssafy.io/api/ai/report/save"
+                save_report_url = "https://j13b207.p.ssafy.io/api/ai/report/save"
                 save_payload = report_data
-                logger.info(f"Saving report for user {username} (ID: {user_id}). Payload: {json.dumps(save_payload)}")
+                logger.info(f"Saving report for user {username} (ID: {user_id}). Full Payload: {json.dumps(save_payload, indent=2)}") # Added for debugging
                 save_res = requests.post(save_report_url, json=save_payload, headers=headers)
-                logger.info(f"Request body: {save_res.request.body}")
-                if save_res.status_code == 200:
+                if save_res.status_code == 201:
                     logger.info(f"Successfully saved report for user {username} (ID: {user_id}) to the backend.")
                 else:
                     logger.error(f"Failed to save report for user {username} (ID: {user_id}). Status: {save_res.status_code}, Response: {save_res.text}")
@@ -1449,7 +1454,7 @@ if __name__ == "__main__":
     # Schedule the monthly report job
     scheduler.add_job(
         func=send_monthly_report,
-        trigger=CronTrigger(day=24, hour=16, minute=15), # Run on the first day of every month at midnight
+        trigger=CronTrigger(day=25, hour=15, minute=39), # Run on the first day of every month at midnight
         id='monthly_report_job',
         name='Monthly Report Generator',
         replace_existing=True
