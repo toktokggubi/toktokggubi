@@ -23,6 +23,7 @@ import { fetchCardBenefits } from "@/features/User/api/wallet.fetchers";
 import BenefitsList from "@/features/User/ui/BenefitsList";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useGifticonsQuery } from "@/features/User/model/gifticon/queries";
+import { pushLocation } from "../api/fetchers";
 
 import { colors } from "@/shared/constants/colors";
 
@@ -41,6 +42,43 @@ import {
 } from "@/shared/constants/kakao";
 
 const KAKAO_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
+
+// 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
+const getCategoryIdFromPlace = (place: KakaoPlace): number => {
+  // 카카오 카테고리 그룹명을 우리 DB 카테고리 ID로 매핑
+  if (place.category_group_name) {
+    const categoryMap: { [key: string]: number } = {
+      "카페": 2, // 카페/간식
+      "음식점": 1, // 식비
+      "대형마트": 5, // 쇼핑
+      "영화관": 10, // 문화
+      "편의점": 4, // 생활
+      "주유소": 8, // 자동차
+      "숙박": 4, // 생활
+      "병원": 9, // 의료/건강
+      "약국": 9, // 의료/건강
+    };
+    return categoryMap[place.category_group_name] || 1; // 기본값: 식비
+  }
+  
+  // 카테고리 그룹 코드로 매핑
+  if (place.category_group_code) {
+    const categoryMap: { [key: string]: number } = {
+      [KAKAO_CATEGORY_CODES.CAFE]: 2, // 카페/간식
+      [KAKAO_CATEGORY_CODES.FOOD]: 1, // 식비
+      [KAKAO_CATEGORY_CODES.SUPERMARKET]: 5, // 쇼핑
+      [KAKAO_CATEGORY_CODES.CINEMA]: 10, // 문화
+      [KAKAO_CATEGORY_CODES.CONVENIENCE]: 4, // 생활활
+      [KAKAO_CATEGORY_CODES.GAS_STATION]: 8, // 자동차
+      [KAKAO_CATEGORY_CODES.LODGING]: 4, // 생활
+      [KAKAO_CATEGORY_CODES.HOSPITAL]: 9, // 의료/건강
+      [KAKAO_CATEGORY_CODES.PHARMACY]: 9, // 의료/건강
+    };
+    return categoryMap[place.category_group_code] || 1; // 기본값: 식비
+  }
+  
+  return 1; // 기본값: 식비
+};
 
 // UserGifticon을 SharedGifticon으로 변환하는 함수
 const convertToSharedGifticon = (userGifticon: UserGifticon): SharedGifticon => {
@@ -148,6 +186,25 @@ export default function PaymentScreen() {
   const { data: userGifticons = [], isLoading: gifticonsLoading, isError: gifticonsError } = useGifticonsQuery();
   const bottomSheetRef = useRef<BottomSheetRef>(null);
   const [refreshing, setRefreshing] = useState(false);
+
+  // 위치 정보를 서버로 전송하는 함수
+  const sendLocationToServer = useCallback(async (place: KakaoPlace) => {
+    try {
+      const categoryId = getCategoryIdFromPlace(place);
+      console.log('Sending location to server:', {
+        placeName: place.place_name,
+        categoryId,
+        categoryGroupName: place.category_group_name,
+        categoryGroupCode: place.category_group_code
+      });
+      
+      await pushLocation(categoryId);
+      console.log('Location sent successfully');
+    } catch (error) {
+      console.error('Failed to send location to server:', error);
+      // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
+    }
+  }, []);
 
   // UserGifticon을 SharedGifticon으로 변환
   const gifticons: SharedGifticon[] = useMemo(() => {
@@ -302,9 +359,13 @@ export default function PaymentScreen() {
       nearbyPlaces &&
       nearbyPlaces.length > 0
     ) {
-      setSelectedPlace(nearbyPlaces[0]);
+      const firstPlace = nearbyPlaces[0];
+      setSelectedPlace(firstPlace);
+      
+      // 첫 번째 장소의 카테고리 ID를 서버로 전송
+      sendLocationToServer(firstPlace);
     }
-  }, [hasNearby, selectedPlace, nearbyPlaces]);
+  }, [hasNearby, selectedPlace, nearbyPlaces, sendLocationToServer]);
 
   // 현재 선택된 가맹점의 혜택 찾기
   const matchedBenefits = useMemo(() => {
@@ -526,11 +587,16 @@ export default function PaymentScreen() {
       // 캐시 무효화 후 새로 로드
       invalidateNearbyCache();
       await refetchNearbyPlaces();
+      
+      // 현재 선택된 장소가 있으면 카테고리 ID를 다시 전송
+      if (selectedPlace) {
+        sendLocationToServer(selectedPlace);
+      }
     } catch (error) {
     } finally {
       setRefreshing(false);
     }
-  }, [invalidateNearbyCache, refetchNearbyPlaces]);
+  }, [invalidateNearbyCache, refetchNearbyPlaces, selectedPlace, sendLocationToServer]);
 
   // 위치 선택 핸들러 - 해당 장소에서 혜택이 가장 큰 카드로 자동 전환
   const handlePlaceSelect = (place: KakaoPlace) => {
@@ -540,6 +606,9 @@ export default function PaymentScreen() {
     
     setSelectedPlace(place);
     bottomSheetRef.current?.close();
+
+    // 선택된 장소의 카테고리 ID를 서버로 전송
+    sendLocationToServer(place);
 
     // 모든 카드의 혜택 데이터가 로드되지 않았으면 현재 카드 유지
     if (allCardBenefitsQuery.isLoading || !allCardBenefitsQuery.data) {

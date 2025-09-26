@@ -22,7 +22,6 @@ public class KakaoOAuthClient {
 
     @Value("${kakao.rest-key}") String clientId;
     @Value("${kakao.redirect-uri}") String redirectUri;
-    @Value("${kakao.client-secret:}") String clientSecret; // 있으면 사용
 
     public Mono<Map<String,Object>> exchangeCodeForToken(String code, String codeVerifier) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
@@ -30,7 +29,6 @@ public class KakaoOAuthClient {
         form.add("client_id", clientId);
         form.add("redirect_uri", redirectUri);
         form.add("code", code);
-        if (clientSecret != null && !clientSecret.isBlank()) form.add("client_secret", clientSecret);
         if (codeVerifier != null) form.add("code_verifier", codeVerifier);
 
         return web.baseUrl("https://kauth.kakao.com")
