@@ -6,8 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -58,9 +56,4 @@ public class MolbbangMember {
 
     @Column(name = "left_at")
     private LocalDateTime leftAt;
-
-    // 연관관계
-    @Builder.Default
-    @OneToMany(mappedBy = "member", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
-    private List<MolbbangScore> scores = new ArrayList<>();
 }

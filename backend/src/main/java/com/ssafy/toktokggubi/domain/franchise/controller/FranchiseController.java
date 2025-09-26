@@ -15,12 +15,10 @@ public class FranchiseController {
 
     private final FranchiseService franchiseService;
 
-    /** 프랜차이즈 목록 조회 */
     @GetMapping
     public ResponseEntity<FranchiseListResponse> list(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false, defaultValue = "name") String sort
+            @RequestParam(required = false) String q
     ) {
-        return ResponseEntity.ok(franchiseService.list(q, sort));
+        return ResponseEntity.ok(franchiseService.list(q));
     }
 }

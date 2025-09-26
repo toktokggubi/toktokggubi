@@ -6,8 +6,6 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -40,12 +38,6 @@ public class MolbbangRoom {
     @Column(name = "amount", nullable = false)
     private Long amount;
 
-    @Column(name = "total_rounds", nullable = false)
-    private Integer totalRounds;
-
-    @Column(name = "current_round_no")
-    private Integer currentRoundNo;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private RoomStatus status;
@@ -59,13 +51,4 @@ public class MolbbangRoom {
 
     @Column(name = "ended_at")
     private LocalDateTime endedAt;
-
-    // 연관관계 (양방향 선택)
-    @Builder.Default
-    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
-    private List<MolbbangMember> members = new ArrayList<>();
-
-    @Builder.Default
-    @OneToMany(mappedBy = "room", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
-    private List<MolbbangRound> rounds = new ArrayList<>();
 }
