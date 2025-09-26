@@ -80,25 +80,12 @@ export default function LoginScreen() {
     try {
       // 카카오 로그인 서비스 인스턴스 가져오기
       const kakaoAuthService = KakaoAuthService.getInstance();
-      
-      // 카카오 로그인 실행하여 액세스 토큰 획득
-      const kakaoAccessToken = await kakaoAuthService.login();
-      
-      // 서버에 카카오 액세스 토큰 전송하여 로그인 처리
-      await kakaoLoginMutation.mutateAsync(kakaoAccessToken);
-      
-      // 로그인 성공 후 예산 설정 여부 확인
-      try {
-        await budgetStatusQuery.refetch();
-        // 예산이 설정되어 있으면 홈으로 이동
-        router.replace("/(tabs)/home");
-      } catch (budgetError: any) {
-        // 예산이 설정되지 않았으면 예산 소개 화면으로 이동
-        if (budgetError?.message === 'BUDGET_NOT_SET' || budgetError?.message === 'BUDGET_NOT_FOUND') {
-          router.replace("/budget");
-        } else {
-          // 예산 확인 실패 시에도 홈으로 이동 (fallback)
-          router.replace("/(tabs)/home");
+      const res = await kakaoAuthService.login();
+      if (res.status === "active") {
+        // access token 저장
+        await SecureStore.setItemAsync("access_token", res.accessToken);
+        if (res.refreshToken) {
+          await SecureStore.setItemAsync("refresh_token", res.refreshToken);
         }
         // 이후 예산 상태 확인 후 라우팅
         try {
