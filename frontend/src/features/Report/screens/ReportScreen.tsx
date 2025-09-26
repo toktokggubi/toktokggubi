@@ -466,6 +466,7 @@ export default function ReportScreen() {
       onVIPStorePress={handleVIPStorePress}
       anomalyData={anomalyData}
       totalAnomalyAmount={totalAnomalyAmount}
+      overallSummary={reportData?.summaryReport.overallSummary}
       onNotificationPress={handleNotificationPress}
       unreadNotificationCount={unreadNotificationCount}
     />

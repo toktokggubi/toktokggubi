@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AnomalyDetectionSection } from "../../ui/AnomalyDetectionSection";
 import { ExpenseDonutChart } from "../../ui/ExpenseDonutChart";
+import { MonthlySummarySection } from "../../ui/MonthlySummarySection";
 import { PaymentLineChart } from "../../ui/PaymentLineChart";
 import { ExpenseReportTemplateProps } from "./types";
 
@@ -33,6 +34,7 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   onVIPStorePress,
   anomalyData,
   totalAnomalyAmount,
+  overallSummary,
   onNotificationPress,
   unreadNotificationCount = 0,
 }) => {
@@ -65,6 +67,18 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
             <AnomalyDetectionSection
               anomalyData={anomalyData}
               totalAnomalyAmount={totalAnomalyAmount || 0}
+            />
+            {/* 구분선 */}
+            <View style={styles.sectionDivider} />
+          </>
+        )}
+
+        {/* 월간 소비 한마디 섹션 */}
+        {overallSummary && (
+          <>
+            <MonthlySummarySection
+              overallSummary={overallSummary}
+              month={monthNames[month - 1]}
             />
             {/* 구분선 */}
             <View style={styles.sectionDivider} />

@@ -51,6 +51,9 @@ export interface ExpenseReportTemplateProps {
   anomalyData?: AnomalyData[];
   totalAnomalyAmount?: number;
 
+  // 월간 소비 한마디
+  overallSummary?: string;
+
   // 알림 아이콘
   onNotificationPress?: () => void;
   unreadNotificationCount?: number;
