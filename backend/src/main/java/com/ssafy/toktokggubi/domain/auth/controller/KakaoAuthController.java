@@ -23,7 +23,7 @@ import java.util.Map;
 @Tag(name = "카카오 로그인", description = "카카오 로그인 API")
 public class KakaoAuthController {
     private final KakaoOAuthClient oauth;
-    private final KakaoApiClient kakaoApi; // /v2/user/me 호출 그대로 재사용
+    private final KakaoApiClient kakaoApi;
     private final KakaoAuthService service;
 
     @Value("${kakao.rest-key}")
@@ -43,7 +43,7 @@ public class KakaoAuthController {
                 .queryParam("client_id", kakaoRestKey)
                 .queryParam("redirect_uri", kakaoRedirectUri)
                 .queryParam("response_type", "code")
-                .queryParam("scope", "openid profile_nickname email");
+                .queryParam("scope", "profile_nickname");
 
         if (codeChallenge != null && !codeChallenge.isBlank()) {
             b.queryParam("code_challenge", codeChallenge)
