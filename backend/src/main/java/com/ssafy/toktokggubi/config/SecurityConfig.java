@@ -35,7 +35,8 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/ai/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/ai/report/get").authenticated() // token needed
+                        .requestMatchers("/ai/**").permitAll() // AI server
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment", "/images/**").permitAll()
                         .requestMatchers(
@@ -72,4 +73,3 @@ public class SecurityConfig {
         return src;
     }
 }
-
