@@ -270,14 +270,14 @@ export default function ReportScreen() {
   const totalAmount = reportData?.summaryReport.monthlySpendingSummary.totalSpending || 
     expenseData.reduce((sum, item) => sum + item.value, 0);
 
-  // API 데이터에서 이상탐지 데이터 변환
+  // API 데이터에서 이상탐지 데이터 변환 (지오코딩은 AnomalyMap 컴포넌트에서 처리)
   const anomalyData: AnomalyData[] = reportData?.summaryReport.abnormalSpending.transactions.map((transaction, index) => ({
     id: index.toString(),
     storeName: transaction.location || "알 수 없는 매장",
     amount: transaction.amount,
     date: transaction.date,
-    latitude: 0, // 백엔드에서 제공하지 않음
-    longitude: 0, // 백엔드에서 제공하지 않음
+    latitude: 0, // 지오코딩으로 프론트엔드에서 처리
+    longitude: 0, // 지오코딩으로 프론트엔드에서 처리
     category: "기타", // 백엔드에서 제공하지 않음
     paymentMethod: "알 수 없음", // 백엔드에서 제공하지 않음
   })) || sampleAnomalyData;
