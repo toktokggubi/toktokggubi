@@ -13,6 +13,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AnomalyDetectionSection } from "../../ui/AnomalyDetectionSection";
 import { ExpenseDonutChart } from "../../ui/ExpenseDonutChart";
+import { MonthlySummarySection } from "../../ui/MonthlySummarySection";
+import { PaymentDetailsSlider } from "../../ui/PaymentDetailsSlider";
 import { PaymentLineChart } from "../../ui/PaymentLineChart";
 import { ExpenseReportTemplateProps } from "./types";
 
@@ -20,17 +22,18 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
   year,
   month,
   totalAmount,
+  fixedExpenseAmount = 0,
+  variableExpenseAmount = 0,
   chartData,
   categoryData,
   onCategoryPress,
   dailyPaymentData,
-  maxPaymentDay,
-  maxPaymentDayDetails,
-  onMoreDetailsPress,
+  allDaysPaymentDetails,
   vipStores,
   onVIPStorePress,
   anomalyData,
   totalAnomalyAmount,
+  overallSummary,
   onNotificationPress,
   unreadNotificationCount = 0,
 }) => {
@@ -69,6 +72,18 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
           </>
         )}
 
+        {/* 월간 소비 한마디 섹션 */}
+        {overallSummary && (
+          <>
+            <MonthlySummarySection
+              overallSummary={overallSummary}
+              month={monthNames[month - 1]}
+            />
+            {/* 구분선 */}
+            <View style={styles.sectionDivider} />
+          </>
+        )}
+
         {/* 헤더 섹션 */}
         <View style={styles.header}>
           <View style={styles.titleContainer}>
@@ -78,15 +93,21 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
             <Text style={styles.totalAmount}>
               {totalAmount.toLocaleString()}원
             </Text>
-            <Text
-              style={styles.summaryText}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              <Text style={styles.statsText}>
-                예산의 <Text style={styles.boldText}>89%</Text>, 월소득의{" "}
-                <Text style={styles.boldText}>23%</Text>를 사용했어요
-              </Text>
+          </View>
+        </View>
+
+        {/* 고정지출/변동지출 정보 */}
+        <View style={styles.expenseBreakdown}>
+          <View style={styles.expenseItem}>
+            <Text style={styles.expenseLabel}>고정지출</Text>
+            <Text style={styles.expenseAmount}>
+              {fixedExpenseAmount.toLocaleString()}원
+            </Text>
+          </View>
+          <View style={styles.expenseItem}>
+            <Text style={styles.expenseLabel}>변동지출</Text>
+            <Text style={styles.expenseAmount}>
+              {variableExpenseAmount.toLocaleString()}원
             </Text>
           </View>
         </View>
@@ -182,39 +203,8 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
             maxCount={Math.max(...dailyPaymentData.map((item) => item.count))}
           />
 
-          {/* 최대 결제일 상세 내역 */}
-          <View style={styles.maxPaymentDaySection}>
-            <Text style={styles.maxPaymentDayTitle}>
-              {maxPaymentDay}의 결제 내역
-            </Text>
-            <View style={styles.paymentDetailsList}>
-              {maxPaymentDayDetails.map((detail, index) => (
-                <View key={detail.id}>
-                  <View style={styles.paymentDetailItem}>
-                    <View style={styles.paymentDetailLeft}>
-                      <Text style={styles.storeName}>{detail.store}</Text>
-                      <Text style={styles.paymentInfo}>
-                        {detail.category} | {detail.paymentMethod}
-                      </Text>
-                    </View>
-                    <Text style={styles.paymentAmount}>
-                      -{detail.amount.toLocaleString()}원
-                    </Text>
-                  </View>
-                  {index < maxPaymentDayDetails.length - 1 && (
-                    <View style={styles.separator} />
-                  )}
-                </View>
-              ))}
-            </View>
-
-            <TouchableOpacity
-              style={styles.moreDetailsButton}
-              onPress={onMoreDetailsPress}
-            >
-              <Text style={styles.moreDetailsText}>더보기</Text>
-            </TouchableOpacity>
-          </View>
+          {/* 결제 내역 슬라이더 */}
+          <PaymentDetailsSlider allDaysData={allDaysPaymentDetails} />
         </View>
 
         {/* 구분선 */}
@@ -227,8 +217,8 @@ export const ExpenseReportTemplate: React.FC<ExpenseReportTemplateProps> = ({
           {/* VIP 매장 요약 */}
           <View style={styles.vipSummary}>
             <Text style={styles.statsText}>
-              <Text style={styles.boldText}>{vipStores[0]?.name}</Text>에서 가장
-              많은 지출을 했어요
+              <Text style={styles.boldText}>{vipStores[0]?.name}</Text>에서{"\n"}가장
+              많은 결제를 했어요
             </Text>
           </View>
 
@@ -522,6 +512,30 @@ const styles = StyleSheet.create({
   vipVisitCountText: {
     fontSize: 14,
     color: "#6B7280",
+  },
+  // 고정지출/변동지출 스타일
+  expenseBreakdown: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#F8FAFC",
+    marginHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  expenseItem: {
+    alignItems: "center",
+  },
+  expenseLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  expenseAmount: {
+    fontSize: 16,
+    ...font.bold,
+    color: colors.BLUE_DARKER,
   },
   // 구분선 스타일
   sectionDivider: {

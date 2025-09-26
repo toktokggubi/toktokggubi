@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface FranchiseRepository extends JpaRepository<Franchise, Long> {
-    Optional<Franchise> findFirstByMerchantName(String merchantName);
-    List<Franchise> findByMerchantNameContaining(String keyword, Sort sort);
+    Optional<Franchise> findFirstByFranchiseName(String merchantName);
+    List<Franchise> findByFranchiseNameContaining(String keyword, Sort sort);
 }

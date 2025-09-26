@@ -74,10 +74,10 @@ public class GifticonService {
         // 4) 프랜차이즈 매칭(없으면 생성)
         Franchise franchise = null;
         if (brand != null && !brand.isBlank()) {
-            franchise = franchiseRepository.findFirstByMerchantName(brand)
+            franchise = franchiseRepository.findFirstByFranchiseName(brand)
                     .orElseGet(() -> franchiseRepository.save(
                             Franchise.builder()
-                                    .merchantName(brand)   // 프랜차이즈는 배달의민족으로 등록
+                                    .franchiseName(brand)   // 프랜차이즈는 배달의민족으로 등록
                                     .imageUrl(null)
                                     .build()
                     ));
@@ -104,7 +104,7 @@ public class GifticonService {
                 entity.getLabel(),
                 brand,
                 franchise != null ? franchise.getFranchiseId() : null,
-                franchise != null ? franchise.getMerchantName() : null,
+                franchise != null ? franchise.getFranchiseName() : null,
                 entity.getExpiresAt(),
                 entity.getImageUrl(),
                 entity.getStatus(),
@@ -175,7 +175,7 @@ public class GifticonService {
 
     private GifticonItemResponse toItem(Gifticon g) {
         Long franchiseId = g.getFranchise() != null ? g.getFranchise().getFranchiseId() : null;
-        String franchiseName = g.getFranchise() != null ? g.getFranchise().getMerchantName() : null;
+        String franchiseName = g.getFranchise() != null ? g.getFranchise().getFranchiseName() : null;
         Long days = daysUntil(LocalDate.now(), g.getExpiresAt());
         return new GifticonItemResponse(
                 g.getGifticonId(),
