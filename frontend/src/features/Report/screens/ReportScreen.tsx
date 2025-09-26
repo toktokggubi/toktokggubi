@@ -59,7 +59,7 @@ const generateDailyPaymentData = (): DailyPaymentData[] => {
   const data: DailyPaymentData[] = [];
   for (let day = 1; day <= 30; day++) {
     // 랜덤한 결제 건수 생성 (0-5 사이)
-    const count = Math.floor(Math.random() * 6);
+    const count = Math.floor(Math.random() * 9);
     data.push({
       date: `9.${day}`,
       count: count,
