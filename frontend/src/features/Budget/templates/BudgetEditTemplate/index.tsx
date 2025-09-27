@@ -2,7 +2,7 @@ import { CATEGORY_ICON_BY_NAME } from "@/shared/constants/categoryIcons";
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import { spacing, borderRadius, createButtonStyles, createTextStyles } from "@/shared/theme/styles";
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { ScrollView, StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BudgetSummaryHeaderRow from "~features/Budget/ui/molecules/BudgetSummaryHeaderRow";
@@ -63,30 +63,26 @@ export default function BudgetEditTemplate({
         showsVerticalScrollIndicator={false}
       >
         {/* 전체 예산 요약 */}
-        <EditableBudgetSummaryRow 
+        <BudgetSummaryHeaderRow 
           title={`${month} 예산`} 
           amount={totalBudget}
-          onAmountChange={onTotalBudgetChange}
         />
 
         {/* 변동 지출 예산 섹션 */}
         <View style={styles.section}>
-          <EditableBudgetSummaryRow
+          <BudgetSummaryHeaderRow
             title="변동 지출 예산"
             amount={variableBudget}
-            onAmountChange={onVariableBudgetChange}
           />
-          {categoryBudgets
-            .sort((a, b) => b.amount - a.amount) // 금액이 많은 순으로 정렬
-            .map((item) => (
-              <EditableCategoryBudgetRow
-                key={item.name}
-                name={item.name}
-                icon={CATEGORY_ICON_BY_NAME[item.name]}
-                amount={item.amount}
-                onAmountChange={(amount) => onCategoryBudgetChange(item.name, amount)}
-              />
-            ))}
+          {categoryBudgets.map((item) => (
+            <EditableCategoryBudgetRow
+              key={item.name}
+              name={item.name}
+              icon={CATEGORY_ICON_BY_NAME[item.name]}
+              amount={item.amount}
+              onAmountChange={(amount) => onCategoryBudgetChange(item.name, amount)}
+            />
+          ))}
         </View>
 
         {/* 고정 지출 (예산 포함) 섹션 */}
