@@ -17,7 +17,11 @@ export const CircularProgress: React.FC<CircularProgressProps> = ({
   month = "12월",
   size = 80,
 }) => {
-  const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
+  // 안전한 퍼센트 계산 (0으로 나누기 방지)
+  const progressPercentage = totalAmount > 0 
+    ? Math.min((currentAmount / totalAmount) * 100, 100)
+    : 0;
+  
   const radius = (size - 20) / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset =

@@ -64,7 +64,8 @@ const getCharacterMessage = (
   currentAmount: number,
   totalAmount: number
 ): string => {
-  const usageRate = (currentAmount / totalAmount) * 100;
+  // 안전한 사용률 계산 (0으로 나누기 방지)
+  const usageRate = totalAmount > 0 ? (currentAmount / totalAmount) * 100 : 0;
 
   if (usageRate < 30) {
     return "아직은 넉넉하다꺼비";
@@ -247,18 +248,17 @@ export const HomeScreen: React.FC = () => {
         );
       }
 
-      // HomeData 형식으로 변환
+      // HomeData 형식으로 변환 (안전한 기본값 처리)
+      const currentAmount = monthlySummaryResponse?.totalAmount || 0;
+      const totalAmount = budgetTotalResponse?.totalAmount || 0;
+      
       const homeData: HomeData = {
         totalBudget: {
-          currentAmount: monthlySummaryResponse.totalAmount,
-          totalAmount: budgetTotalResponse.totalAmount,
+          currentAmount: currentAmount,
+          totalAmount: totalAmount,
         },
-        availableAmount:
-          budgetTotalResponse.totalAmount - monthlySummaryResponse.totalAmount,
-        characterMessage: getCharacterMessage(
-          monthlySummaryResponse.totalAmount,
-          budgetTotalResponse.totalAmount
-        ),
+        availableAmount: Math.max(totalAmount - currentAmount, 0),
+        characterMessage: getCharacterMessage(currentAmount, totalAmount),
         month: getCurrentMonth(),
         listTitle: `${getCurrentMonth()} 카테고리별 사용현황`,
         categoryBudgets: updatedCategoryBudgets,
