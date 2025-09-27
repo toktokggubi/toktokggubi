@@ -6,6 +6,8 @@ import type {
   DraftCategoriesRequest,
   DraftSaveResponse,
   BudgetCommitResponse,
+  BudgetAllSaveRequest,
+  BudgetAllSaveResponse,
 } from "../types/budget.types";
 
 // 예산 설정 여부 확인을 위한 타입
@@ -127,4 +129,10 @@ export async function checkBudgetStatus(): Promise<BudgetStatusResponse> {
     
     throw error;
   }
+}
+
+// 예산 전체 저장/수정 (Redis 없이 한번에)
+export async function saveAllBudget(dto: BudgetAllSaveRequest): Promise<BudgetAllSaveResponse> {
+  const { data } = await http.post(BUDGET_ENDPOINTS.saveAllBudget, dto);
+  return data;
 }

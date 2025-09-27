@@ -6,11 +6,13 @@ import AddFixedExpenseForm from "~features/Budget/ui/forms/AddFixedExpenseForm";
 import { 
   fetchFixedIncludedTotal, 
   fetchCategoryAllocations,
-  fetchFixedExpenseList
+  fetchFixedExpenseList,
+  saveAllBudget
 } from "~features/Budget/api/fetchers";
 import { fetchBudgetTotal } from "~features/Home/api/fetchers";
 import type { BudgetEditTemplateProps } from "~features/Budget/templates/BudgetEditTemplate/types";
 import type { AddFixedExpenseFormValues } from "~features/Budget/ui/forms/AddFixedExpenseForm/types";
+import type { BudgetAllSaveRequest } from "~features/Budget/types/budget.types";
 
 // 카테고리 ID를 이름으로 변환하는 함수
 const getCategoryNameById = (categoryId: number): string => {
@@ -27,6 +29,24 @@ const getCategoryNameById = (categoryId: number): string => {
     10: '문화',
   };
   return categoryMap[categoryId] || '기타';
+};
+
+// 카테고리 이름을 ID로 변환하는 함수
+const getCategoryIdByName = (categoryName: string): number => {
+  const nameMap: Record<string, number> = {
+    '식비': 1,
+    '카페/간식': 2,
+    '술/유흥': 3,
+    '생활': 4,
+    '쇼핑': 5,
+    '뷰티/미용': 6,
+    '교통': 7,
+    '자동차': 8,
+    '의료/건강': 9,
+    '문화': 10,
+    '기타': 11,
+  };
+  return nameMap[categoryName] || 11;
 };
 
 // 현재 월을 가져오는 함수
@@ -267,19 +287,44 @@ export default function BudgetEditScreen() {
       setSaving(true);
       setError(null);
 
-      // TODO: 실제 저장 로직 구현
-      // 1. 총 예산 저장
-      // 2. 카테고리별 예산 저장
-      // 3. 고정 지출 저장
-      // 4. 커밋
+      // 1. 고정 지출 데이터 변환 (예산 포함 + 미포함 합치기)
+      const allFixedExpenses = [
+        ...fixedIncludedExpenses,
+        ...fixedExcludedExpenses
+      ].map(expense => ({
+        title: expense.name,
+        amount: expense.amount,
+        payDay: expense.billingDay || 1,
+        includeInBudget: expense.includeInBudget
+      }));
 
-      // 임시로 성공 처리
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 2. 카테고리별 예산 데이터 변환
+      const categoryAllocations = categoryBudgets.map(category => ({
+        categoryId: getCategoryIdByName(category.name),
+        finalAmount: category.amount
+      }));
 
-      // Homepage로 이동하면서 새로고침 (replace 사용으로 뒤로가기 방지)
+      // 3. 선택된 카테고리 ID 목록
+      const selectedCategories = categoryAllocations.map(cat => cat.categoryId);
+
+      // 4. API 요청 데이터 구성
+      const saveRequest: BudgetAllSaveRequest = {
+        totalAmount: totalBudget,
+        fixedExpenses: allFixedExpenses,
+        selectedCategories: selectedCategories,
+        categoryAllocations: categoryAllocations
+      };
+
+      // 5. API 호출
+      const response = await saveAllBudget(saveRequest);
+      
+      console.log('예산 저장 성공:', response);
+
+      // 6. Homepage로 이동하면서 새로고침 (replace 사용으로 뒤로가기 방지)
       router.replace('/(tabs)/home' as any);
       
     } catch (err) {
+      console.error('예산 저장 실패:', err);
       setError(err instanceof Error ? err.message : '예산 저장에 실패했습니다.');
     } finally {
       setSaving(false);
