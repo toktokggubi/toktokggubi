@@ -4,10 +4,11 @@ import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import React, { useCallback, useState, useEffect } from "react";
-import { Alert, ActivityIndicator, View } from "react-native";
+import { Alert, ActivityIndicator, View, TouchableOpacity, Text } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 import { ExpenseReportTemplate } from "../templates/ExpenseReportTemplate";
+import { NoReportScreen } from "../ui/NoReportScreen";
 import type {
   DailyPaymentData,
   PaymentDetail,
@@ -22,43 +23,44 @@ import {
   fetchFixedIncludedTotal,
   fetchFixedExpenseList,
 } from "@/features/Budget/api/fetchers";
+import { colors } from "@/shared/constants/colors";
 
-// 샘플 데이터 (실제로는 API에서 가져올 데이터)
+// 샘플 데이터 (실제로는 API에서 가져올 데이터) - 금액 순으로 정렬
 const sampleData: DonutChartData[] = [
   {
     label: "식비",
     value: 350000,
-    color: "#3B82F6", // 파란색
+    color: colors.BLUE_LIGHT,
     percentage: 67.8,
   },
   {
     label: "쇼핑",
     value: 130000,
-    color: "#F59E0B", // 노란색
+    color: colors.BLUE_LIGHT_HOVER,
     percentage: 25.2,
   },
   {
     label: "교통",
     value: 82000,
-    color: "#EF4444", // 빨간색
+    color: colors.BLUE_LIGHT_ACTIVE,
     percentage: 15.9,
   },
   {
     label: "뷰티",
     value: 35000,
-    color: "#10B981", // 초록색
+    color: colors.BLUE_NORMAL,
     percentage: 6.8,
   },
   {
     label: "유흥",
     value: 12000,
-    color: "#F97316", // 주황색
+    color: colors.BLUE_NORMAL_HOVER,
     percentage: 2.3,
   },
   {
     label: "기타",
     value: 12000,
-    color: "#6B7280", // 회색
+    color: colors.BLUE_NORMAL_ACTIVE,
     percentage: 2.3,
   },
 ];
@@ -254,24 +256,44 @@ export default function ReportScreen() {
       const variableAmount = Math.max(0, totalSpending - fixedAmount);
       setVariableExpenseAmount(variableAmount);
 
-      // API 데이터를 차트 데이터로 변환
-      const chartData: DonutChartData[] =
-        data.summaryReport.spendingByCategory.map((item, index) => {
-          const colors = [
-            "#3B82F6",
-            "#F59E0B",
-            "#EF4444",
-            "#10B981",
-            "#F97316",
-            "#6B7280",
-          ];
-          return {
-            label: item.category,
-            value: item.amount,
-            color: colors[index % colors.length],
-            percentage: item.percentage,
-          };
-        });
+      // API 데이터를 차트 데이터로 변환 (금액 순으로 정렬 후 색상 매칭)
+      const sortedCategories = [...data.summaryReport.spendingByCategory].sort(
+        (a, b) => b.amount - a.amount
+      );
+      
+      const chartColors = [
+        colors.BLUE_LIGHT,
+        colors.BLUE_LIGHT_HOVER,
+        colors.BLUE_LIGHT_ACTIVE,
+        colors.BLUE_NORMAL,
+        colors.BLUE_NORMAL_HOVER,
+        colors.BLUE_NORMAL_ACTIVE,
+        colors.BLUE_DARK,
+        colors.BLUE_DARK_HOVER,
+        colors.BLUE_DARK_ACTIVE,
+        colors.BLUE_DARKER,
+        colors.YELLOW_LIGHT,
+        colors.YELLOW_LIGHT_HOVER,
+        colors.YELLOW_LIGHT_ACTIVE,
+        colors.YELLOW_NORMAL,
+        colors.GRAY_LIGHT,
+        colors.GRAY_LIGHT_HOVER,
+        colors.GRAY_LIGHT_ACTIVE,
+        colors.GRAY_NORMAL,
+        colors.GRAY_NORMAL_HOVER,
+        colors.GRAY_NORMAL_ACTIVE,
+        colors.GRAY_DARK,
+        colors.GRAY_DARK_HOVER,
+        colors.GRAY_DARK_ACTIVE,
+        colors.GRAY_DARKER,
+      ];
+      
+      const chartData: DonutChartData[] = sortedCategories.map((item, index) => ({
+        label: item.category,
+        value: item.amount,
+        color: chartColors[index % chartColors.length],
+        percentage: item.percentage,
+      }));
       setExpenseData(chartData);
     } catch (err: any) {
       console.error("리포트 데이터 조회 실패:", err);
@@ -457,9 +479,7 @@ export default function ReportScreen() {
 
   // VIP 매장 클릭 핸들러
   const handleVIPStorePress = useCallback((storeName: string) => {
-    Alert.alert("VIP 매장 상세", `${storeName} 매장 상세 정보를 보여줍니다.`);
-    // 실제로는 매장 상세 화면으로 이동
-    // router.push(`/report/store-detail?store=${storeName}`);
+    // 모달 제거 - 아무 동작하지 않음
   }, []);
 
   // 알림 아이콘 클릭 핸들러
@@ -529,6 +549,13 @@ export default function ReportScreen() {
     return (
       <LoadingOverlay visible={true} message="오류 발생, 다시 시도 중..." />
     );
+  }
+
+
+  // 리포트 데이터가 없는 경우
+  if (reportData && (!reportData.summaryReport.spendingByCategory.length || 
+      reportData.summaryReport.monthlySpendingSummary.totalSpending === 0)) {
+    return <NoReportScreen />;
   }
 
   return (

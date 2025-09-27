@@ -38,13 +38,13 @@ export const AnomalyDetectionSection: React.FC<
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>AI 이상탐지</Text>
+      <Text style={styles.title}>AI 이상 소비</Text>
       <Text style={styles.subtitle}>
-        이상 소비 총{" "}
+        {new Date().getMonth() === 0 ? '12월' : `${new Date().getMonth()}월`}에 총{" "}
         <Text style={styles.boldText}>
-          {totalAnomalyAmount.toLocaleString()}
+          {anomalyData.length}건, {totalAnomalyAmount.toLocaleString()}
         </Text>
-        원을 탐지했어요
+        원의{"\n"}이상 소비를 탐지했어요
       </Text>
 
       {/* 지도 섹션 */}
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 20,
     color: colors.BLUE_DARKER,
-    lineHeight: 26,
+    lineHeight: 32,
   },
   boldText: {
     ...font.bold,
