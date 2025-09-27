@@ -11,4 +11,10 @@ export interface TotalBudgetTemplateProps {
   min?: number;
   max?: number;
   step?: number;
+
+  // AI recommendation
+  loadingAI?: boolean;
+  aiError?: string | null;
+  onRetryAI?: () => void;
+  aiRecommendationSuccess?: boolean;
 }

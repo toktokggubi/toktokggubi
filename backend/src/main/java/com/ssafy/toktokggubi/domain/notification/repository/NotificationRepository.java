@@ -125,14 +125,15 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
     INSERT INTO notification_log
         (user_id, type, title, body, payload_json, sent_at)
     VALUES
-        (:userId, :type, :title, :body, :payloadJson, NOW())
+        (:userId, :type, :title, :body, :payloadJson, :sendAt)
     """, nativeQuery = true)
     int insertLog(
             @Param("userId") long userId,
             @Param("type") String type,
             @Param("title") String title,
             @Param("body") String body,
-            @Param("payloadJson") String payloadJson
+            @Param("payloadJson") String payloadJson,
+            @Param("sentAt") LocalDateTime sentAt
     );
     @Query(value = """
     SELECT COUNT(*)

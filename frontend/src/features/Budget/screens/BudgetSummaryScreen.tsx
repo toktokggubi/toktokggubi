@@ -8,6 +8,7 @@ import type {
   FixedExpenseItem,
 } from "~features/Budget/templates/BudgetSummaryTemplate/types";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 import * as SecureStore from "expo-secure-store";
 // 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
@@ -173,6 +174,11 @@ export default function BudgetSummaryScreen() {
         totalBudget={totalAmount || 0}
         onConfirm={handleConfirmBudget}
         onCancel={handleCancelConfirm}
+      />
+      
+      <LoadingOverlay
+        visible={isCommitting}
+        message="예산을 확정하고 있어요..."
       />
     </>
   );

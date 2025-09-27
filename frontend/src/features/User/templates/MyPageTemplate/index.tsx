@@ -92,22 +92,28 @@ export default function MyPageTemplate({
       {/* 개발용 임시 버튼들 */}
       <View style={s.tempButtonContainer}>
         <Text style={s.tempButtonTitle}>🧪 예산 설정 테스트</Text>
-        
+
         <View style={s.tempButtonRow}>
-          <TouchableOpacity style={[s.tempButtonSmall, s.tempButtonBlue]} onPress={onPressBudgetSetup}>
+          <TouchableOpacity
+            style={[s.tempButtonSmall, s.tempButtonBlue]}
+            onPress={onPressBudgetSetup}
+          >
             <Text style={[s.tempButtonTextSmall, s.tempButtonTextBlue]}>
               📋 초기설정
             </Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={[s.tempButtonSmall, s.tempButtonGreen]} onPress={onPressAIBudgetSetup}>
+
+          <TouchableOpacity
+            style={[s.tempButtonSmall, s.tempButtonGreen]}
+            onPress={onPressAIBudgetSetup}
+          >
             <Text style={[s.tempButtonTextSmall, s.tempButtonTextGreen]}>
               🤖 AI추천
             </Text>
           </TouchableOpacity>
         </View>
       </View>
-     </View>
+    </View>
   );
 }
 

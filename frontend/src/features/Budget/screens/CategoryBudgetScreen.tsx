@@ -5,6 +5,7 @@ import { useBudgetDraft } from "../context/BudgetDraftContext";
 import type { CategoryBudgetItem } from "~features/Budget/templates/CategoryBudgetTemplate/types";
 import type { CategoryName } from "@/shared/constants/categoryIcons";
 import type { CategoryAllocation } from "../types/budget.types";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 // 유틸: 천원 단위로 내림
 const floorToThousand = (n: number) => Math.max(0, Math.floor(n / 1000) * 1000);
@@ -27,6 +28,8 @@ const getCategoryId = (name: CategoryName): number => {
 };
 
 export default function CategoryBudgetScreen() {
+  const [aiRecommendationSuccess, setAiRecommendationSuccess] = useState(false);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { 
     availableBudget, 
     selectedCategories, 
@@ -43,36 +46,54 @@ export default function CategoryBudgetScreen() {
 
   // 페이지 진입 시 초기값 설정 (한 번만 실행)
   useEffect(() => {
-    // 카테고리가 선택되어 있고, 할당이 비어있거나 모든 값이 0원일 때 초기값 설정
+    // 카테고리가 선택되어 있고, 할당이 비어있거나 모든 값이 0원일 때만 초기값 설정
     const needsInitialization = selectedCategories.length > 0 && (
       categoryAllocations.length === 0 || 
       categoryAllocations.every(allocation => allocation.finalAmount === 0)
     );
     
     if (needsInitialization) {
-      
-      // 초기 할당값 생성 (균등 분배)
-      const baseAmount = floorToThousand(availableBudget / selectedCategories.length);
-      const initialAllocations: CategoryAllocation[] = selectedCategories.map(categoryId => ({
+      setIsLoadingAI(true);
+      // 백엔드에서 AI 추천값을 받아오기 위해 saveCategories 호출
+      // 이때 빈 allocations로 보내면 백엔드에서 AI 추천값을 반환
+      const emptyAllocations: CategoryAllocation[] = selectedCategories.map(categoryId => ({
         categoryId,
-        finalAmount: baseAmount,
+        finalAmount: 0,
       }));
       
-      // 잔여 예산을 앞에서부터 천원씩 추가
-      const allocated = baseAmount * selectedCategories.length;
-      let remain = availableBudget - allocated;
-      let idx = 0;
-      while (remain >= 1000 && idx < initialAllocations.length) {
-        initialAllocations[idx].finalAmount += 1000;
-        remain -= 1000;
-        idx++;
-      }
-      
-      
-      // Context 업데이트
-      updateCategorySelection(selectedCategories, initialAllocations);
+      // 백엔드에서 AI 추천값을 받아오기 위해 저장 시도
+      saveCategories(selectedCategories, emptyAllocations).then((result) => {
+        if (result && result.snapshot && result.snapshot.categoryAllocations) {
+          // 백엔드에서 받은 AI 추천값으로 업데이트
+          updateCategorySelection(selectedCategories, result.snapshot.categoryAllocations);
+          setAiRecommendationSuccess(true);
+        }
+      }).catch((error) => {
+        // AI 추천값 로딩 실패, 균등 분배로 폴백
+        setAiRecommendationSuccess(false);
+        // AI 추천 실패 시 기존 균등 분배 로직 사용
+        const baseAmount = floorToThousand(availableBudget / selectedCategories.length);
+        const fallbackAllocations: CategoryAllocation[] = selectedCategories.map(categoryId => ({
+          categoryId,
+          finalAmount: baseAmount,
+        }));
+        
+        // 잔여 예산을 앞에서부터 천원씩 추가
+        const allocated = baseAmount * selectedCategories.length;
+        let remain = availableBudget - allocated;
+        let idx = 0;
+        while (remain >= 1000 && idx < fallbackAllocations.length) {
+          fallbackAllocations[idx].finalAmount += 1000;
+          remain -= 1000;
+          idx++;
+        }
+        
+        updateCategorySelection(selectedCategories, fallbackAllocations);
+      }).finally(() => {
+        setIsLoadingAI(false);
+      });
     }
-  }, [selectedCategories.length, availableBudget, categoryAllocations.length]); // categoryAllocations.length도 의존성에 추가
+  }, [selectedCategories.length, availableBudget, categoryAllocations.length]);
 
   // Context에서 직접 카테고리 예산 데이터를 계산
   const items: CategoryBudgetItem[] = useMemo(() => {
@@ -157,17 +178,25 @@ export default function CategoryBudgetScreen() {
   }, [selectedCategories, categoryAllocations, saveCategories, version, isBudgetValid, availableBudget]);
 
   return (
-    <CategoryBudgetTemplate
-      availableNextMonth={availableBudget}
-      items={items}
-      onChangeItem={onChangeItem}
-      onPressPrev={goPrev}
-      onPressNext={goNext}
-      nextDisabled={!isBudgetValid}
-      stepIndex={3}
-      stepTotal={5}
-      title="카테고리별 예산 설정"
-      subtitle="꺼비가 회원님의 정보를 바탕으로 제안했어요."
-    />
+    <>
+      <CategoryBudgetTemplate
+        availableNextMonth={availableBudget}
+        items={items}
+        onChangeItem={onChangeItem}
+        onPressPrev={goPrev}
+        onPressNext={goNext}
+        nextDisabled={!isBudgetValid}
+        stepIndex={3}
+        stepTotal={5}
+        title="카테고리별 예산 설정"
+        subtitle="꺼비가 회원님의 정보를 바탕으로 제안했어요."
+        aiRecommendationSuccess={aiRecommendationSuccess}
+      />
+      
+      <LoadingOverlay
+        visible={isLoadingAI || isSavingCategories}
+        message={isLoadingAI ? "AI가 예산을 추천하고 있어요..." : "카테고리 예산 저장 중..."}
+      />
+    </>
   );
 }
