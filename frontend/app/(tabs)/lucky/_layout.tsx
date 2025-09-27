@@ -8,7 +8,7 @@ export default function LuckyStackLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen
         name="molbbang"
-        options={{ headerShown: true, title: "몰빵" }}
+        options={{ headerShown: false }}
       />
     </Stack>
   );
