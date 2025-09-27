@@ -87,7 +87,7 @@ export default function MyPageTemplate({
         </TouchableOpacity>
       </View>
 
-    </View>
+    </ScrollView>
   );
 }
 

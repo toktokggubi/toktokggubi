@@ -18,11 +18,6 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { HomeTemplate } from "../templates/HomeTemplate";
-import {
-  CategoryBudget,
-  HomeData,
-  Transaction,
-} from "../templates/HomeTemplate/types";
 import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 // 헬퍼 함수들
