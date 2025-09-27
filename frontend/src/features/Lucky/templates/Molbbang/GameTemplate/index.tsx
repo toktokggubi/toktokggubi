@@ -1,6 +1,6 @@
 // src/features/Lucky/templates/Molbbang/GameTemplate/index.tsx
 import React, { useCallback, useState } from "react";
-import { View, Text, Modal, Pressable, LayoutChangeEvent } from "react-native";
+import { View, Text, LayoutChangeEvent } from "react-native";
 import Animated, {
   useAnimatedStyle,
   withSpring,
@@ -24,13 +24,6 @@ export default function GameTemplate({
   idleImage,
   shakeImage,
   onFinishRound,
-
-  rankModalVisible,
-  rankModalData,
-  isFinalRound,
-  onNextRound,
-  onViewFinal,
-
   remainingSeconds,
 }: GameTemplateProps) {
   // ── 캐릭터가 떠다닐 박스 크기 측정
@@ -42,7 +35,7 @@ export default function GameTemplate({
 
   // ── 가속도 기반 위치 (중앙 기준 px 오프셋)
   const { x, y } = useFloatInBox(box, {
-    enabled: !rankModalVisible, // 모달 중엔 멈추기
+    enabled: true, // 모달이 없으므로 항상 활성화
     accelScale: 170,
     friction: 0.84,
     sampleHz: 90,
@@ -97,43 +90,7 @@ export default function GameTemplate({
         <Text style={s.timerTxt}>{Math.max(0, remainingSeconds)}</Text>
       </View>
 
-      {/* 랭킹 모달(기존 유지) */}
-      <Modal
-        visible={rankModalVisible}
-        animationType="fade"
-        transparent
-        onRequestClose={isFinalRound ? onViewFinal : onNextRound}
-      >
-        <View style={s.modalBackdrop}>
-          <View style={s.modalCard}>
-            <Text style={s.modalTitle}>
-              {isFinalRound ? "최종 랭킹" : "현재까지 랭킹"}
-            </Text>
-
-            <View style={s.rankWrap}>
-              {rankModalData.map((r, i) => (
-                <View key={r.userId} style={s.rankRow}>
-                  <Text style={s.rankBadge}>{i + 1}</Text>
-                  <Text style={s.rankNick}>{r.nickname}</Text>
-                  <Text style={s.rankScore}>{r.total}</Text>
-                </View>
-              ))}
-            </View>
-
-            <View style={s.modalBtns}>
-              {isFinalRound ? (
-                <Pressable style={s.modalBtnPrimary} onPress={onViewFinal}>
-                  <Text style={s.modalBtnPrimaryTxt}>결과 화면으로</Text>
-                </Pressable>
-              ) : (
-                <Pressable style={s.modalBtnPrimary} onPress={onNextRound}>
-                  <Text style={s.modalBtnPrimaryTxt}>다음 라운드 준비</Text>
-                </Pressable>
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* 모달 제거 - 게임 종료 시 바로 결과 화면으로 이동 */}
     </SafeAreaView>
   );
 }
