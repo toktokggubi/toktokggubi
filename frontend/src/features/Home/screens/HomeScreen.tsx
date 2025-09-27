@@ -91,6 +91,7 @@ export const HomeScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+
   // 예산 설정 여부 확인
   const budgetStatusQuery = useBudgetStatusQuery();
 
@@ -331,6 +332,7 @@ export const HomeScreen: React.FC = () => {
     router.push("/notification");
   }, [router]);
 
+
   // 읽지 않은 알림 개수 계산
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
@@ -400,6 +402,7 @@ export const HomeScreen: React.FC = () => {
         visible={loading && !refreshing}
         message="홈 데이터를 불러오고 있어요..."
       />
+
     </View>
   );
 };
@@ -417,21 +420,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: colors.GRAY_DARK,
-  },
-  testButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: colors.BLUE_NORMAL,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    zIndex: 1000,
-  },
-  testButtonText: {
-    color: "white",
-    fontSize: 12,
-    lineHeight: 14,
-    ...font.bold,
   },
 });

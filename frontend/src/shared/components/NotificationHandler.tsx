@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as Notifications from 'expo-notifications';
-import { Alert } from 'react-native';
+import NotificationAlert from '@/shared/ui/NotificationAlert';
 
 interface NotificationHandlerProps {
   children: React.ReactNode;
@@ -15,8 +15,18 @@ interface NotificationHandlerProps {
  */
 export default function NotificationHandler({ children }: NotificationHandlerProps) {
   const router = useRouter();
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const responseListener = useRef<Notifications.Subscription | null>(null);
+  
+  // 알림 모달 상태
+  const [notificationAlert, setNotificationAlert] = useState<{
+    visible: boolean;
+    title?: string;
+    message: string;
+  }>({
+    visible: false,
+    message: "",
+  });
 
   useEffect(() => {
     // 포그라운드 알림 수신 리스너
@@ -48,34 +58,16 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
    */
   const showForegroundNotification = (notification: Notifications.Notification) => {
     try {
-      const { title, body, data } = notification.request.content;
+      const { title, body } = notification.request.content;
       
-      // 커스텀 알림 표시 (Alert 사용)
-      Alert.alert(
-        title || '알림',
-        body || '',
-        [
-          {
-            text: '확인',
-            style: 'default',
-            onPress: () => {
-              // 확인 버튼을 누르면 항상 홈으로 이동
-              try {
-                router.push('/(tabs)/home');
-              } catch (error) {
-                console.error('홈 페이지 이동 실패:', error);
-              }
-            },
-          },
-          {
-            text: '바로가기',
-            style: 'default',
-            onPress: () => handleNotificationClick({ notification }),
-          },
-        ],
-        { cancelable: true }
-      );
+      // 커스텀 알림 모달 표시
+      setNotificationAlert({
+        visible: true,
+        title: title || '알림',
+        message: body || '',
+      });
     } catch (error) {
+      console.error('알림 표시 실패:', error);
     }
   };
 
@@ -135,5 +127,19 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
     }
   };
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <NotificationAlert
+        visible={notificationAlert.visible}
+        title={notificationAlert.title}
+        message={notificationAlert.message}
+        onConfirm={() => {
+          setNotificationAlert({ ...notificationAlert, visible: false });
+          // 확인 버튼을 누르면 항상 (tabs)/home으로 이동
+          router.push('/(tabs)/home');
+        }}
+      />
+    </>
+  );
 }
