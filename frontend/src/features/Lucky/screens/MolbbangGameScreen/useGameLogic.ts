@@ -36,6 +36,7 @@ export function useGameLogic({
 }: UseGameLogicProps) {
   const router = useRouter();
   const [room, setRoom] = useState<MolbbangRoom | null>(null);
+  const [isSubmittingScore, setIsSubmittingScore] = useState(false);
 
   // 함수들을 ref로 참조하여 의존성 문제 해결
   const setRemainingSecondsRef = useRef(setRemainingSeconds);
@@ -114,10 +115,13 @@ export function useGameLogic({
       if (me) {
         try {
           console.log("🔍 [점수 제출] 점수 제출 시작, 점수:", finalScore);
+          setIsSubmittingScore(true); // 로딩 시작
           await molbbangApi.submitScore(finalScore);
           console.log("🔍 [점수 제출] 점수 제출 성공");
         } catch (error: any) {
           console.error("❌ [점수 제출] 점수 제출 실패:", error);
+        } finally {
+          setIsSubmittingScore(false); // 로딩 종료
         }
       } else {
         console.warn("⚠️ [점수 제출] me 객체 없음 - 점수 제출 불가");
@@ -439,5 +443,6 @@ export function useGameLogic({
     handleFinishRound,
     stopGame,
     reset, // 센서 리셋 함수 반환
+    isSubmittingScore, // 로딩 상태 반환
   };
 }

@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useState, useEffect } from "react";
 import { Alert, ActivityIndicator, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 import { ExpenseReportTemplate } from "../templates/ExpenseReportTemplate";
 import type {
   DailyPaymentData,
@@ -17,7 +18,10 @@ import type { DonutChartData } from "../ui/ExpenseDonutChart/types";
 import { fetchCurrentUserReport } from "../api/reportApi";
 import { useProfileQuery } from "@/features/Auth/model/useAuthQueries";
 import type { UserReportResponse } from "../api/reportApi";
-import { fetchFixedIncludedTotal, fetchFixedExpenseList } from "@/features/Budget/api/fetchers";
+import {
+  fetchFixedIncludedTotal,
+  fetchFixedExpenseList,
+} from "@/features/Budget/api/fetchers";
 
 // 샘플 데이터 (실제로는 API에서 가져올 데이터)
 const sampleData: DonutChartData[] = [
@@ -192,18 +196,20 @@ export default function ReportScreen() {
     try {
       const accessToken = await SecureStore.getItemAsync("access_token");
       const refreshToken = await SecureStore.getItemAsync("refresh_token");
-      
+
       console.log("토큰 확인:", {
         accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : null,
-        refreshToken: refreshToken ? `${refreshToken.substring(0, 20)}...` : null
+        refreshToken: refreshToken
+          ? `${refreshToken.substring(0, 20)}...`
+          : null,
       });
-      
+
       if (!accessToken || !refreshToken) {
         console.log("토큰이 없습니다.");
         setIsTokenValid(false);
         return false;
       }
-      
+
       setIsTokenValid(true);
       return true;
     } catch (error) {
@@ -216,7 +222,7 @@ export default function ReportScreen() {
   // API 데이터 가져오기 (http 인터셉터에서 401 처리)
   const fetchReportData = useCallback(async () => {
     if (!profile?.userId) return;
-    
+
     // 토큰 존재 여부 확인
     const hasToken = await validateToken();
     if (!hasToken) {
@@ -224,53 +230,68 @@ export default function ReportScreen() {
       router.replace("/auth/login");
       return;
     }
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       // 리포트 데이터와 고정지출 데이터를 병렬로 가져오기
       const [data, fixedExpenseResponse] = await Promise.all([
         fetchCurrentUserReport(currentYear, currentMonth),
-        fetchFixedIncludedTotal().catch(() => ({ fixedIncludedTotal: 0 }))
+        fetchFixedIncludedTotal().catch(() => ({ fixedIncludedTotal: 0 })),
       ]);
-      
+
       setReportData(data);
       setRetryCount(0); // 성공 시 재시도 카운트 리셋
-      
+
       // 고정지출 금액 설정
       const fixedAmount = fixedExpenseResponse.fixedIncludedTotal || 0;
       setFixedExpenseAmount(fixedAmount);
-      
+
       // 변동지출 금액 계산 (총 지출 - 고정지출)
-      const totalSpending = data.summaryReport.monthlySpendingSummary?.totalSpending || 0;
+      const totalSpending =
+        data.summaryReport.monthlySpendingSummary?.totalSpending || 0;
       const variableAmount = Math.max(0, totalSpending - fixedAmount);
       setVariableExpenseAmount(variableAmount);
-      
+
       // API 데이터를 차트 데이터로 변환
-      const chartData: DonutChartData[] = data.summaryReport.spendingByCategory.map((item, index) => {
-        const colors = ["#3B82F6", "#F59E0B", "#EF4444", "#10B981", "#F97316", "#6B7280"];
-        return {
-          label: item.category,
-          value: item.amount,
-          color: colors[index % colors.length],
-          percentage: item.percentage,
-        };
-      });
+      const chartData: DonutChartData[] =
+        data.summaryReport.spendingByCategory.map((item, index) => {
+          const colors = [
+            "#3B82F6",
+            "#F59E0B",
+            "#EF4444",
+            "#10B981",
+            "#F97316",
+            "#6B7280",
+          ];
+          return {
+            label: item.category,
+            value: item.amount,
+            color: colors[index % colors.length],
+            percentage: item.percentage,
+          };
+        });
       setExpenseData(chartData);
     } catch (err: any) {
       console.error("리포트 데이터 조회 실패:", err);
-      
+
       // 토큰 갱신 실패로 인한 에러인 경우 로그인 페이지로 이동
-      if (err?.message === "NO_REFRESH_TOKEN" || err?.message === "NO_ACCESS_FROM_REFRESH") {
+      if (
+        err?.message === "NO_REFRESH_TOKEN" ||
+        err?.message === "NO_ACCESS_FROM_REFRESH"
+      ) {
         console.log("토큰 갱신 실패 - 로그인 페이지로 이동");
         await SecureStore.deleteItemAsync("access_token");
         await SecureStore.deleteItemAsync("refresh_token");
         router.replace("/auth/login");
         return;
       }
-      
-      setError(err?.response?.data?.message || "리포트 데이터를 불러오는데 실패했습니다.");
+
+      setError(
+        err?.response?.data?.message ||
+          "리포트 데이터를 불러오는데 실패했습니다."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -284,20 +305,24 @@ export default function ReportScreen() {
   }, [fetchReportData]);
 
   // 총 지출 금액 계산 (API 데이터 우선, 없으면 차트 데이터 합계)
-  const totalAmount = reportData?.summaryReport.monthlySpendingSummary.totalSpending || 
+  const totalAmount =
+    reportData?.summaryReport.monthlySpendingSummary.totalSpending ||
     expenseData.reduce((sum, item) => sum + item.value, 0);
 
   // API 데이터에서 이상탐지 데이터 변환 (지오코딩은 AnomalyMap 컴포넌트에서 처리)
-  const anomalyData: AnomalyData[] = reportData?.summaryReport.abnormalSpending.transactions.map((transaction, index) => ({
-    id: index.toString(),
-    storeName: transaction.location || "알 수 없는 매장",
-    amount: transaction.amount,
-    date: transaction.date,
-    latitude: 0, // 지오코딩으로 프론트엔드에서 처리
-    longitude: 0, // 지오코딩으로 프론트엔드에서 처리
-    category: "기타", // 백엔드에서 제공하지 않음
-    paymentMethod: "알 수 없음", // 백엔드에서 제공하지 않음
-  })) || sampleAnomalyData;
+  const anomalyData: AnomalyData[] =
+    reportData?.summaryReport.abnormalSpending.transactions.map(
+      (transaction, index) => ({
+        id: index.toString(),
+        storeName: transaction.location || "알 수 없는 매장",
+        amount: transaction.amount,
+        date: transaction.date,
+        latitude: 0, // 지오코딩으로 프론트엔드에서 처리
+        longitude: 0, // 지오코딩으로 프론트엔드에서 처리
+        category: "기타", // 백엔드에서 제공하지 않음
+        paymentMethod: "알 수 없음", // 백엔드에서 제공하지 않음
+      })
+    ) || sampleAnomalyData;
 
   // API 데이터에서 VIP 매장 데이터 변환 (지출 금액 계산 포함)
   const vipStores: VIPStore[] = (() => {
@@ -307,18 +332,20 @@ export default function ReportScreen() {
 
     // 모든 거래 내역에서 매장별 지출 금액 계산
     const merchantAmounts: Record<string, number> = {};
-    
-    reportData.spendingDetails.spendingPerDay.forEach(day => {
-      day.transactions.forEach(transaction => {
+
+    reportData.spendingDetails.spendingPerDay.forEach((day) => {
+      day.transactions.forEach((transaction) => {
         // TODO: 임시 하드코딩 - 송금 내역 제외 (나중에 제거 예정)
-        if (transaction.merchant.includes('송금') || 
-            transaction.merchant.includes('이체') ||
-            transaction.merchant.includes('계좌이체') ||
-            transaction.merchant.includes('ATM') ||
-            transaction.merchant.includes('입금')) {
+        if (
+          transaction.merchant.includes("송금") ||
+          transaction.merchant.includes("이체") ||
+          transaction.merchant.includes("계좌이체") ||
+          transaction.merchant.includes("ATM") ||
+          transaction.merchant.includes("입금")
+        ) {
           return; // 송금 관련 거래는 제외
         }
-        
+
         const merchant = transaction.merchant;
         if (!merchantAmounts[merchant]) {
           merchantAmounts[merchant] = 0;
@@ -328,13 +355,15 @@ export default function ReportScreen() {
     });
 
     return reportData.spendingDetails.topSpendingMerchants
-      .filter(merchant => {
+      .filter((merchant) => {
         // TODO: 임시 하드코딩 - 송금 관련 매장 제외 (나중에 제거 예정)
-        return !merchant.merchant.includes('송금') && 
-               !merchant.merchant.includes('이체') &&
-               !merchant.merchant.includes('계좌이체') &&
-               !merchant.merchant.includes('ATM') &&
-               !merchant.merchant.includes('입금');
+        return (
+          !merchant.merchant.includes("송금") &&
+          !merchant.merchant.includes("이체") &&
+          !merchant.merchant.includes("계좌이체") &&
+          !merchant.merchant.includes("ATM") &&
+          !merchant.merchant.includes("입금")
+        );
       })
       .map((merchant, index) => ({
         id: index.toString(),
@@ -345,7 +374,8 @@ export default function ReportScreen() {
   })();
 
   // 총 이상탐지 금액 계산
-  const totalAnomalyAmount = reportData?.summaryReport.abnormalSpending.totalAbnormalSpending || 
+  const totalAnomalyAmount =
+    reportData?.summaryReport.abnormalSpending.totalAbnormalSpending ||
     sampleAnomalyData.reduce((sum, item) => sum + item.amount, 0);
 
   // 퍼센트 계산된 데이터 생성
@@ -372,37 +402,48 @@ export default function ReportScreen() {
   }, []);
 
   // API 데이터에서 일별 결제 데이터 변환
-  const dailyPaymentData: DailyPaymentData[] = reportData?.spendingDetails.spendingPerDay.map((dayData) => ({
-    date: dayData.date.replace("월 ", ".").replace("일", ""), // "9월 2일" -> "9.2"
-    count: dayData.transactions.length,
-  })) || sampleDailyPaymentData;
+  const dailyPaymentData: DailyPaymentData[] =
+    reportData?.spendingDetails.spendingPerDay.map((dayData) => ({
+      date: dayData.date.replace("월 ", ".").replace("일", ""), // "9월 2일" -> "9.2"
+      count: dayData.transactions.length,
+    })) || sampleDailyPaymentData;
 
   // API 데이터에서 가장 많은 결제 건수를 가진 날들만 변환
   const allDaysPaymentDetails = (() => {
     if (!reportData?.spendingDetails.spendingPerDay.length) {
-      return [{
-        date: "9월 25일",
-        details: sampleMaxPaymentDayDetails
-      }];
+      return [
+        {
+          date: "9월 25일",
+          details: sampleMaxPaymentDayDetails,
+        },
+      ];
     }
-    
-    const daysWithTransactions = reportData.spendingDetails.spendingPerDay
-      .filter(day => day.transactions.length > 0); // 결제 내역이 있는 날만
-    
+
+    const daysWithTransactions =
+      reportData.spendingDetails.spendingPerDay.filter(
+        (day) => day.transactions.length > 0
+      ); // 결제 내역이 있는 날만
+
     if (daysWithTransactions.length === 0) {
-      return [{
-        date: "9월 25일",
-        details: sampleMaxPaymentDayDetails
-      }];
+      return [
+        {
+          date: "9월 25일",
+          details: sampleMaxPaymentDayDetails,
+        },
+      ];
     }
-    
+
     // 가장 많은 결제 건수 찾기
-    const maxTransactionCount = Math.max(...daysWithTransactions.map(day => day.transactions.length));
-    
+    const maxTransactionCount = Math.max(
+      ...daysWithTransactions.map((day) => day.transactions.length)
+    );
+
     // 가장 많은 결제 건수를 가진 날들만 필터링
-    const maxDays = daysWithTransactions.filter(day => day.transactions.length === maxTransactionCount);
-    
-    return maxDays.map(day => ({
+    const maxDays = daysWithTransactions.filter(
+      (day) => day.transactions.length === maxTransactionCount
+    );
+
+    return maxDays.map((day) => ({
       date: day.date,
       details: day.transactions.map((transaction, index) => ({
         id: `${day.date}-${index}`,
@@ -410,7 +451,7 @@ export default function ReportScreen() {
         category: transaction.category,
         paymentMethod: transaction.paymentMethod,
         amount: transaction.amount,
-      }))
+      })),
     }));
   })();
 
@@ -438,7 +479,7 @@ export default function ReportScreen() {
         console.log("알림 조회: 토큰이 없습니다.");
         return;
       }
-      
+
       const notificationData = await fetchNotifications();
       const unreadCount = notificationData.items.filter(
         (notification) => notification.readAt === null
@@ -468,29 +509,25 @@ export default function ReportScreen() {
   // 프로필 로딩 중이거나 리포트 로딩 중인 경우
   if (profileLoading || isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-      </View>
+      <LoadingOverlay visible={true} message="리포트 데이터를 불러오는 중..." />
     );
   }
 
   // 에러가 발생한 경우
   if (error) {
     Alert.alert("오류", error, [
-      { 
-        text: "다시 시도", 
+      {
+        text: "다시 시도",
         onPress: () => {
           setError(null);
           setRetryCount(0);
           fetchReportData();
-        }
+        },
       },
-      { text: "확인", style: "cancel" }
+      { text: "확인", style: "cancel" },
     ]);
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <ActivityIndicator size="large" color="#3B82F6" />
-      </View>
+      <LoadingOverlay visible={true} message="오류 발생, 다시 시도 중..." />
     );
   }
 
