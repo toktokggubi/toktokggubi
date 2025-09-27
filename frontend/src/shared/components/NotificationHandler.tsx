@@ -58,6 +58,14 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
           {
             text: '확인',
             style: 'default',
+            onPress: () => {
+              // 확인 버튼을 누르면 항상 홈으로 이동
+              try {
+                router.push('/(tabs)/home');
+              } catch (error) {
+                console.error('홈 페이지 이동 실패:', error);
+              }
+            },
           },
           {
             text: '바로가기',
