@@ -92,6 +92,7 @@ public class BudgetCommitService {
 
             // 6) 고정지출: 기존 삭제 후 삽입
             feRepo.deleteByUserMonthlyBudget(umb);
+            em.flush();
             var feList = Optional.ofNullable(snap.fixedExpenses()).orElseGet(ArrayList::new).stream()
                     .map(f -> FixedExpense.builder()
                             .userMonthlyBudget(umb)
@@ -109,6 +110,7 @@ public class BudgetCommitService {
 
             // 7) 카테고리 배분
             bcRepo.deleteByUserMonthlyBudget(umb);
+            em.flush();
             int catCnt = 0;
             for (var c : Optional.ofNullable(snap.categoryAllocations()).orElseGet(ArrayList::new)) {
                 var usc = uscRepo.findByUser_UserIdAndCategory_CategoryId(userId, c.categoryId())
