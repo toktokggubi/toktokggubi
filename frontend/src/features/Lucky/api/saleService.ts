@@ -68,9 +68,6 @@ export async function fetchSalesByMonth(
 ): Promise<MonthResult> {
   const { year, month, category } = params;
 
-  // console.log('fetchSalesByMonth 호출:', { year, month, category });
-  // console.log('API URL:', `${http.defaults.baseURL}/sale-events/month`);
-
   try {
     const response = await http.get("/sale-events/month", {
       params: {
@@ -79,8 +76,6 @@ export async function fetchSalesByMonth(
         // franchiseId는 선택사항이므로 일단 제외
       },
     });
-
-    // console.log('API 응답:', response.data);
 
     const responseData = z.array(saleEventResponseSchema).parse(response.data);
 
@@ -95,10 +90,8 @@ export async function fetchSalesByMonth(
     }));
 
     const result = monthResultSchema.parse({ events, merchants });
-    // console.log('변환된 결과:', result);
     return result;
   } catch (error) {
-    // console.error('fetchSalesByMonth 에러:', error);
     throw error;
   }
 }

@@ -33,10 +33,9 @@ export interface StartRoundResponse {
   totalRounds: number;
 }
 
-export interface RoundTransitionResponse {
+export interface GameEndResponse {
   ok: boolean;
   status: string;
-  round: number;
 }
 
 export interface MolbbangMember {
@@ -67,7 +66,7 @@ export interface RoomView {
 export interface RankingRow {
   userId: number;
   nickname: string;
-  totalScore: number;
+  score: number; // totalScore → score로 변경
   rank: number;
 }
 

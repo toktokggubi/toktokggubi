@@ -57,7 +57,7 @@ public interface TransactionCategoryRepository extends JpaRepository<CardTransac
       ct.payment_balance                         AS amount,
       ct.card_status                             AS card_status,
       ct.merchant_id                             AS merchant_id,
-      COALESCE(m.merchant_name, f.merchant_name) AS merchant_name, -- ✅
+      COALESCE(m.merchant_name, f.franchise_name) AS merchant_name, 
       ct.user_card_id                            AS user_card_id,
       cp.card_name                               AS card_name
     FROM card_transaction ct
@@ -86,7 +86,7 @@ public interface TransactionCategoryRepository extends JpaRepository<CardTransac
       ct.payment_balance                         AS amount,
       ct.card_status                             AS card_status,
       ct.merchant_id                             AS merchant_id,
-      COALESCE(m.merchant_name, f.merchant_name) AS merchant_name, -- ✅ 스키마에 맞춤
+      COALESCE(m.merchant_name, f.franchise_name) AS merchant_name, 
       ct.user_card_id                            AS user_card_id,
       cp.card_name                               AS card_name
     FROM card_transaction ct

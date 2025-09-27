@@ -3,6 +3,13 @@ import { View, Text, Pressable, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { molbbangApi } from "@/features/Lucky/api/molbbangService";
 import type { MolbbangRoom } from "@/features/Lucky/api/molbbangService";
+
+// 전역 변수 타입 선언
+declare global {
+  interface Window {
+    __resultParamsLogged?: boolean;
+  }
+}
 import ResultTemplate from "@/features/Lucky/templates/Molbbang/ResultTemplate";
 
 function isRoom(v: unknown): v is MolbbangRoom {
@@ -30,7 +37,7 @@ export default function MolbbangResultScreen() {
       ? params.nick
       : Array.isArray(params.nick)
       ? params.nick[0]
-      : "나";
+      : "";
   const amount = Number(
     typeof params.amount === "string"
       ? params.amount
@@ -38,6 +45,8 @@ export default function MolbbangResultScreen() {
       ? params.amount[0]
       : 0
   );
+
+  // URL 파라미터 처리
 
   const [room, setRoom] = useState<MolbbangRoom | null>(null);
   const [ranking, setRanking] = useState<
@@ -50,13 +59,56 @@ export default function MolbbangResultScreen() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const r = await molbbangApi.fetchRoom(code);
-      if (!mounted) return;
-      if (isRoom(r)) setRoom(r);
-      const res = await molbbangApi.getResults(code);
-      if (mounted && res.ok) {
-        setRanking(res.ranking);
-        setJackpotUserId(res.jackpotUserId);
+      try {
+        console.log("🔍 [결과 페이지] API 호출 시작, code:", code);
+
+        // 게임이 이미 종료되었으므로 바로 결과 조회
+        console.log("🔍 [결과 페이지] getResults 호출 시작");
+        const res = await molbbangApi.getResults();
+        console.log("🔍 [결과 페이지] getResults 응답:", res);
+        console.log("🔍 [결과 페이지] getResults 응답 타입:", typeof res);
+        console.log("🔍 [결과 페이지] getResults ok:", res.ok);
+        console.log("🔍 [결과 페이지] getResults ranking:", res.ranking);
+
+        if (mounted && res.ok) {
+          console.log("🔍 [결과 페이지] 랭킹 데이터 설정:", res.ranking);
+
+          // 랭킹 데이터가 비어있거나 유효하지 않은 경우 처리
+          if (
+            res.ranking &&
+            Array.isArray(res.ranking) &&
+            res.ranking.length > 0
+          ) {
+            setRanking(res.ranking);
+            setJackpotUserId(res.jackpotUserId);
+          } else {
+            console.warn(
+              "⚠️ [결과 페이지] 랭킹 데이터가 비어있음, 빈 배열로 설정"
+            );
+            setRanking([]);
+          }
+        } else {
+          console.error("❌ [결과 페이지] getResults 실패:", res);
+          console.error(
+            "❌ [결과 페이지] 응답 상세:",
+            JSON.stringify(res, null, 2)
+          );
+
+          // 실패 시에도 빈 랭킹으로 설정하여 UI가 깨지지 않도록 함
+          setRanking([]);
+        }
+      } catch (error) {
+        console.error("❌ [결과 페이지] API 호출 오류:", error);
+        console.error("❌ [결과 페이지] 에러 상세:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+
+        // 에러 발생 시 빈 랭킹으로 설정
+        if (mounted) {
+          setRanking([]);
+        }
       }
     })();
     return () => {
@@ -65,7 +117,8 @@ export default function MolbbangResultScreen() {
   }, [code]);
 
   const myRank = useMemo(() => {
-    const idx = ranking.findIndex((x) => x.nickname === nickname);
+    // 닉네임으로 사용자 순위 찾기
+    const idx = ranking.findIndex((r) => r.nickname === nickname);
     return idx >= 0 ? idx + 1 : null;
   }, [ranking, nickname]);
 
@@ -91,6 +144,11 @@ export default function MolbbangResultScreen() {
   const onExit = () => {
     router.replace("/molbbang"); // ✅ 원하는 경로로 이동 (예: 홈 화면)
   };
+
+  // 랭킹 데이터 로딩 상태 확인
+  console.log("🔍 [결과 페이지] 현재 랭킹 데이터:", ranking);
+  console.log("🔍 [결과 페이지] 내 순위:", myRank);
+  console.log("🔍 [결과 페이지] 잭팟 닉네임:", jackpotNick);
 
   return (
     <ResultTemplate

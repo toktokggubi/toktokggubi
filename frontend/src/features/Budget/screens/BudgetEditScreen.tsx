@@ -3,8 +3,8 @@ import { router } from "expo-router";
 import { Modal } from "react-native";
 import BudgetEditTemplate from "~features/Budget/templates/BudgetEditTemplate";
 import AddFixedExpenseForm from "~features/Budget/ui/forms/AddFixedExpenseForm";
-import { 
-  fetchFixedIncludedTotal, 
+import {
+  fetchFixedIncludedTotal,
   fetchCategoryAllocations,
   fetchFixedExpenseList,
   saveAllBudget
@@ -17,16 +17,16 @@ import type { BudgetAllSaveRequest } from "~features/Budget/types/budget.types";
 // 카테고리 ID를 이름으로 변환하는 함수
 const getCategoryNameById = (categoryId: number): string => {
   const categoryMap: Record<number, string> = {
-    1: '식비',
-    2: '카페/간식',
-    3: '술/유흥',
-    4: '생활',
-    5: '쇼핑',
-    6: '뷰티/미용',
-    7: '교통',
-    8: '자동차',
-    9: '의료/건강',
-    10: '문화',
+    1: "식비",
+    2: "카페/간식",
+    3: "술/유흥",
+    4: "생활",
+    5: "쇼핑",
+    6: "뷰티/미용",
+    7: "교통",
+    8: "자동차",
+    9: "의료/건강",
+    10: "문화",
   };
   return categoryMap[categoryId] || '기타';
 };
@@ -59,31 +59,38 @@ export default function BudgetEditScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 예산 데이터 상태
   const [totalBudget, setTotalBudget] = useState(0);
   const [variableBudget, setVariableBudget] = useState(0);
   const [fixedIncludedBudget, setFixedIncludedBudget] = useState(0);
   const [fixedExcludedBudget, setFixedExcludedBudget] = useState(0);
-  const [categoryBudgets, setCategoryBudgets] = useState<Array<{ name: string; amount: number }>>([]);
-  const [fixedIncludedExpenses, setFixedIncludedExpenses] = useState<Array<{
-    id: string;
-    name: string;
-    amount: number;
-    includeInBudget: boolean;
-    billingDay?: number;
-  }>>([]);
-  const [fixedExcludedExpenses, setFixedExcludedExpenses] = useState<Array<{
-    id: string;
-    name: string;
-    amount: number;
-    includeInBudget: boolean;
-    billingDay?: number;
-  }>>([]);
+  const [categoryBudgets, setCategoryBudgets] = useState<
+    Array<{ name: string; amount: number }>
+  >([]);
+  const [fixedIncludedExpenses, setFixedIncludedExpenses] = useState<
+    Array<{
+      id: string;
+      name: string;
+      amount: number;
+      includeInBudget: boolean;
+      billingDay?: number;
+    }>
+  >([]);
+  const [fixedExcludedExpenses, setFixedExcludedExpenses] = useState<
+    Array<{
+      id: string;
+      name: string;
+      amount: number;
+      includeInBudget: boolean;
+      billingDay?: number;
+    }>
+  >([]);
 
   // 모달 상태
   const [formVisible, setFormVisible] = useState(false);
-  const [editingFixedExpense, setEditingFixedExpense] = useState<any>(undefined);
+  const [editingFixedExpense, setEditingFixedExpense] =
+    useState<any>(undefined);
 
   // 원본 데이터 (변경 감지용)
   const [originalData, setOriginalData] = useState<any>(null);
@@ -99,11 +106,16 @@ export default function BudgetEditScreen() {
       setError(null);
 
       // 모든 예산 데이터를 병렬로 가져오기
-      const [totalResponse, fixedResponse, categoryResponse, fixedListResponse] = await Promise.all([
+      const [
+        totalResponse,
+        fixedResponse,
+        categoryResponse,
+        fixedListResponse,
+      ] = await Promise.all([
         fetchBudgetTotal(),
         fetchFixedIncludedTotal(),
         fetchCategoryAllocations(),
-        fetchFixedExpenseList()
+        fetchFixedExpenseList(),
       ]);
 
 
@@ -157,9 +169,13 @@ export default function BudgetEditScreen() {
       }));
 
       // 예산 포함/미포함으로 분리
-      const includedExpenses = fixedExpenseList.filter(item => item.includeInBudget);
-      const excludedExpenses = fixedExpenseList.filter(item => !item.includeInBudget);
-      
+      const includedExpenses = fixedExpenseList.filter(
+        (item) => item.includeInBudget
+      );
+      const excludedExpenses = fixedExpenseList.filter(
+        (item) => !item.includeInBudget
+      );
+
       setFixedIncludedExpenses(includedExpenses);
       setFixedExcludedExpenses(excludedExpenses);
 
@@ -177,9 +193,12 @@ export default function BudgetEditScreen() {
         fixedIncludedExpenses: includedExpenses,
         fixedExcludedExpenses: excludedExpenses
       });
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : '예산 데이터를 불러오는데 실패했습니다.');
+      setError(
+        err instanceof Error
+          ? err.message
+          : "예산 데이터를 불러오는데 실패했습니다."
+      );
     } finally {
       setLoading(false);
     }
@@ -221,10 +240,8 @@ export default function BudgetEditScreen() {
 
   // 카테고리별 예산 변경 핸들러
   const handleCategoryBudgetChange = (name: string, amount: number) => {
-    setCategoryBudgets(prev => 
-      prev.map(cat => 
-        cat.name === name ? { ...cat, amount } : cat
-      )
+    setCategoryBudgets((prev) =>
+      prev.map((cat) => (cat.name === name ? { ...cat, amount } : cat))
     );
     // useEffect가 자동으로 헤더 값들을 업데이트함
   };
@@ -244,7 +261,9 @@ export default function BudgetEditScreen() {
   // 고정 지출 삭제 핸들러
   const handleDeleteFixedExpense = (id: string) => {
     // 고정 지출 삭제 로직
-    const isIncluded = fixedIncludedExpenses.find(expense => expense.id === id);
+    const isIncluded = fixedIncludedExpenses.find(
+      (expense) => expense.id === id
+    );
     if (isIncluded) {
       setFixedIncludedExpenses(prev => prev.filter(expense => expense.id !== id));
     } else {
@@ -416,7 +435,7 @@ export default function BudgetEditScreen() {
         onPressSave={handleSave}
         saveDisabled={!hasChanges || saving}
       />
-      
+
       {/* 고정 지출 추가/편집 모달 */}
       <Modal
         visible={formVisible}
