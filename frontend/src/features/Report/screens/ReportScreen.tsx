@@ -146,6 +146,11 @@ export default function ReportScreen() {
       setExpenseData(chartData);
     } catch (err: any) {
       console.error("리포트 데이터 조회 실패:", err);
+      console.error("에러 상태 코드:", err?.response?.status);
+      console.error("에러 메시지:", err?.response?.data?.message || err?.message);
+      console.error("에러 응답:", err?.response?.data);
+      console.error("에러 데이터 타입:", typeof err?.response?.data);
+      console.error("에러 데이터 키 개수:", err?.response?.data ? Object.keys(err?.response?.data).length : 0);
 
       // 토큰 갱신 실패로 인한 에러인 경우 로그인 페이지로 이동
       if (
@@ -159,9 +164,45 @@ export default function ReportScreen() {
         return;
       }
 
+      // 이전 달 데이터가 없는 경우 처리
+      const errorMessage = err?.response?.data?.message || err?.message || "";
+      const statusCode = err?.response?.status;
+      const errorData = err?.response?.data;
+      
+      // 토큰 갱신 후에도 401이 발생하면 데이터가 없는 것으로 간주
+      const isDataNotFound = 
+        statusCode === 404 ||
+        (statusCode === 401 && (
+          // 에러 메시지가 없거나 비어있는 경우 (백엔드에서 데이터 없음을 401로 반환)
+          !errorData || 
+          Object.keys(errorData).length === 0 ||
+          errorMessage.includes("데이터가 없습니다") ||
+          errorMessage.includes("거래 내역이 없습니다") ||
+          errorMessage.includes("리포트를 생성할 수 없습니다") ||
+          errorMessage.includes("사용자 데이터가 없습니다")
+        )) ||
+        errorMessage.includes("데이터가 없습니다") ||
+        errorMessage.includes("거래 내역이 없습니다") ||
+        errorMessage.includes("리포트를 생성할 수 없습니다");
+      
+      if (isDataNotFound) {
+        console.log("이전 달 데이터가 없음 - NoReportScreen 표시");
+        setReportData(null); // 리포트 데이터를 null로 설정하여 NoReportScreen이 표시되도록 함
+        setError(null); // 에러 상태를 초기화
+        return;
+      }
+
+      // 일반적인 401 에러 (토큰 문제)는 로그인 페이지로 이동
+      if (statusCode === 401) {
+        console.log("인증 에러 - 로그인 페이지로 이동");
+        await SecureStore.deleteItemAsync("access_token");
+        await SecureStore.deleteItemAsync("refresh_token");
+        router.replace("/auth/login");
+        return;
+      }
+
       setError(
-        err?.response?.data?.message ||
-          "리포트 데이터를 불러오는데 실패했습니다."
+        errorMessage || "리포트 데이터를 불러오는데 실패했습니다."
       );
     } finally {
       setIsLoading(false);
@@ -390,9 +431,10 @@ export default function ReportScreen() {
   }
 
 
-  // 리포트 데이터가 없는 경우
-  if (reportData && (!reportData.summaryReport.spendingByCategory.length || 
-      reportData.summaryReport.monthlySpendingSummary.totalSpending === 0)) {
+  // 리포트 데이터가 없는 경우 (이전 달 데이터가 없을 때)
+  if (!reportData || 
+      !reportData.summaryReport.spendingByCategory.length || 
+      reportData.summaryReport.monthlySpendingSummary.totalSpending === 0) {
     return <NoReportScreen />;
   }
 
