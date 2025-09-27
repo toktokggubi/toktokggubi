@@ -61,11 +61,11 @@ const s = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 32, // 하단 여백 증가 (SafeArea 고려)
+    marginTop: 8,
+    marginBottom: 16,
     shadowColor: colors.GRAY_DARK,
     elevation: 5,
     flex: 1, // 스크롤 뷰 내에서 공간을 모두 사용
@@ -81,7 +81,7 @@ const s = StyleSheet.create({
     backgroundColor: colors.GRAY_LIGHT,
     marginBottom: 6,
   },
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 10 },
+  row: { flexDirection: "row", alignItems: "center", paddingVertical: 6 },
   icon: { width: 24, height: 24, marginRight: 12, resizeMode: "contain" },
   oneLine: {
     flex: 1, // 아이콘 옆에서 남은 공간 모두 사용

@@ -25,157 +25,6 @@ import {
 } from "@/features/Budget/api/fetchers";
 import { colors } from "@/shared/constants/colors";
 
-// 샘플 데이터 (실제로는 API에서 가져올 데이터) - 금액 순으로 정렬
-const sampleData: DonutChartData[] = [
-  {
-    label: "식비",
-    value: 350000,
-    color: colors.BLUE_LIGHT,
-    percentage: 67.8,
-  },
-  {
-    label: "쇼핑",
-    value: 130000,
-    color: colors.BLUE_LIGHT_HOVER,
-    percentage: 25.2,
-  },
-  {
-    label: "교통",
-    value: 82000,
-    color: colors.BLUE_LIGHT_ACTIVE,
-    percentage: 15.9,
-  },
-  {
-    label: "뷰티",
-    value: 35000,
-    color: colors.BLUE_NORMAL,
-    percentage: 6.8,
-  },
-  {
-    label: "유흥",
-    value: 12000,
-    color: colors.BLUE_NORMAL_HOVER,
-    percentage: 2.3,
-  },
-  {
-    label: "기타",
-    value: 12000,
-    color: colors.BLUE_NORMAL_ACTIVE,
-    percentage: 2.3,
-  },
-];
-
-// 일별 결제 데이터 샘플 (1일부터 30일까지)
-const generateDailyPaymentData = (): DailyPaymentData[] => {
-  const data: DailyPaymentData[] = [];
-  for (let day = 1; day <= 30; day++) {
-    // 랜덤한 결제 건수 생성 (0-5 사이)
-    const count = Math.floor(Math.random() * 9);
-    data.push({
-      date: `9.${day}`,
-      count: count,
-    });
-  }
-  return data;
-};
-
-const sampleDailyPaymentData = generateDailyPaymentData();
-
-// 최대 결제일 상세 내역 샘플
-const sampleMaxPaymentDayDetails: PaymentDetail[] = [
-  {
-    id: "1",
-    store: "다이소",
-    category: "생활",
-    paymentMethod: "네이버페이 카드",
-    amount: 2000,
-  },
-  {
-    id: "2",
-    store: "스타벅스",
-    category: "카페/디저트",
-    paymentMethod: "삼성 카드",
-    amount: 5600,
-  },
-];
-
-// VIP 매장 샘플 데이터
-const sampleVIPStores: VIPStore[] = [
-  {
-    id: "1",
-    name: "스타벅스",
-    visitCount: 7,
-    totalAmount: 45000,
-  },
-  {
-    id: "2",
-    name: "충남대 레드버튼",
-    visitCount: 5,
-    totalAmount: 25000,
-  },
-  {
-    id: "3",
-    name: "덕디야",
-    visitCount: 4,
-    totalAmount: 18000,
-  },
-  {
-    id: "4",
-    name: "도미노피자",
-    visitCount: 2,
-    totalAmount: 32000,
-  },
-  {
-    id: "5",
-    name: "할리스",
-    visitCount: 2,
-    totalAmount: 12000,
-  },
-];
-
-// 이상탐지 샘플 데이터 (다양한 매장)
-const sampleAnomalyData: AnomalyData[] = [
-  {
-    id: "1",
-    storeName: "이디야커피 대전구암동점",
-    amount: 12000,
-    date: "09.20",
-    latitude: 36.361109, // 이디야커피 대전구암동점
-    longitude: 127.307039,
-    category: "카페/디저트",
-    paymentMethod: "삼성 카드",
-  },
-  {
-    id: "2",
-    storeName: "옛날숯불갈비본점",
-    amount: 35000,
-    date: "09.17",
-    latitude: 36.358542, // 옛날숯불갈비본점
-    longitude: 127.308368,
-    category: "식비",
-    paymentMethod: "네이버페이 카드",
-  },
-  {
-    id: "3",
-    storeName: "크래버 대게나라 대전유성점",
-    amount: 7000,
-    date: "09.11",
-    latitude: 36.358392, // 크래버 대게나라 대전유성점
-    longitude: 127.343857,
-    category: "식비",
-    paymentMethod: "삼성 카드",
-  },
-  {
-    id: "4",
-    storeName: "뼈먹자",
-    amount: 25000,
-    date: "09.08",
-    latitude: 36.357115, // 뼈먹자
-    longitude: 127.34616,
-    category: "식비",
-    paymentMethod: "네이버페이 카드",
-  },
-];
 
 export default function ReportScreen() {
   const router = useRouter();
@@ -184,7 +33,7 @@ export default function ReportScreen() {
 
   const [currentYear, setCurrentYear] = useState(2025);
   const [currentMonth, setCurrentMonth] = useState(8); // 9월 - 1 = 8월
-  const [expenseData, setExpenseData] = useState<DonutChartData[]>(sampleData);
+  const [expenseData, setExpenseData] = useState<DonutChartData[]>([]);
   const [reportData, setReportData] = useState<UserReportResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -344,12 +193,12 @@ export default function ReportScreen() {
         category: "기타", // 백엔드에서 제공하지 않음
         paymentMethod: "알 수 없음", // 백엔드에서 제공하지 않음
       })
-    ) || sampleAnomalyData;
+    ) || [];
 
   // API 데이터에서 VIP 매장 데이터 변환 (지출 금액 계산 포함)
   const vipStores: VIPStore[] = (() => {
     if (!reportData?.spendingDetails.topSpendingMerchants.length) {
-      return sampleVIPStores;
+      return [];
     }
 
     // 모든 거래 내역에서 매장별 지출 금액 계산
@@ -397,8 +246,7 @@ export default function ReportScreen() {
 
   // 총 이상탐지 금액 계산
   const totalAnomalyAmount =
-    reportData?.summaryReport.abnormalSpending.totalAbnormalSpending ||
-    sampleAnomalyData.reduce((sum, item) => sum + item.amount, 0);
+    reportData?.summaryReport.abnormalSpending.totalAbnormalSpending || 0;
 
   // 퍼센트 계산된 데이터 생성
   const expenseDataWithPercentage = expenseData.map((item) => ({
@@ -428,17 +276,12 @@ export default function ReportScreen() {
     reportData?.spendingDetails.spendingPerDay.map((dayData) => ({
       date: dayData.date.replace("월 ", ".").replace("일", ""), // "9월 2일" -> "9.2"
       count: dayData.transactions.length,
-    })) || sampleDailyPaymentData;
+    })) || [];
 
   // API 데이터에서 가장 많은 결제 건수를 가진 날들만 변환
   const allDaysPaymentDetails = (() => {
     if (!reportData?.spendingDetails.spendingPerDay.length) {
-      return [
-        {
-          date: "9월 25일",
-          details: sampleMaxPaymentDayDetails,
-        },
-      ];
+      return [];
     }
 
     const daysWithTransactions =
@@ -447,12 +290,7 @@ export default function ReportScreen() {
       ); // 결제 내역이 있는 날만
 
     if (daysWithTransactions.length === 0) {
-      return [
-        {
-          date: "9월 25일",
-          details: sampleMaxPaymentDayDetails,
-        },
-      ];
+      return [];
     }
 
     // 가장 많은 결제 건수 찾기

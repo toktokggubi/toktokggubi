@@ -10,7 +10,6 @@ import {
 
 function CardSlideImpl({ card }: CardSlideProps) {
   const [imageError, setImageError] = useState(false);
-  const [imageLoading, setImageLoading] = useState(true);
   
   // 1) 서버 imageUrl 우선 → 2) 카드사별 정적 이미지 → 3) 기본 이미지
   const fallbackSource = (card.cardIssuerCode && CARD_IMAGE_BY_ISSUER[card.cardIssuerCode])
@@ -28,23 +27,9 @@ function CardSlideImpl({ card }: CardSlideProps) {
       <Image 
         source={source} 
         style={s.cardImg}
-        onError={() => {
-          setImageError(true);
-          setImageLoading(false);
-        }}
-        onLoad={() => {
-          setImageError(false);
-          setImageLoading(false);
-        }}
+        onError={() => setImageError(true)}
+        fadeDuration={200}
       />
-      {imageLoading && (
-        <View style={s.loadingOverlay}>
-          <Text style={s.loadingText}>로딩 중...</Text>
-        </View>
-      )}
-      {imageError && (
-        <Text style={s.errorText}>이미지 로딩 실패</Text>
-      )}
     </View>
   );
 }
