@@ -49,7 +49,7 @@
     "expo-system-ui": "~5.0.11",
     "expo-video": "~2.2.2",
     "expo-web-browser": "~14.2.0",
-    "lottie-react-native": "^7.3.4",
+    "lottie-react-native": "7.2.2",
     "nanoid": "^3.3.7",
     "react": "19.0.0",
     "react-dom": "19.0.0",
