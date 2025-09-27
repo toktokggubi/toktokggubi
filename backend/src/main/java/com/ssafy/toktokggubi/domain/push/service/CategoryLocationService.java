@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -124,7 +125,7 @@ public class CategoryLocationService {
                 "remaining", Math.max(remaining, 0),
                 "exceeded", exceeded
         ));
-        notificationRepo.insertLog(userId, TYPE, title, body, payloadJson);
+        notificationRepo.insertLog(userId, TYPE, title, body, payloadJson, LocalDateTime.now(KST));
 
         // 응답
         return new ThresholdCheckResponse(true, userId, categoryId, SCOPE, budgetYm, used, finalAmount, sent);
