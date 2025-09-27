@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { colors } from "@/shared/constants/colors";
@@ -64,7 +64,12 @@ export default function TotalBudgetTemplate({
         
         {aiRecommendationSuccess && !loadingAI && !aiError && (
           <View style={s.aiSuccess}>
-            <Text style={s.aiSuccessText}>🤖 AI가 추천해준 전체 예산 값입니다</Text>
+            <Image 
+              source={require("@/assets/images/character/stupid.png")} 
+              style={s.characterImage}
+              resizeMode="contain"
+            />
+            <Text style={s.aiSuccessText}>꺼비가 추천해준 전체 예산 값입니다</Text>
           </View>
         )}
         
@@ -145,11 +150,19 @@ const s = StyleSheet.create({
     borderRadius: 8,
     borderLeftWidth: 3,
     borderLeftColor: colors.BLUE_NORMAL,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  characterImage: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
   },
   aiSuccessText: {
     fontSize: 14,
     color: colors.BLUE_NORMAL,
     fontWeight: '500',
+    flex: 1,
   },
   aiError: {
     marginTop: 16,
