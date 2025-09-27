@@ -98,12 +98,7 @@ export function useGameLogic({
         me =
           room.members.find((member) => member.nickname === nickname) ||
           room.members[0];
-        console.log("🔍 [점수 제출] 찾은 멤버:", me);
       }
-
-      console.log("🎮 [점수 확인] 화면에 표시된 점수:", currentScore, "점");
-      console.log("📤 [점수 확인] 제출할 점수:", finalScore, "점");
-      console.log("🔍 [점수 확인] shakeValue:", shakeValue);
 
       // 점수 보존 후 즉시 센서 리셋 (점수 누적 방지)
       reset();
@@ -114,32 +109,24 @@ export function useGameLogic({
       // 먼저 점수 제출
       if (me) {
         try {
-          console.log("🔍 [점수 제출] 점수 제출 시작, 점수:", finalScore);
           setIsSubmittingScore(true); // 로딩 시작
           await molbbangApi.submitScore(finalScore);
-          console.log("🔍 [점수 제출] 점수 제출 성공");
         } catch (error: any) {
           console.error("❌ [점수 제출] 점수 제출 실패:", error);
         } finally {
           setIsSubmittingScore(false); // 로딩 종료
         }
       } else {
-        console.warn("⚠️ [점수 제출] me 객체 없음 - 점수 제출 불가");
       }
 
       // 게임 종료 (바로 최종 결과로)
-      console.log("🔍 [endGame] 게임 종료, 최종 결과 조회 시작");
       const res = await molbbangApi.finishRound();
-      console.log("🔍 [endGame] 응답:", res.status);
-      console.log("🔍 [endGame] 응답 상세:", res);
-      console.log("🔍 [endGame] 응답 ok:", res.ok);
 
       if (res.ok) {
         // 게임 완료 상태로 처리 (라운드 없이 바로 최종 결과)
         // 서버 상태 반영 (room.status는 실제 DB 상태 유지)
         setRoom((prevRoom: MolbbangRoom | null) => {
           // 게임 완료 상태로 업데이트
-          console.log("🔍 [게임 로직] 방 상태를 finished로 변경");
           return prevRoom
             ? {
                 ...prevRoom,
@@ -153,7 +140,6 @@ export function useGameLogic({
         // getResults API로 최종 결과 조회
         try {
           // 서버 상태가 업데이트될 때까지 잠시 대기
-          console.log("🔍 [게임 로직] 서버 상태 업데이트 대기 중...");
           await new Promise((resolve) => setTimeout(resolve, 500)); // 1초 → 0.5초로 단축
 
           const resultsRes = await molbbangApi.getResults();
@@ -359,12 +345,6 @@ export function useGameLogic({
       // 시작 직후 서버 상태 요동(playing/lobby 튐) 무시 구간
       startLockUntilRef.current = Date.now() + 500; // 1.5초 → 0.5초로 단축
 
-      console.log("🔍 [게임 시작] 상태 설정 완료", {
-        round: startedRoundRef.current,
-        endAt: roundEndAtRef.current,
-        lockUntil: startLockUntilRef.current,
-      });
-
       // 점수는 센서 리셋과 함께 자동으로 0이 되므로 별도 초기화 불필요
       // setCurrentScoreRef.current(0); // 제거
 
@@ -427,11 +407,6 @@ export function useGameLogic({
 
     // 현재 점수를 실시간으로 저장 (최종 제출용)
     finalScoreRef.current = score;
-
-    // 디버깅: 점수 변화 로그
-    if (score > 0) {
-      console.log("🔍 [점수 변화] shakeValue:", shakeValue, "→ score:", score);
-    }
 
     // 점수가 10의 배수로 변경될 때만 업데이트 (성능 최적화)
   }, [shakeValue]);

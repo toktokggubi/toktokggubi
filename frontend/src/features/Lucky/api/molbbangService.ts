@@ -190,9 +190,7 @@ async function getResults(): Promise<{
   amount?: number;
 }> {
   try {
-    console.log("🔍 [API] getResults 호출 시작");
     const response = await molbbangFetchers.getResults();
-    console.log("🔍 [API] getResults 원본 응답:", response);
 
     const result = {
       ok: response.ok,
@@ -205,16 +203,8 @@ async function getResults(): Promise<{
       amount: response.amount,
     };
 
-    console.log("🔍 [API] getResults 변환된 결과:", result);
     return result;
   } catch (error: any) {
-    console.error("❌ [API] getResults 오류:", error);
-    console.error("❌ [API] getResults 오류 상세:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-    });
     throw error;
   }
 }
