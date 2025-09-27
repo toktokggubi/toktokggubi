@@ -38,12 +38,7 @@ export function useMolbbangSocket(opts: Options) {
     [accessToken]
   );
 
-  const log = useCallback(
-    (...args: any[]) => {
-      if (debug) console.log("[STOMP]", ...args);
-    },
-    [debug]
-  );
+  const log = useCallback((...args: any[]) => {}, [debug]);
 
   const connect = useCallback(() => {
     if (clientRef.current?.connected) return;
@@ -65,7 +60,7 @@ export function useMolbbangSocket(opts: Options) {
       reconnectDelay: 2000, // 자동 재연결(ms). 지수 백오프는 직접 구현 가능
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      debug: (str) => debug && console.log(str), // 몰빵 웹소켓 로그만 유지
+      debug: (str) => {}, // 몰빵 웹소켓 로그만 유지
       onConnect: () => {
         setConnected(true);
         onConnect?.();

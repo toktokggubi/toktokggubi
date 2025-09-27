@@ -27,7 +27,6 @@ export default function LuckyScreen() {
   const { data, isLoading, error } = useSalesByMonth(year, month, category);
 
   // 디버깅용 로그
-  // console.log('LuckyScreen - API 상태:', { isLoading, error, data: data ? '데이터 있음' : '데이터 없음' });
 
   const eventsForDay = useMemo((): SaleEventListItem[] => {
     if (!data || selectedDay == null) return [];
