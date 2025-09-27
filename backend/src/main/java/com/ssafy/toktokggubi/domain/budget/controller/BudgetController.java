@@ -38,8 +38,8 @@ public class BudgetController {
     private final BudgetCommitService commitService;
     private final YmResolver ymResolver;
     private final BudgetReadService budgetReadService;
-private final AiSuggestService aiSuggestService;
-private final GmsTextService gmsTextService;
+    private final AiSuggestService aiSuggestService;
+    private final GmsTextService gmsTextService;
     private final AiReportInformationService reportInfoService; // 이미 있는 서비스(값 조회)
     private final AiBudgetService aiBudgetService;
     private final UserRepository userRepository;
@@ -64,7 +64,7 @@ private final GmsTextService gmsTextService;
 
     @PostMapping("/draft/save/fixed")
     public DraftSaveResponseDto saveDraftFixed(
-                                            @RequestBody DraftFixedRequestDto req) {
+            @RequestBody DraftFixedRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
         DraftPatchRequestDto patch = new DraftPatchRequestDto(
                 req.expectedVersion(),
@@ -79,7 +79,7 @@ private final GmsTextService gmsTextService;
     @PostMapping("/draft/save/categories")
     public DraftSaveResponseDto saveDraftCategories(
 
-                                                 @RequestBody DraftCategoriesSelectRequestDto req) {
+            @RequestBody DraftCategoriesSelectRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
         String ym   = ymResolver.nowYm();
 
@@ -119,7 +119,7 @@ private final GmsTextService gmsTextService;
     // BD-6 마지막 버튼 (commit)
     @PostMapping("/commit")
     public BudgetCommitResponseDto commit(
-            ) {
+    ) {
         Long userId =SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         return commitService.commit(userId, ym, null);
@@ -260,7 +260,11 @@ private final GmsTextService gmsTextService;
         return budgetReadService.getPreviousFixedList(userId, ym);
     }
 
-
+    @GetMapping("/ai/total/set")
+    public TotalAmountResponseDto getAiSet() {
+        Long userId = SecurityUtils.currentUserIdOrNull();
+        return aiSuggestService.suggestLivingBudget(userId);
+    }
     /**
      * 추천안 저장/덮어쓰기(전월 기본).
      * - ym 미지정 시: prevYm()
