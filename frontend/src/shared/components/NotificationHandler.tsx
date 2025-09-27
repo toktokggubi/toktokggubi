@@ -129,7 +129,7 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
    */
   const navigateToBudgetPage = () => {
     try {
-      router.push('/budget');
+      router.push('/(tabs)/home');
     } catch (error) {
       router.push('/(tabs)/home');
     }
