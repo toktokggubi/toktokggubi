@@ -60,19 +60,10 @@ export default function MolbbangResultScreen() {
     let mounted = true;
     (async () => {
       try {
-        console.log("🔍 [결과 페이지] API 호출 시작, code:", code);
-
         // 게임이 이미 종료되었으므로 바로 결과 조회
-        console.log("🔍 [결과 페이지] getResults 호출 시작");
         const res = await molbbangApi.getResults();
-        console.log("🔍 [결과 페이지] getResults 응답:", res);
-        console.log("🔍 [결과 페이지] getResults 응답 타입:", typeof res);
-        console.log("🔍 [결과 페이지] getResults ok:", res.ok);
-        console.log("🔍 [결과 페이지] getResults ranking:", res.ranking);
 
         if (mounted && res.ok) {
-          console.log("🔍 [결과 페이지] 랭킹 데이터 설정:", res.ranking);
-
           // 랭킹 데이터가 비어있거나 유효하지 않은 경우 처리
           if (
             res.ranking &&
@@ -146,9 +137,6 @@ export default function MolbbangResultScreen() {
   };
 
   // 랭킹 데이터 로딩 상태 확인
-  console.log("🔍 [결과 페이지] 현재 랭킹 데이터:", ranking);
-  console.log("🔍 [결과 페이지] 내 순위:", myRank);
-  console.log("🔍 [결과 페이지] 잭팟 닉네임:", jackpotNick);
 
   return (
     <ResultTemplate

@@ -22,10 +22,10 @@ export const s = StyleSheet.create({
     alignItems: "center",
   },
 
-  lottieIcon: {
-    width: 200,
-    height: 200,
-    marginBottom: 20,
+  gifIcon: {
+    width: 300,
+    height: 150,
+    marginBottom: 8,
   },
 
   message: {
@@ -33,6 +33,7 @@ export const s = StyleSheet.create({
     fontSize: 16,
     color: colors.BLUE_DARKER,
     textAlign: "center",
-    lineHeight: 24,
+    lineHeight: 18,
+    marginTop: 4,
   },
 });
