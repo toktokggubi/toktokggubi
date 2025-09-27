@@ -35,15 +35,14 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/ai/**").permitAll()
+                        .requestMatchers("/ai/report/save", "/ai/report/information", "/ai/transaction").permitAll() // AI server
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/qr/payment", "/images/**").permitAll()
-                        .requestMatchers("/auth/signup", "/auth/signup/complete", "/auth/login", "/auth/password/reset",
-                                "/auth/token/refresh", "/auth/kakao/login").permitAll()
+                        .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/push/test/**", "/dev/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated()
-                )
-                .exceptionHandling(ex -> ex
+                ).exceptionHandling(ex -> ex
                         .authenticationEntryPoint((req, res, e) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                         .accessDeniedHandler((req, res, e) -> res.sendError(HttpServletResponse.SC_FORBIDDEN))
                 )
@@ -70,4 +69,3 @@ public class SecurityConfig {
         return src;
     }
 }
-

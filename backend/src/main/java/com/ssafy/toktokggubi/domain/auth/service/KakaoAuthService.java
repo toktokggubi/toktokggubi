@@ -1,7 +1,6 @@
 package com.ssafy.toktokggubi.domain.auth.service;
 
 import com.ssafy.toktokggubi.domain.auth.client.KakaoApiClient;
-import com.ssafy.toktokggubi.domain.auth.dto.request.KakaoLoginRequest;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoLoginResponse;
 import com.ssafy.toktokggubi.domain.auth.dto.response.KakaoMe;
 import com.ssafy.toktokggubi.domain.finance.service.FinanceLinkService;
@@ -41,8 +40,7 @@ public class KakaoAuthService {
     }
 
     @Transactional
-    public KakaoLoginResponse login(KakaoLoginRequest req) {
-        KakaoMe me = kakaoApiClient.me(req.accessToken());
+    public KakaoLoginResponse login(KakaoMe me) {
         Long kakaoId = me.id();
 
         String email = (me.kakao_account() != null && me.kakao_account().get("email") != null)
@@ -74,14 +72,14 @@ public class KakaoAuthService {
         if (user.getStatus() == UserStatus.ACTIVE) {
             TokenEnvelope token = issueTokens(user.getUserId());
             return KakaoLoginResponse.builder()
-                    .message("카카오 로그인 완료")
+                    .message("kakao login success")
                     .userId(user.getUserId())
                     .token(token)
                     .build();
         } else {
             String signupToken = jwtProvider.createSignupToken(user.getUserId());
             return KakaoLoginResponse.builder()
-                    .message("카카오 로그인 성공. 프로필 작성 후 완료하세요.")
+                    .message("kakao login success. create a profile.")
                     .userId(user.getUserId())
                     .signupToken(signupToken)
                     .build();

@@ -32,14 +32,21 @@ const getNotificationIcon = (type: NotificationType) => {
 };
 
 const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
+  // 서버에서 받은 시간은 이미 KST로 저장되어 있음
+  // 시간대 정보가 없는 경우 로컬 시간대로 해석하도록 함
+  const serverDate = new Date(dateString);
   const now = new Date();
-  const diffInHours = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  );
+  
+  // 시간 차이 계산
+  const diffInMs = now.getTime() - serverDate.getTime();
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
 
   if (diffInHours < 1) {
-    return "방금 전";
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    if (diffInMinutes < 1) {
+      return "방금 전";
+    }
+    return `${diffInMinutes}분 전`;
   } else if (diffInHours < 24) {
     return `${diffInHours}시간 전`;
   } else {

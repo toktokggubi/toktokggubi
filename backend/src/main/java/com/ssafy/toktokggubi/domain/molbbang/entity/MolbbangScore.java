@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
 @Table(
         name = "molbbang_score",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uq_ms_round_member", columnNames = {"round_id", "member_id"})
+                @UniqueConstraint(name = "uq_ms_room_member", columnNames = {"room_id", "member_id"})
         },
         indexes = {
-                @Index(name = "idx_ms_round", columnList = "round_id"),
+                @Index(name = "idx_ms_room", columnList = "room_id"),
                 @Index(name = "idx_ms_member", columnList = "member_id")
         }
 )
@@ -29,8 +29,8 @@ public class MolbbangScore {
     private Long scoreId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "round_id", nullable = false, foreignKey = @ForeignKey(name = "FK_ms_round"))
-    private MolbbangRound round;
+    @JoinColumn(name = "room_id", nullable = false, foreignKey = @ForeignKey(name = "FK_ms_room"))
+    private MolbbangRoom room;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id", nullable = false, foreignKey = @ForeignKey(name = "FK_ms_member"))

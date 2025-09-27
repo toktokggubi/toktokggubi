@@ -6,6 +6,7 @@ import {
   Alert,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,6 +14,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
+import { processPayment, type PaymentRequest } from "@/features/Pay/api/fetchers";
+import * as SecureStore from "expo-secure-store";
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get("window");
 
@@ -22,37 +25,167 @@ export default function QRScannerScreen() {
   
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // 카드 정보
   const cardId = params.cardId as string;
   const cardName = params.cardName as string;
   const last4 = params.last4 as string;
 
-  const handleBarcodeScanned = ({ type, data }: { type: string; data: string }) => {
-    setScanned(true);
+  // QR 코드에서 결제 정보 파싱
+  const parseQRData = (data: string): { merchantName: string; amount: number } | null => {
+    try {
+      // JSON 형태의 QR 코드 데이터 파싱 시도
+      const parsed = JSON.parse(data);
+      if (parsed.merchantName && parsed.amount) {
+        return {
+          merchantName: parsed.merchantName,
+          amount: Number(parsed.amount)
+        };
+      }
+    } catch (error) {
+      console.log("JSON 파싱 실패, 다른 형식으로 시도");
+    }
+
+    // JSON이 아닌 경우 다른 형식으로 파싱 시도 (예: "merchantName:amount" 형태)
+    const parts = data.split(':');
+    if (parts.length >= 2) {
+      const merchantName = parts[0];
+      const amount = Number(parts[1]);
+      if (!isNaN(amount)) {
+        return { merchantName, amount };
+      }
+    }
+
+    return null;
+  };
+
+  const handleBarcodeScanned = async ({ type, data }: { type: string; data: string }) => {
+    if (scanned || isProcessing) return;
     
-    // QR 코드 스캔 성공 시 처리
-    Alert.alert(
-      "QR 코드 스캔 완료",
-      `스캔된 데이터: ${data}`,
-      [
-        {
-          text: "확인",
-          onPress: () => {
-            // 백엔드로 데이터 전송 (실제 구현 필요)
-            console.log("카드 정보:", { cardId, cardName, last4 });
-            console.log("QR 데이터:", data);
-            
-            // 결제 완료 후 이전 화면으로 돌아가기
-            router.back();
+    setScanned(true);
+    setIsProcessing(true);
+    
+    try {
+      // QR 코드에서 결제 정보 파싱
+      const paymentInfo = parseQRData(data);
+      
+      if (!paymentInfo) {
+        Alert.alert(
+          "QR 코드 오류",
+          "올바른 결제 QR 코드가 아닙니다.",
+          [
+            {
+              text: "다시 스캔",
+              onPress: () => {
+                setScanned(false);
+                setIsProcessing(false);
+              },
+            },
+          ]
+        );
+        return;
+      }
+
+      // 토큰 상태 확인
+      const accessToken = await SecureStore.getItemAsync("access_token");
+      const refreshToken = await SecureStore.getItemAsync("refresh_token");
+      
+      console.log("토큰 상태:", {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        accessTokenLength: accessToken?.length || 0
+      });
+
+      // 결제 API 호출
+      const paymentRequest: PaymentRequest = {
+        userCardId: Number(cardId),
+        merchantId: null,  // QR에서 merchantId를 제공하지 않으므로 null
+        merchantName: paymentInfo.merchantName,
+        amount: paymentInfo.amount,
+      };
+
+      console.log("결제 요청:", paymentRequest);
+      
+      const response = await processPayment(paymentRequest);
+      
+      console.log("결제 응답:", response);
+      console.log("결제 상태:", response.status, "→", response.status?.toUpperCase());
+      
+      if (response.status?.toUpperCase() === "APPROVED") {
+        Alert.alert(
+          "결제 완료",
+          `${response.merchantName}에서 ${response.finalAmount.toLocaleString()}원 결제가 완료되었습니다.`,
+          [
+            {
+              text: "확인",
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "결제 실패",
+          `결제가 거부되었습니다. (상태: ${response.status})`,
+          [
+            {
+              text: "다시 시도",
+              onPress: () => {
+                setScanned(false);
+                setIsProcessing(false);
+              },
+            },
+            {
+              text: "취소",
+              onPress: () => router.back(),
+            },
+          ]
+        );
+      }
+    } catch (error: any) {
+      console.error("결제 처리 오류:", error);
+      
+      let errorMessage = "결제 처리 중 오류가 발생했습니다.";
+      
+      if (error?.response?.status === 401) {
+        errorMessage = "인증이 필요합니다. 토큰을 확인해주세요.";
+      } else if (error?.response?.status === 403) {
+        errorMessage = "결제 권한이 없습니다.";
+      } else if (error?.response?.status === 400) {
+        errorMessage = "잘못된 결제 정보입니다.";
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      console.log("에러 상세 정보:", {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message
+      });
+      
+      Alert.alert(
+        "결제 오류",
+        errorMessage,
+        [
+          {
+            text: "다시 시도",
+            onPress: () => {
+              setScanned(false);
+              setIsProcessing(false);
+            },
           },
-        },
-        {
-          text: "다시 스캔",
-          onPress: () => setScanned(false),
-        },
-      ]
-    );
+          {
+            text: "취소",
+            onPress: () => router.back(),
+          },
+        ]
+      );
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBack = () => {
@@ -122,7 +255,14 @@ export default function QRScannerScreen() {
           {/* 스캔 상태 표시 */}
           {scanned && (
             <View style={styles.scanOverlay}>
-              <Text style={styles.scanText}>스캔 완료!</Text>
+              {isProcessing ? (
+                <View style={styles.processingContainer}>
+                  <ActivityIndicator size="large" color={colors.BLUE_LIGHT} />
+                  <Text style={styles.scanText}>결제 처리 중...</Text>
+                </View>
+              ) : (
+                <Text style={styles.scanText}>스캔 완료!</Text>
+              )}
             </View>
           )}
         </CameraView>
@@ -229,6 +369,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     ...font.bold,
     textAlign: "center",
+  },
+  processingContainer: {
+    alignItems: "center",
+    gap: 12,
   },
   scanFrame: {
     position: "absolute",

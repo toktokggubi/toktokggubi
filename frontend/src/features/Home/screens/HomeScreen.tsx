@@ -323,10 +323,9 @@ export const HomeScreen: React.FC = () => {
     loadHomeData(true);
   };
 
-  const handleNotificationPress = () => {
-    // TODO: 알림 화면 구현 후 경로 수정
-    console.log("알림 화면으로 이동");
-  };
+  const handleNotificationPress = useCallback(() => {
+    router.push("/notification");
+  }, [router]);
 
   // 읽지 않은 알림 개수 계산
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);

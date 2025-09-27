@@ -18,9 +18,8 @@ public class CategoryController {
     /** 카테고리 목록 조회 */
     @GetMapping
     public ResponseEntity<CategoryListResponse> list(
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false, defaultValue = "sortOrder") String sort
+            @RequestParam(required = false) String q
     ) {
-        return ResponseEntity.ok(categoryService.list(q, sort));
+        return ResponseEntity.ok(categoryService.list(q));
     }
 }

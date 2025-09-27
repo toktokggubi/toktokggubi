@@ -23,4 +23,8 @@ public class YmResolver {
         }
         return budgetYm;
     }
+    /** 지난달 yyyyMM */
+    public String prevYm() {
+        return YearMonth.now(ZONE).minusMonths(1).format(DateTimeFormatter.ofPattern("yyyyMM"));
+    }
 }

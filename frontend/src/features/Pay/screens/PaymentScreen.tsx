@@ -23,6 +23,8 @@ import { fetchCardBenefits } from "@/features/User/api/wallet.fetchers";
 import BenefitsList from "@/features/User/ui/BenefitsList";
 import { useAuthGuard } from "@/shared/hooks/useAuthGuard";
 import { useGifticonsQuery } from "@/features/User/model/gifticon/queries";
+import { pushLocation } from "../api/fetchers";
+import NotificationSettingsService from "@/shared/services/notificationSettingsService";
 
 import { colors } from "@/shared/constants/colors";
 
@@ -41,6 +43,43 @@ import {
 } from "@/shared/constants/kakao";
 
 const KAKAO_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
+
+// 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
+const getCategoryIdFromPlace = (place: KakaoPlace): number => {
+  // 카카오 카테고리 그룹명을 우리 DB 카테고리 ID로 매핑
+  if (place.category_group_name) {
+    const categoryMap: { [key: string]: number } = {
+      "카페": 2, // 카페/간식
+      "음식점": 1, // 식비
+      "대형마트": 5, // 쇼핑
+      "영화관": 10, // 문화
+      "편의점": 4, // 생활
+      "주유소": 8, // 자동차
+      "숙박": 4, // 생활
+      "병원": 9, // 의료/건강
+      "약국": 9, // 의료/건강
+    };
+    return categoryMap[place.category_group_name] || 1; // 기본값: 식비
+  }
+  
+  // 카테고리 그룹 코드로 매핑
+  if (place.category_group_code) {
+    const categoryMap: { [key: string]: number } = {
+      [KAKAO_CATEGORY_CODES.CAFE]: 2, // 카페/간식
+      [KAKAO_CATEGORY_CODES.FOOD]: 1, // 식비
+      [KAKAO_CATEGORY_CODES.SUPERMARKET]: 5, // 쇼핑
+      [KAKAO_CATEGORY_CODES.CINEMA]: 10, // 문화
+      [KAKAO_CATEGORY_CODES.CONVENIENCE]: 4, // 생활활
+      [KAKAO_CATEGORY_CODES.GAS_STATION]: 8, // 자동차
+      [KAKAO_CATEGORY_CODES.LODGING]: 4, // 생활
+      [KAKAO_CATEGORY_CODES.HOSPITAL]: 9, // 의료/건강
+      [KAKAO_CATEGORY_CODES.PHARMACY]: 9, // 의료/건강
+    };
+    return categoryMap[place.category_group_code] || 1; // 기본값: 식비
+  }
+  
+  return 1; // 기본값: 식비
+};
 
 // UserGifticon을 SharedGifticon으로 변환하는 함수
 const convertToSharedGifticon = (userGifticon: UserGifticon): SharedGifticon => {
@@ -78,6 +117,8 @@ const SEARCH_CATEGORIES: KakaoCategoryCode[] = [
 // 브랜드 매칭 규칙을 컴포넌트 외부로 이동 (성능 최적화)
 const BRAND_MAPPINGS: { [key: string]: string[] } = {
   스타벅스: ["starbucks", "스타벅스"],
+  공차: ["gongcha", "공차", "gong cha", "공차티라미수"],
+  할리스: ["hollys", "할리스", "hollys coffee", "할리스커피"],
   이마트: ["emart", "이마트", "이마트몰"],
   CGV: ["cgv", "씨지브이"],
   맥도날드: ["mcdonald", "맥도날드", "맥도널드"],
@@ -149,14 +190,30 @@ export default function PaymentScreen() {
   const bottomSheetRef = useRef<BottomSheetRef>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  // 위치 정보를 서버로 전송하는 함수
+  const sendLocationToServer = useCallback(async (place: KakaoPlace) => {
+    try {
+      // 위치기반 알림 설정 확인
+      const notificationService = NotificationSettingsService.getInstance();
+      const isLocationNotificationEnabled = await notificationService.isNotificationEnabled('locationBasedOn');
+      
+      if (!isLocationNotificationEnabled) {
+        console.log('위치기반 알림이 비활성화되어 있습니다.');
+        return;
+      }
+
+      const categoryId = getCategoryIdFromPlace(place);
+      await pushLocation(categoryId);
+      console.log('위치기반 알림 요청 전송:', place.place_name, '카테고리:', categoryId);
+    } catch (error) {
+      console.error('위치기반 알림 전송 실패:', error);
+      // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
+    }
+  }, []);
+
   // UserGifticon을 SharedGifticon으로 변환
   const gifticons: SharedGifticon[] = useMemo(() => {
     const converted = userGifticons.map(convertToSharedGifticon);
-    console.log('Converted gifticons:', converted.map(g => ({ 
-      gifticonId: g.gifticonId, 
-      label: g.label, 
-      imageUrl: g.imageUrl 
-    })));
     return converted;
   }, [userGifticons]);
 
@@ -167,8 +224,6 @@ export default function PaymentScreen() {
     queryKey: ['allCardBenefits', cards.map(card => card.userCardId)],
     queryFn: async () => {
       if (!cards || cards.length === 0) return [];
-      
-      console.log('Fetching benefits for all cards:', cards.map(c => c.cardName));
       
       const benefitsPromises = cards.map(card => 
         fetchCardBenefits(card.userCardId).catch(error => {
@@ -197,7 +252,6 @@ export default function PaymentScreen() {
   // 카드 혜택 정보를 간단한 형태로 변환
   const benefits = useMemo(() => {
     if (!cardBenefitsData?.benefits) {
-      console.log('No benefits data available');
       return [];
     }
     
@@ -302,9 +356,13 @@ export default function PaymentScreen() {
       nearbyPlaces &&
       nearbyPlaces.length > 0
     ) {
-      setSelectedPlace(nearbyPlaces[0]);
+      const firstPlace = nearbyPlaces[0];
+      setSelectedPlace(firstPlace);
+      
+      // 첫 번째 장소의 카테고리 ID를 서버로 전송
+      sendLocationToServer(firstPlace);
     }
-  }, [hasNearby, selectedPlace, nearbyPlaces]);
+  }, [hasNearby, selectedPlace, nearbyPlaces, sendLocationToServer]);
 
   // 현재 선택된 가맹점의 혜택 찾기
   const matchedBenefits = useMemo(() => {
@@ -383,7 +441,7 @@ export default function PaymentScreen() {
 
       // 같은 카테고리에서 더 높은 혜택률을 가진 다른 가게 찾기
       let betterBenefitInfo = null;
-      if (currentPlaceMaxDiscount > 0 && allCardBenefitsQuery.data) {
+      if (allCardBenefitsQuery.data) {
         // 현재 장소의 카테고리 정보 가져오기
         const getCategoryFromPlace = (place: KakaoPlace): string => {
           if (place.category_group_name) {
@@ -426,7 +484,10 @@ export default function PaymentScreen() {
           if (otherPlace.place_name === place.place_name) continue;
           
           const otherCategory = getCategoryFromPlace(otherPlace);
-          if (otherCategory !== currentCategory) continue;
+          
+          if (otherCategory !== currentCategory) {
+            continue;
+          }
           
           // 다른 장소의 혜택 찾기
           let otherPlaceBenefits: any[] = [];
@@ -445,6 +506,13 @@ export default function PaymentScreen() {
             : 0;
           
           if (otherPlaceMaxDiscount > currentPlaceMaxDiscount) {
+            betterBenefitInfo = {
+              placeName: otherPlace.place_name,
+              discountRate: otherPlaceMaxDiscount,
+              currentDiscountRate: currentPlaceMaxDiscount,
+            };
+            break; // 첫 번째로 찾은 더 나은 혜택만 표시
+          } else if (currentPlaceMaxDiscount === 0 && otherPlaceMaxDiscount > 0) {
             betterBenefitInfo = {
               placeName: otherPlace.place_name,
               discountRate: otherPlaceMaxDiscount,
@@ -481,10 +549,7 @@ export default function PaymentScreen() {
   // 해당 장소에서 혜택이 가장 큰 카드 찾기
   const findBestCardForPlace = useCallback(
     (place: KakaoPlace) => {
-      
-
       if (!allCardBenefitsQuery.data || allCardBenefitsQuery.data.length === 0) {
-        console.log('No card benefits data available');
         return -1;
       }
 
@@ -493,27 +558,21 @@ export default function PaymentScreen() {
 
       // 모든 카드의 혜택을 확인하여 가장 높은 할인율을 가진 카드 찾기
       for (const cardData of allCardBenefitsQuery.data) {
-        console.log(`Checking card: ${cardData.cardName}`);
-
         // 해당 장소와 매칭되는 혜택 찾기
         const matchingBenefits = cardData.benefits.filter(benefit => 
           benefit.franchiseName && 
           isPlaceMatchingBenefit(place.place_name, benefit.franchiseName)
         );
 
-        console.log(`Card ${cardData.cardName} matching benefits:`, matchingBenefits);
-
         // 가장 높은 할인율 찾기
         for (const benefit of matchingBenefits) {
           if (benefit.discountRate > maxDiscountRate) {
             maxDiscountRate = benefit.discountRate;
             bestCardIndex = cardData.cardIndex;
-          
           }
         }
       }
 
-      console.log('Best card index:', bestCardIndex, 'Max discount rate:', maxDiscountRate);
       return bestCardIndex;
     },
     [allCardBenefitsQuery.data]
@@ -526,36 +585,35 @@ export default function PaymentScreen() {
       // 캐시 무효화 후 새로 로드
       invalidateNearbyCache();
       await refetchNearbyPlaces();
+      
+      // 현재 선택된 장소가 있으면 카테고리 ID를 다시 전송
+      if (selectedPlace) {
+        sendLocationToServer(selectedPlace);
+      }
     } catch (error) {
     } finally {
       setRefreshing(false);
     }
-  }, [invalidateNearbyCache, refetchNearbyPlaces]);
+  }, [invalidateNearbyCache, refetchNearbyPlaces, selectedPlace, sendLocationToServer]);
 
   // 위치 선택 핸들러 - 해당 장소에서 혜택이 가장 큰 카드로 자동 전환
   const handlePlaceSelect = (place: KakaoPlace) => {
-    console.log('handlePlaceSelect called with place:', place.place_name);
-    console.log('All card benefits loading state:', allCardBenefitsQuery.isLoading);
-    console.log('All card benefits data:', allCardBenefitsQuery.data);
-    
     setSelectedPlace(place);
     bottomSheetRef.current?.close();
 
+    // 선택된 장소의 카테고리 ID를 서버로 전송
+    sendLocationToServer(place);
+
     // 모든 카드의 혜택 데이터가 로드되지 않았으면 현재 카드 유지
     if (allCardBenefitsQuery.isLoading || !allCardBenefitsQuery.data) {
-      console.log('All card benefits not loaded yet, keeping current card');
       return;
     }
 
     // 해당 장소에서 혜택이 가장 큰 카드 찾기
     const bestCardIndex = findBestCardForPlace(place);
     
-    
     if (bestCardIndex !== -1) {
-    
       setActiveCardIndex(bestCardIndex);
-    } else {
-      console.log('No matching card found, keeping current index:', activeCardIndex);
     }
   };
 
@@ -631,10 +689,21 @@ export default function PaymentScreen() {
                   {currentPlaceBetterBenefit.placeName}
                 </Text>
                 에서{" "}
-                <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
-                  {currentPlaceBetterBenefit.discountRate - currentPlaceBetterBenefit.currentDiscountRate}%
-                </Text>
-                {" "}더 많은 혜택!
+                {currentPlaceBetterBenefit.currentDiscountRate > 0 ? (
+                  <>
+                    <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                      {currentPlaceBetterBenefit.discountRate - currentPlaceBetterBenefit.currentDiscountRate}%
+                    </Text>
+                    {" "}더 많은 혜택!
+                  </>
+                ) : (
+                  <>
+                    <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                      {currentPlaceBetterBenefit.discountRate}%
+                    </Text>
+                    {" "}혜택 받기!
+                  </>
+                )}
               </Text>
             </TouchableOpacity>
           </View>
@@ -716,7 +785,7 @@ export default function PaymentScreen() {
 
   // 기프티콘 에러가 있는 경우 (카드는 있지만 기프티콘만 에러)
   if (gifticonsError) {
-    console.warn("기프티콘 로딩 실패:", gifticonsError);
+    // 기프티콘 로딩 실패 시 조용히 처리
   }
 
   return (

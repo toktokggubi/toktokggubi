@@ -19,18 +19,17 @@ public class FranchiseService {
     private final FranchiseRepository franchiseRepository;
 
     /**
-     * @param q    부분 검색 (merchantName LIKE %q%), null 허용
-     * @param sort name (기본 name ASC)
+     * @param q    부분 검색 (franchiseName LIKE %q%), null 허용
      */
-    public FranchiseListResponse list(String q, String sort) {
-        Sort s = Sort.by(Sort.Direction.ASC, "merchantName");
+    public FranchiseListResponse list(String q) {
+        Sort s = Sort.by(Sort.Direction.ASC, "franchiseName");
         List<Franchise> rows = (q == null || q.isBlank())
                 ? franchiseRepository.findAll(s)
-                : franchiseRepository.findByMerchantNameContaining(q, s);
+                : franchiseRepository.findByFranchiseNameContaining(q, s);
 
         var items = rows.stream()
                 .map(f -> new FranchiseItemResponse(
-                        f.getFranchiseId(), f.getMerchantName(), f.getImageUrl()))
+                        f.getFranchiseId(), f.getFranchiseName(), f.getImageUrl()))
                 .toList();
 
         return new FranchiseListResponse(items);

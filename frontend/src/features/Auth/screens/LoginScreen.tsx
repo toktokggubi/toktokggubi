@@ -1,10 +1,12 @@
-import { useRouter } from "expo-router";
-import React, { useState, useEffect } from "react";
-import { SafeAreaView, Alert } from "react-native";
-import LoginTemplate from "~features/Auth/templates/LoginTemplate";
-import { useEmailLogin, useKakaoLogin } from "../model/useAuthQueries";
-import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
+import KakaoAuthService from "@/shared/services/kakaoAuthService";
 import { hasValidToken } from "@/shared/utils/currency";
+import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
+import { useEffect, useState } from "react";
+import { Alert, SafeAreaView } from "react-native";
+import LoginTemplate from "~features/Auth/templates/LoginTemplate";
+import { useBudgetStatusQuery } from "~features/Budget/model/useBudgetStatusQuery";
+import { useEmailLogin } from "../model/useAuthQueries";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -14,7 +16,6 @@ export default function LoginScreen() {
   const [isCheckingToken, setIsCheckingToken] = useState(true);
 
   const emailLoginMutation = useEmailLogin();
-  const kakaoLoginMutation = useKakaoLogin();
   const budgetStatusQuery = useBudgetStatusQuery();
 
   // 토큰 확인 및 자동 리다이렉트
@@ -77,13 +78,40 @@ export default function LoginScreen() {
   // 카카오 로그인 처리
   const handleKakaoLogin = async () => {
     try {
-      // TODO: 카카오 로그인 SDK 연동
-      // const kakaoAccessToken = await getKakaoAccessToken();
-      // await kakaoLoginMutation.mutateAsync(kakaoAccessToken);
-      
-      Alert.alert("알림", "카카오 로그인은 준비 중입니다.");
+      // 카카오 로그인 서비스 인스턴스 가져오기
+      const kakaoAuthService = KakaoAuthService.getInstance();
+      const res = await kakaoAuthService.login();
+      if (res.status === "active") {
+        // access token 저장
+        await SecureStore.setItemAsync("access_token", res.accessToken);
+        if (res.refreshToken) {
+          await SecureStore.setItemAsync("refresh_token", res.refreshToken);
+        }
+        // 이후 예산 상태 확인 후 라우팅
+        try {
+          await budgetStatusQuery.refetch();
+          router.replace("/(tabs)/home");
+        } catch (e: any) {
+          if (e?.message === "BUDGET_NOT_SET" || e?.message === "BUDGET_NOT_FOUND") {
+            router.replace("/budget");
+          } else {
+            router.replace("/(tabs)/home");
+          }
+        }
+      } else {
+        // needs-profile: 회원가입 추가 정보 화면으로
+        // 서버가 준 signupToken은 딥링크 쿼리에 있으므로, 이후 /auth/signup/complete 호출 전까지 임시 저장
+        await SecureStore.setItemAsync("signup_token", res.signupToken);
+        // 프로필 작성 화면으로 이동
+        router.push("/auth/personalinfo");
+      }
     } catch (error: any) {
-      Alert.alert("로그인 실패", "카카오 로그인 중 오류가 발생했습니다.");
+      console.error("카카오 로그인 오류:", error);
+      if (error?.message === "사용자가 로그인을 취소했습니다.") return;
+      Alert.alert(
+        "로그인 실패",
+        error?.response?.data?.message || error.message || "카카오 로그인 중 오류가 발생했습니다."
+      );
     }
   };
 
@@ -100,6 +128,7 @@ export default function LoginScreen() {
       </SafeAreaView>
     );
   }
+  
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -116,8 +145,8 @@ export default function LoginScreen() {
         onPressKakao={handleKakaoLogin}
         passwordToggle={passwordVisible}
         onTogglePassword={togglePasswordVisibility}
-        submitting={emailLoginMutation.isPending || kakaoLoginMutation.isPending}
-        disabled={emailLoginMutation.isPending || kakaoLoginMutation.isPending}
+        submitting={emailLoginMutation.isPending}
+        disabled={emailLoginMutation.isPending}
       />
     </SafeAreaView>
   );
