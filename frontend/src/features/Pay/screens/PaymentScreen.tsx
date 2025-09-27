@@ -971,7 +971,7 @@ export default function PaymentScreen() {
             )}
             
             {/* 카드가 없을 때의 UI */}
-            <View style={{ alignItems: "center", marginTop: 80 }}>
+            <View style={{ alignItems: "center", marginTop: 88 }}>
               {/* 캐릭터 이미지 */}
               <Image 
                 source={require("@/assets/images/character/big-character-06.png")}
