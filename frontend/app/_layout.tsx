@@ -154,6 +154,7 @@ export default function RootLayout() {
                 <Stack.Screen name="cards" options={{ headerShown: false }} />
                 <Stack.Screen name="gifticons" options={{ headerShown: false }} />
                 <Stack.Screen name="notification" options={{ headerShown: false }} />
+                <Stack.Screen name="molbbang" options={{ headerShown: false }} />
                 <Stack.Screen name="+not-found" />
               </Stack>
             </NotificationHandler>
