@@ -32,9 +32,7 @@ export default function BudgetEditTemplate({
   onPressCancel,
   onPressSave,
   saveDisabled = false,
-  mode = 'edit',
   saveButtonText = '수정 완료',
-  aiRecommendations,
 }: BudgetEditTemplateProps) {
   
   // 합계 유효성 검사
@@ -52,7 +50,7 @@ export default function BudgetEditTemplate({
       {/* 고정 헤더 */}
       <View style={styles.header}>
         <Text style={styles.editText}>
-          {mode === 'ai-setup' ? `${month} 예산 설정` : `${month} 예산 편집`}
+          {month} 예산 편집
         </Text>
         {/* 유효성 검사 결과 표시 */}
         <ValidationSummary errors={validationResult.errors} />
@@ -64,56 +62,11 @@ export default function BudgetEditTemplate({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* AI 추천 배너 */}
-        {mode === 'ai-setup' && (
-          <View style={styles.aiRecommendationBanner}>
-            <View style={styles.aiRecommendationHeader}>
-              <Text style={styles.aiRecommendationTitle}>
-                🤖 AI 예산 추천
-              </Text>
-            </View>
-            <Text style={styles.aiRecommendationText}>
-              이전 달 지출 내역과 예산 달성 등 정보를 활용하여 제안한 이번 달 예산입니다.
-            </Text>
-                <View style={styles.aiRecommendationReasonBox}>
-                  <Text style={styles.aiRecommendationReasonTitle}>
-                    💡 이렇게 예산을 설정한 이유
-                  </Text>
-                  <Text style={styles.aiRecommendationReason}>
-                    {aiRecommendations?.recommendationReason ? (
-                      <>
-                        • 총 예산: {aiRecommendations.recommendationReason.totalBudgetReason}{'\n'}
-                        {aiRecommendations.recommendationReason.categoryReasons.slice(0, 3).map((reason: any, index: number) => (
-                          <Text key={index}>
-                            • {reason.categoryName}: {reason.reason}{'\n'}
-                          </Text>
-                        ))}
-                        {aiRecommendations.recommendationReason.overallInsights.length > 0 && (
-                          <Text>
-                            • {aiRecommendations.recommendationReason.overallInsights[0]}
-                          </Text>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        • 식비: 월 평균 패턴 분석 기반{'\n'}
-                        • 카페/간식: 이용 빈도 고려{'\n'}
-                        • 미사용 카테고리: 0원으로 유연성 확보
-                      </>
-                    )}
-                  </Text>
-                </View>
-            <Text style={styles.aiRecommendationSubText}>
-              필요에 따라 수정해주세요.
-            </Text>
-          </View>
-        )}
         {/* 전체 예산 요약 */}
         <EditableBudgetSummaryRow 
           title={`${month} 예산`} 
           amount={totalBudget}
           onAmountChange={onTotalBudgetChange}
-          mode={mode}
         />
 
         {/* 변동 지출 예산 섹션 */}
@@ -122,7 +75,6 @@ export default function BudgetEditTemplate({
             title="변동 지출 예산"
             amount={variableBudget}
             onAmountChange={onVariableBudgetChange}
-            mode={mode}
           />
           {categoryBudgets
             .sort((a, b) => b.amount - a.amount) // 금액이 많은 순으로 정렬
@@ -142,7 +94,6 @@ export default function BudgetEditTemplate({
           <BudgetSummaryHeaderRow
             title="고정 지출 (예산 포함)"
             amount={fixedIncludedBudget}
-            mode={mode}
           />
           {fixedIncludedExpenses.map((item) => (
             <EditableFixedExpenseRow 
@@ -168,7 +119,6 @@ export default function BudgetEditTemplate({
           <BudgetSummaryHeaderRow
             title="고정 지출 (예산 미포함)"
             amount={fixedExcludedBudget}
-            mode={mode}
           />
           {fixedExcludedExpenses.map((item) => (
             <EditableFixedExpenseRow 
@@ -230,71 +180,6 @@ const styles = StyleSheet.create({
   },
   editText: {
     ...textStyles.h3,
-  },
-  aiRecommendationBanner: {
-    backgroundColor: "#FFFFFF",
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.xl,
-    marginTop: spacing.md,
-    marginBottom: spacing.lg,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  aiRecommendationHeader: {
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  aiRecommendationTitle: {
-    ...textStyles.body,
-    color: colors.BLUE_NORMAL,
-    fontWeight: '700',
-    fontSize: 18,
-    ...font.bold,
-  },
-  aiRecommendationText: {
-    ...textStyles.body,
-    color: "#374151",
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: spacing.md,
-  },
-  aiRecommendationReasonBox: {
-    backgroundColor: "#F8FAFC",
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.md,
-    borderLeftWidth: 3,
-    borderLeftColor: colors.BLUE_NORMAL,
-  },
-  aiRecommendationReasonTitle: {
-    ...textStyles.caption,
-    color: colors.BLUE_NORMAL,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
-    ...font.bold,
-  },
-  aiRecommendationReason: {
-    ...textStyles.caption,
-    color: "#4B5563",
-    lineHeight: 18,
-    fontSize: 13,
-  },
-  aiRecommendationSubText: {
-    ...textStyles.caption,
-    color: "#6B7280",
-    textAlign: 'center',
-    fontSize: 12,
-    fontStyle: 'italic',
   },
   scrollContainer: {
     flex: 1,

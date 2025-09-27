@@ -24,8 +24,8 @@ export default function StartBugetScreen() {
     try {
       setIsCheckingPreviousBudget(true);
       await fetchPreviousBudget();
-      // 이전 달 예산이 있으면 AIBudgetSetup으로 이동
-      router.replace("/budget/ai-setup");
+      // 이전 달 예산이 있으면 기존 예산 설정 과정으로 이동
+      router.replace("/budget/total");
     } catch (error) {
       // 이전 달 예산이 없으면 Redis 기반 플로우로 이동 (total 페이지부터 시작)
       console.log("이전 달 예산이 없습니다. Redis 기반 플로우로 진행합니다.");

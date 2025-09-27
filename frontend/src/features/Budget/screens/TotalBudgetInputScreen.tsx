@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import TotalBudgetTemplate from "~features/Budget/templates/TotalBudgetTemplate";
 import { useBudgetDraft } from "~features/Budget/context/BudgetDraftContext";
+import { fetchAITotalRecommendation } from "~features/Budget/api/ai-fetchers";
 
 export default function TotalBudgetInputScreen() {
   const [totalAmount, setTotalAmount] = useState(500_000); // 기본값을 500,000으로 설정
+  const [loadingAI, setLoadingAI] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const { 
     saveTotal, 
     isSavingTotal, 
@@ -15,11 +18,33 @@ export default function TotalBudgetInputScreen() {
     loadDraftData 
   } = useBudgetDraft();
 
-  // 이전에 저장된 총예산 데이터가 있으면 불러오기
+  // AI 추천값 가져오기
+  const loadAIRecommendation = async () => {
+    try {
+      setLoadingAI(true);
+      setAiError(null);
+      
+      const aiRecommendation = await fetchAITotalRecommendation();
+      if (aiRecommendation && aiRecommendation.totalAmount > 0) {
+        setTotalAmount(aiRecommendation.totalAmount);
+      }
+    } catch (error) {
+      console.log('AI 추천값 로딩 실패:', error);
+      setAiError('AI 추천값을 불러오는데 실패했습니다. 기본값을 사용합니다.');
+      // AI 실패해도 기본값 그대로 사용
+    } finally {
+      setLoadingAI(false);
+    }
+  };
+
+  // 이전에 저장된 총예산 데이터가 있으면 불러오기, 없으면 AI 추천값 로딩
   useEffect(() => {
     loadDraftData();
     if (contextTotalAmount) {
       setTotalAmount(contextTotalAmount);
+    } else {
+      // 이전 데이터가 없으면 AI 추천값 로딩
+      loadAIRecommendation();
     }
   }, [contextTotalAmount, loadDraftData]);
 
@@ -41,6 +66,9 @@ export default function TotalBudgetInputScreen() {
       onPressPrev={goPrev}
       onPressNext={goNext}
       nextDisabled={totalAmount <= 0 || isSavingTotal}
+      loadingAI={loadingAI}
+      aiError={aiError}
+      onRetryAI={loadAIRecommendation}
     />
   );
 }

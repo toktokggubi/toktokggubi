@@ -298,8 +298,8 @@ export const HomeScreen: React.FC = () => {
       const budgetStatus = await checkBudgetStatus();
 
       if (budgetStatus.totalAmount > 0) {
-        // 이전 달에 예산이 있으면 AI 추천으로 새로운 예산 설정
-        router.push("/budget/ai-setup" as any);
+        // 이전 달에 예산이 있으면 기존 예산 설정 과정으로 이동
+        router.push("/budget/total" as any);
       } else {
         // 이전 달에 예산이 없으면 초기 단계별 프로세스
         router.push("/budget");
@@ -313,8 +313,8 @@ export const HomeScreen: React.FC = () => {
         // 이전 달에 예산이 없음 → 초기 단계별 프로세스
         router.push("/budget");
       } else {
-        // 다른 에러의 경우 AI 추천으로 폴백
-        router.push("/budget/ai-setup" as any);
+        // 다른 에러의 경우 기존 예산 설정 과정으로 폴백
+        router.push("/budget/total" as any);
       }
     }
   };

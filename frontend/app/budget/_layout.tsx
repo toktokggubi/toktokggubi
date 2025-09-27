@@ -6,7 +6,6 @@ export default function BudgetLayout() {
     <BudgetDraftProvider>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="ai-setup" />
         <Stack.Screen name="total" />
         <Stack.Screen name="fixed-expense" />
         <Stack.Screen name="select-category" />
