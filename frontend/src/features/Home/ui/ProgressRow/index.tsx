@@ -19,6 +19,7 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
 }) => {
   const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
   const remainingAmount = totalAmount - currentAmount;
+  const isOverBudget = currentAmount > totalAmount;
 
   const isTotalType = type === "total";
   const label = isTotalType
@@ -67,8 +68,14 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
           </Text>
         </View>
         <View style={styles.rightSection}>
-          <Text style={styles.remainingAmount}>
-            {remainingAmount.toLocaleString("ko-KR")}원 남음
+          <Text style={[
+            styles.remainingAmount,
+            isOverBudget && styles.overBudgetText
+          ]}>
+            {isOverBudget 
+              ? `${Math.abs(remainingAmount).toLocaleString("ko-KR")}원 초과`
+              : `${remainingAmount.toLocaleString("ko-KR")}원 남음`
+            }
           </Text>
           {isTotalType && onEditPress && (
             <TouchableOpacity style={styles.editButton} onPress={onEditPress}>
@@ -167,6 +174,9 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     ...font.medium,
     color: colors.BLUE_DARKER,
+  },
+  overBudgetText: {
+    color: "#000000", // 검정색으로 표시
   },
   progressBarContainer: {
     marginBottom: 12,

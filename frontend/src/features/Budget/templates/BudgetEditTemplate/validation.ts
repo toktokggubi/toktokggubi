@@ -21,30 +21,26 @@ export interface BudgetData {
   categoryBudgets: CategoryBudgetItem[];
 }
 
-// 합계 유효성 검사 함수들
+// 합계 유효성 검사 함수들 (간소화)
 export const validateBudgetSums = (data: BudgetData): ValidationResult => {
   const errors: ValidationError[] = [];
 
-  // 1. 총 예산 = 변동 지출 예산 + 고정 지출 (예산 포함) 검증
-  const expectedTotal = data.variableBudget + data.fixedIncludedBudget;
-  if (Math.abs(data.totalBudget - expectedTotal) > 0) {
-    errors.push({
-      field: 'totalBudget',
-      message: `💰 총 예산이 맞지 않아요! 변동 지출 + 고정 지출 = ${expectedTotal.toLocaleString()}원이어야 해요`
-    });
-  }
-
-  // 2. 카테고리별 예산 합계가 변동 지출 예산을 초과하는지만 검증 (0원 허용)
-  const categoryTotal = data.categoryBudgets.reduce((sum, cat) => sum + cat.amount, 0);
-  if (categoryTotal > data.variableBudget) {
-    const excessAmount = categoryTotal - data.variableBudget;
-    errors.push({
-      field: 'categoryBudgets',
-      message: `⚠️ 카테고리 예산이 변동 지출 예산보다 ${excessAmount.toLocaleString()}원 많아요!`
-    });
-  }
-  // 카테고리 예산이 변동 지출 예산보다 적어도 허용 (0원 카테고리 가능)
-
+  // 개별 카테고리 예산 검증만 수행 (헤더 값들은 자동 계산되므로)
+  data.categoryBudgets.forEach((cat, index) => {
+    if (cat.amount < 0) {
+      errors.push({
+        field: `category_${index}`,
+        message: `💰 ${cat.name} 예산은 0원 이상이어야 해요!`
+      });
+    }
+    if (cat.amount > 10000000) {
+      errors.push({
+        field: `category_${index}`,
+        message: `💰 ${cat.name} 예산이 너무 커요! 최대 1천만원까지 가능해요`
+      });
+    }
+    // 0원은 허용하므로 별도 검증 없음
+  });
 
   return {
     isValid: errors.length === 0,
@@ -58,7 +54,7 @@ export const validateField = (field: string, value: number, data: BudgetData): s
     case 'totalBudget':
       if (value < 0) return '💰 금액은 0원 이상이어야 해요!';
       if (value > 10000000) return '💰 너무 큰 금액이에요! 최대 1천만원까지 가능해요';
-      if (value > 0 && value < 10000) return '💰 최소 1만원 이상 설정해주세요!';
+      // 0원 허용 (카테고리 예산이 모두 0원일 수 있음)
       break;
     
     case 'variableBudget':

@@ -7,6 +7,7 @@ import {
   type CategoryName,
 } from "@/shared/constants/categoryIcons";
 import type { CategoryItem } from "~features/Budget/ui/organisms/CategoryGrid/types";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 // ✅ 초기 선택 없음
 const INITIAL_SELECTED: CategoryName[] = [];
@@ -127,20 +128,27 @@ export default function SelectCategoryScreen() {
   const selectedKeys = selected.map(name => String(getCategoryId(name)));
 
   return (
-    <SelectCategoryTemplate
-      // 헤더
-      title="카테고리 선택"
-      subtitle="예산을 관리할 카테고리를 선택해주세요."
-      // 그리드
-      items={items}
-      selectedKeys={selectedKeys}
-      onToggle={toggle}
-      // 푸터
-      stepIndex={2}
-      stepTotal={5}
-      onPressPrev={goPrev}
-      onPressNext={goNext}
-      nextDisabled={selected.length === 0 || isSavingCategories}
-    />
+    <>
+      <SelectCategoryTemplate
+        // 헤더
+        title="카테고리 선택"
+        subtitle="예산을 관리할 카테고리를 선택해주세요."
+        // 그리드
+        items={items}
+        selectedKeys={selectedKeys}
+        onToggle={toggle}
+        // 푸터
+        stepIndex={2}
+        stepTotal={5}
+        onPressPrev={goPrev}
+        onPressNext={goNext}
+        nextDisabled={selected.length === 0 || isSavingCategories}
+      />
+      
+      <LoadingOverlay
+        visible={isSavingCategories}
+        message="카테고리 저장 중..."
+      />
+    </>
   );
 }

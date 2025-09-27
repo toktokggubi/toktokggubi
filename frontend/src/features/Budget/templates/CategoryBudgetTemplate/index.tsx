@@ -2,7 +2,7 @@ import { colors } from "@/shared/constants/colors";
 import { font } from "@/shared/typography/font";
 import { krw } from "@/shared/utils/currency";
 import React, { useMemo } from "react";
-import { StyleSheet, Text, View, ScrollView, KeyboardAvoidingView, Platform } from "react-native";
+import { StyleSheet, Text, View, ScrollView, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BudgetCopy from "~features/Budget/ui/molecules/BudgetCopy";
 import BudgetWizardFooter from "~features/Budget/ui/organisms/BudgetWizardFooter";
@@ -21,6 +21,7 @@ export default function CategoryBudgetTemplate({
   nextDisabled,
   stepIndex,
   stepTotal,
+  aiRecommendationSuccess = false,
 }: CategoryBudgetTemplateProps) {
   const allocated = useMemo(
     () => items.reduce((sum, it) => sum + (it.amount || 0), 0),
@@ -61,6 +62,18 @@ export default function CategoryBudgetTemplate({
           </Text>
         )}
       </View>
+
+      {/* AI 추천 문구 */}
+      {aiRecommendationSuccess && (
+        <View style={styles.aiRecommendation}>
+          <Image 
+            source={require("@/assets/images/character/stupid.png")} 
+            style={styles.characterImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.aiRecommendationText}>꺼비가 추천해준 카테고리별 예산입니다</Text>
+        </View>
+      )}
 
       {/* 3) 키보드 회피 영역 */}
       <KeyboardAvoidingView 
@@ -162,6 +175,29 @@ const styles = StyleSheet.create({
     color: colors.GRAY_NORMAL,
     textAlign: "center",
     marginBottom: 16,
+  },
+  aiRecommendation: {
+    marginHorizontal: 24,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.BLUE_LIGHT,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.BLUE_NORMAL,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  characterImage: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+  aiRecommendationText: {
+    fontSize: 14,
+    color: colors.BLUE_NORMAL,
+    fontWeight: '500',
+    flex: 1,
   },
   listBox: {
     gap: 12,
