@@ -9,7 +9,6 @@ export const fetchNotifications =
       const response = await http.get("/ai/notification");
       return response.data;
     } catch (error) {
-      console.error("알림 목록 조회 실패:", error);
       // 에러 시 빈 응답 반환
       return {
         readFilter: "all",
@@ -27,9 +26,8 @@ export const markNotificationsAsRead = async (): Promise<{
   try {
     const response = await http.patch("/ai/notification/read");
     return response.data;
-  } catch (error) {
-    console.error("알림 읽음 처리 실패:", error);
-    return { updatedCount: 0 };
+    } catch (error) {
+      return { updatedCount: 0 };
   }
 };
 
@@ -40,8 +38,7 @@ export const deleteNotifications = async (): Promise<{
   try {
     const response = await http.delete("/ai/notification");
     return response.data;
-  } catch (error) {
-    console.error("알림 삭제 실패:", error);
-    return { deleted: 0 };
+    } catch (error) {
+      return { deleted: 0 };
   }
 };

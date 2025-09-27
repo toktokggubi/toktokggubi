@@ -73,29 +73,12 @@ export default function MolbbangResultScreen() {
             setRanking(res.ranking);
             setJackpotUserId(res.jackpotUserId);
           } else {
-            console.warn(
-              "⚠️ [결과 페이지] 랭킹 데이터가 비어있음, 빈 배열로 설정"
-            );
             setRanking([]);
           }
         } else {
-          console.error("❌ [결과 페이지] getResults 실패:", res);
-          console.error(
-            "❌ [결과 페이지] 응답 상세:",
-            JSON.stringify(res, null, 2)
-          );
-
-          // 실패 시에도 빈 랭킹으로 설정하여 UI가 깨지지 않도록 함
           setRanking([]);
         }
       } catch (error) {
-        console.error("❌ [결과 페이지] API 호출 오류:", error);
-        console.error("❌ [결과 페이지] 에러 상세:", {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        });
-
         // 에러 발생 시 빈 랭킹으로 설정
         if (mounted) {
           setRanking([]);

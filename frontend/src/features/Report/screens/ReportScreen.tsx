@@ -48,15 +48,8 @@ export default function ReportScreen() {
       const accessToken = await SecureStore.getItemAsync("access_token");
       const refreshToken = await SecureStore.getItemAsync("refresh_token");
 
-      console.log("토큰 확인:", {
-        accessToken: accessToken ? `${accessToken.substring(0, 20)}...` : null,
-        refreshToken: refreshToken
-          ? `${refreshToken.substring(0, 20)}...`
-          : null,
-      });
 
       if (!accessToken || !refreshToken) {
-        console.log("토큰이 없습니다.");
         setIsTokenValid(false);
         return false;
       }
@@ -64,7 +57,6 @@ export default function ReportScreen() {
       setIsTokenValid(true);
       return true;
     } catch (error) {
-      console.error("토큰 확인 실패:", error);
       setIsTokenValid(false);
       return false;
     }
@@ -77,7 +69,6 @@ export default function ReportScreen() {
     // 토큰 존재 여부 확인
     const hasToken = await validateToken();
     if (!hasToken) {
-      console.log("토큰이 없습니다. 로그인 페이지로 이동합니다.");
       router.replace("/auth/login");
       return;
     }
@@ -145,19 +136,11 @@ export default function ReportScreen() {
       }));
       setExpenseData(chartData);
     } catch (err: any) {
-      console.error("리포트 데이터 조회 실패:", err);
-      console.error("에러 상태 코드:", err?.response?.status);
-      console.error("에러 메시지:", err?.response?.data?.message || err?.message);
-      console.error("에러 응답:", err?.response?.data);
-      console.error("에러 데이터 타입:", typeof err?.response?.data);
-      console.error("에러 데이터 키 개수:", err?.response?.data ? Object.keys(err?.response?.data).length : 0);
-
       // 토큰 갱신 실패로 인한 에러인 경우 로그인 페이지로 이동
       if (
         err?.message === "NO_REFRESH_TOKEN" ||
         err?.message === "NO_ACCESS_FROM_REFRESH"
       ) {
-        console.log("토큰 갱신 실패 - 로그인 페이지로 이동");
         await SecureStore.deleteItemAsync("access_token");
         await SecureStore.deleteItemAsync("refresh_token");
         router.replace("/auth/login");
@@ -186,7 +169,6 @@ export default function ReportScreen() {
         errorMessage.includes("리포트를 생성할 수 없습니다");
       
       if (isDataNotFound) {
-        console.log("이전 달 데이터가 없음 - NoReportScreen 표시");
         setReportData(null); // 리포트 데이터를 null로 설정하여 NoReportScreen이 표시되도록 함
         setError(null); // 에러 상태를 초기화
         return;
@@ -194,7 +176,6 @@ export default function ReportScreen() {
 
       // 일반적인 401 에러 (토큰 문제)는 로그인 페이지로 이동
       if (statusCode === 401) {
-        console.log("인증 에러 - 로그인 페이지로 이동");
         await SecureStore.deleteItemAsync("access_token");
         await SecureStore.deleteItemAsync("refresh_token");
         router.replace("/auth/login");
@@ -375,7 +356,6 @@ export default function ReportScreen() {
       // 토큰 존재 여부 확인
       const hasToken = await validateToken();
       if (!hasToken) {
-        console.log("알림 조회: 토큰이 없습니다.");
         return;
       }
 
@@ -385,7 +365,6 @@ export default function ReportScreen() {
       ).length;
       setUnreadNotificationCount(unreadCount);
     } catch (error: any) {
-      console.error("알림 개수 조회 실패:", error);
       // 401 에러는 http 인터셉터에서 처리됨
     }
   }, [validateToken]);

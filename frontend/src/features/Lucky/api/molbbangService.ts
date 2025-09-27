@@ -144,21 +144,12 @@ async function finishRound(payload?: {
   totals?: Record<string, number>;
 }): Promise<{ ok: boolean; status?: string }> {
   try {
-    console.log("🔍 [API] finishRound 호출 시작");
     const response = await molbbangFetchers.endGame();
-    console.log("🔍 [API] finishRound 응답:", response);
     return {
       ok: response.ok,
       status: response.status,
     };
   } catch (error: any) {
-    console.error("❌ [API] finishRound 오류:", error);
-    console.error("❌ [API] finishRound 오류 상세:", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-    });
     throw error;
   }
 }
@@ -223,7 +214,6 @@ class MolbbangWebSocketManager {
   ) {
     if (this.client?.connected) {
       if (__DEV__) {
-        console.log("WebSocket already connected");
       }
       return;
     }
@@ -262,35 +252,23 @@ class MolbbangWebSocketManager {
       reconnectDelay: 2000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      debug: (str) => debug && console.log("[STOMP]", str), // 몰빵 웹소켓 로그만 유지
+      debug: (str) => debug && false, // 몰빵 웹소켓 로그만 유지
       onConnect: () => {
-        if (__DEV__) {
-          console.log("WebSocket connected");
-        }
+      if (__DEV__) {
+      }
         this.subscribeToRoom();
       },
       onStompError: (frame) => {
-        if (__DEV__) {
-          console.warn("🔍 STOMP error:", {
-            headers: frame.headers,
-            body: frame.body,
-            command: frame.command,
-          });
-        }
+      if (__DEV__) {
+      }
       },
       onWebSocketError: (ev) => {
-        if (__DEV__) {
-          console.warn("🔍 WebSocket error:", {
-            type: ev.type,
-            target: ev.target?.url,
-            readyState: ev.target?.readyState,
-          });
-        }
+      if (__DEV__) {
+      }
       },
       onDisconnect: () => {
-        if (__DEV__) {
-          console.log("WebSocket disconnected");
-        }
+      if (__DEV__) {
+      }
       },
     });
 
@@ -307,15 +285,13 @@ class MolbbangWebSocketManager {
         const convertedRoom = convertRoomViewToMolbbangRoom(roomView);
         this.onRoomUpdateCallback?.(convertedRoom);
         if (this.debug) {
-          console.log("Room update received:", convertedRoom);
         }
       } catch (error) {
-        console.error("Error parsing room update:", error);
+        // Error parsing room update
       }
     });
 
     if (this.debug) {
-      console.log("Subscribed to:", destination);
     }
   }
 
@@ -338,7 +314,6 @@ class MolbbangWebSocketManager {
       body: JSON.stringify({ ready }),
     });
     if (this.debug) {
-      console.log("Sent ready:", ready);
     }
   }
 
@@ -351,7 +326,6 @@ class MolbbangWebSocketManager {
       body: "{}",
     });
     if (this.debug) {
-      console.log("Sent start game");
     }
   }
 
@@ -370,7 +344,6 @@ class MolbbangWebSocketManager {
       body: JSON.stringify({ score }),
     });
     if (this.debug) {
-      console.log("Sent score:", score);
     }
   }
 
@@ -383,7 +356,6 @@ class MolbbangWebSocketManager {
       body: "{}",
     });
     if (this.debug) {
-      console.log("Sent end game");
     }
   }
 

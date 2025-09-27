@@ -36,7 +36,6 @@ export default function IndexScreen() {
           router.replace("/auth/login");
         }
       } catch (error) {
-        console.error("초기 인증 확인 중 오류:", error);
         // 오류 발생 시 로그인 페이지로 이동
         router.replace("/auth/login");
       } finally {
