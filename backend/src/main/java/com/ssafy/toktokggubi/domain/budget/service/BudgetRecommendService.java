@@ -53,46 +53,28 @@ public class BudgetRecommendService {
         Objects.requireNonNull(dto, "dto is null");
         Objects.requireNonNull(dto.totalAmount(), "totalAmount is null");
 
-        // ✅ 비인증 허용: dto.userId 필수
-        Long targetUserId = Objects.requireNonNull(dto.userId(), "userId is required for /ai calls");
-
-
+        Long userId = Objects.requireNonNull(dto.userId(), "userId is required for /ai");
         String budgetYm = ymResolver.nowYm();
         if (budgetYm == null || !budgetYm.matches("\\d{6}")) {
             throw new IllegalStateException("ym 포맷 오류(YYYYMM)");
         }
 
-        // 2) 이미 존재하면: 아무 것도 하지 않음
-        Optional<UserMonthlyBudget> existing = umbRepo.findByUser_UserIdAndBudgetYm(targetUserId, budgetYm);
-        if (existing.isPresent()) {
-            return new BudgetSaveResponseDto(
-                    budgetYm,
-                    existing.get().getUserMonthlyBudgetId(),
-                    0, // fixedExpenseCount
-                    0  // budgetCategoryCount
-            );
-        }
-
-        // 3) UMB 신규 생성 (경합 시 유니크 충돌 → 재조회 후 스킵 응답)
-        User userRef = em.getReference(User.class, targetUserId);
-        UserMonthlyBudget umb;
-        try {
-            umb = umbRepo.save(
-                    UserMonthlyBudget.builder()
-                            .user(userRef)
-                            .budgetYm(budgetYm)
-                            .totalAmount(dto.totalAmount()) // 추천 총예산(고정 포함)
-                            .isActive(true)
-                            .build()
-            );
-        } catch (DataIntegrityViolationException race) {
-            Long umbId = umbRepo.findByUser_UserIdAndBudgetYm(targetUserId, budgetYm)
-                    .map(UserMonthlyBudget::getUserMonthlyBudgetId)
-                    .orElseThrow(() -> race);
+        // ✅ 이미 존재하면 그냥 스킵(예외 없이 정상 응답)
+        if (umbRepo.existsByUser_UserIdAndBudgetYm(userId, budgetYm)) {
+            Long umbId = umbRepo.findByUser_UserIdAndBudgetYm(userId, budgetYm)
+                    .map(UserMonthlyBudget::getUserMonthlyBudgetId).orElse(null);
             return new BudgetSaveResponseDto(budgetYm, umbId, 0, 0);
         }
 
-        // 4) 고정지출 저장 (요청 그대로)
+        // 신규 생성
+        User userRef = em.getReference(User.class, userId);
+        UserMonthlyBudget umb = umbRepo.save(UserMonthlyBudget.builder()
+                .user(userRef)
+                .budgetYm(budgetYm)
+                .totalAmount(dto.totalAmount())
+                .isActive(true)
+                .build());
+
         int feCount = 0;
         if (dto.fixedExpenses() != null && !dto.fixedExpenses().isEmpty()) {
             var feList = dto.fixedExpenses().stream()
@@ -104,65 +86,48 @@ public class BudgetRecommendService {
                             .paymentDay(f.payDay() == null ? null : f.payDay().byteValue())
                             .build())
                     .toList();
-            if (!feList.isEmpty()) {
-                feRepo.saveAll(new ArrayList<>(feList));
-                feCount = feList.size();
-            }
+            feRepo.saveAll(new ArrayList<>(feList));
+            feCount = feList.size();
         }
 
-        // 5) 배분 저장 (요청 내 중복 병합 + USC 업서트, UMB 신규이므로 업데이트 없음)
+        // 중복 방지: 같은 categoryId는 마지막 값만 사용
+        Map<Long, Long> merged = new LinkedHashMap<>();
+        if (dto.categoryAllocations() != null) {
+            dto.categoryAllocations().forEach(a -> merged.put(a.categoryId(), a.finalAmount()));
+        }
+
+        // USC 업서트(예외 삼키지 않음) + 요청 내 중복 방지
+        Map<Long, UserSelectedCategory> uscCache = new HashMap<>();
+        Set<Long> insertedUscIds = new HashSet<>();
         int bcCount = 0;
-        if (dto.categoryAllocations() != null && !dto.categoryAllocations().isEmpty()) {
-            // 같은 categoryId가 여러 번 오면 마지막 값만 반영
-            Map<Long, Long> merged = new LinkedHashMap<>();
-            for (CategoryAllocDto a : dto.categoryAllocations()) {
-                merged.put(a.categoryId(), a.finalAmount());
-            }
 
-            Map<Long, UserSelectedCategory> uscCache = new HashMap<>();
-            Set<Long> insertedUscIds = new HashSet<>();
+        for (Map.Entry<Long, Long> e : merged.entrySet()) {
+            Long cid = e.getKey();
+            Long amt = e.getValue();
 
-            for (Map.Entry<Long, Long> e : merged.entrySet()) {
-                Long cid = e.getKey();
-                Long amount = e.getValue();
+            UserSelectedCategory usc = uscCache.computeIfAbsent(cid, key ->
+                    uscRepo.findByUser_UserIdAndCategory_CategoryId(userId, key)
+                            .orElseGet(() -> {
+                                var categoryRef = em.getReference(Category.class, key);
+                                return uscRepo.save(UserSelectedCategory.builder()
+                                        .user(userRef).category(categoryRef).build());
+                            })
+            );
 
-                // USC 업서트 (userId, categoryId)
-                UserSelectedCategory usc = uscCache.computeIfAbsent(cid, key ->
-                        uscRepo.findByUser_UserIdAndCategory_CategoryId(targetUserId, key)
-                                .orElseGet(() -> {
-                                    try {
-                                        Category categoryRef = em.getReference(Category.class, key);
-                                        return uscRepo.save(UserSelectedCategory.builder()
-                                                .user(userRef)
-                                                .category(categoryRef)
-                                                .build());
-                                    } catch (DataIntegrityViolationException race) {
-                                        return uscRepo.findByUser_UserIdAndCategory_CategoryId(targetUserId, key)
-                                                .orElseThrow(() -> race);
-                                    }
-                                })
-                );
+            // 같은 UMB 내 중복 방지
+            if (!insertedUscIds.add(usc.getUserSelectedCategoryId())) continue;
 
-                // 같은 UMB 내 동일 USC 두 번 방지(요청 중복 대비)
-                if (!insertedUscIds.add(usc.getUserSelectedCategoryId())) continue;
-
-                bcRepo.save(BudgetCategory.builder()
-                        .userMonthlyBudget(umb)
-                        .userSelectedCategory(usc)
-                        .finalAmount(amount)
-                        .build());
-                bcCount++;
-            }
+            bcRepo.save(BudgetCategory.builder()
+                    .userMonthlyBudget(umb)
+                    .userSelectedCategory(usc)
+                    .finalAmount(amt)
+                    .build());
+            bcCount++;
         }
 
-        // 6) 응답
-        return new BudgetSaveResponseDto(
-                budgetYm,
-                umb.getUserMonthlyBudgetId(),
-                feCount,
-                bcCount
-        );
+        return new BudgetSaveResponseDto(budgetYm, umb.getUserMonthlyBudgetId(), feCount, bcCount);
     }
+
     @Transactional
     public BudgetSaveResponseDto saveOrUpdateMonthlyBudget(Long userId, String budgetYm, BudgetAllSaveRequestDto dto) {
         Objects.requireNonNull(userId, "userId is null");
@@ -172,7 +137,7 @@ public class BudgetRecommendService {
 
         User userRef = em.getReference(User.class, userId);
 
-        // ✅ isActive 조건 제거: 존재하면 그걸 '수정', 없으면 '생성'
+        // isActive 조건 제거: 존재하면 그걸 '수정', 없으면 '생성'
         UserMonthlyBudget umb = umbRepo.findByUser_UserIdAndBudgetYm(userId, budgetYm)
                 .orElse(null);
 

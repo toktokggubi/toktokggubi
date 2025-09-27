@@ -5,6 +5,7 @@ import com.ssafy.toktokggubi.domain.budget.dto.BudgetSaveResponseDto;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetRecommendService;
 import com.ssafy.toktokggubi.domain.report.dto.request.*;
 import com.ssafy.toktokggubi.domain.report.dto.response.AiReportInformationResponse;
+import com.ssafy.toktokggubi.domain.report.service.AiBudgetPipelineService;
 import com.ssafy.toktokggubi.domain.report.service.AiReportInformationService;
 import com.ssafy.toktokggubi.domain.report.service.AiUserReportService;
 import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
@@ -39,7 +40,7 @@ public class AiReportInformationController {
     private final AiUserReportService aiUserReportService;
     private final UserProfileService userProfileService;
     private final BudgetRecommendService recommendService;
-
+private final AiBudgetPipelineService pipeline;
     /**
      * AI 월간 리포트 정보를 조회합니다.
      * 예산 설정 및 실제 지출 내역을 포함한 월간 리포트 데이터를 반환합니다.
@@ -112,11 +113,12 @@ public class AiReportInformationController {
     }
 
 
-    @PostMapping("/recommend")
-    public BudgetSaveResponseDto  recommend(@RequestBody @Valid AiBudgetAllSaveRequestDto dto) {
 
-        String ym = ymResolver.nowYm();
-        return recommendService.saveRecommendedBudget(dto);
+    public BudgetSaveResponseDto recommend(@RequestBody @Valid AiReportInformationRequest request) {
+        return pipeline.recommendFromInfoAndSave(request);
     }
 
-}
+    }
+
+
+

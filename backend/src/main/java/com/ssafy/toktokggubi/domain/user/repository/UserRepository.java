@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;     // ← 추가
 import org.springframework.data.repository.query.Param; // ← 추가
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -25,4 +26,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
         where umb.user.userId = :userId and umb.budgetYm = :ym
     """)
     void deleteUmb(@Param("userId") Long userId, @Param("ym") String ym);
+
+    @Query("select u.userId from User u")
+    List<Long> findAllUserIds();
+
+    @Query("select u.nickname from User u where u.userId = :userId")
+    String findNicknameByUserId(Long userId);
 }
