@@ -107,7 +107,7 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
     try {
       // 링크에 따른 네비게이션 처리
       if (link.includes('budget')) {
-        router.push('/budget');
+        router.push('/(tabs)/home');
       } else if (link.includes('home')) {
         router.push('/(tabs)/home');
       } else if (link.includes('lucky')) {

@@ -32,26 +32,52 @@ const getNotificationIcon = (type: NotificationType) => {
 };
 
 const formatDate = (dateString: string) => {
-  // 서버에서 받은 시간은 이미 KST로 저장되어 있음
-  // 시간대 정보가 없는 경우 로컬 시간대로 해석하도록 함
-  const serverDate = new Date(dateString);
-  const now = new Date();
+  // 서버에서 받은 시간은 한국 시간(KST)으로 저장되어 있음
+  // 명시적으로 한국 시간대로 해석하여 정확한 시간 차이 계산
   
-  // 시간 차이 계산
-  const diffInMs = now.getTime() - serverDate.getTime();
-  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
-
-  if (diffInHours < 1) {
-    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
-    if (diffInMinutes < 1) {
+  let serverDate: Date;
+  
+  try {
+    // 시간대 정보가 포함된 경우 (예: "2024-01-01T12:00:00+09:00")
+    if (dateString.includes('+') || dateString.includes('Z')) {
+      serverDate = new Date(dateString);
+    } else {
+      // 시간대 정보가 없는 경우 한국 시간으로 해석
+      // 예: "2024-01-01 12:00:00" -> "2024-01-01T12:00:00+09:00"
+      const kstDateString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+      serverDate = new Date(kstDateString + '+09:00');
+    }
+    
+    // 현재 시간도 한국 시간으로 계산
+    const now = new Date();
+    const kstOffset = 9 * 60; // 한국 시간대 오프셋 (분 단위)
+    const nowKST = new Date(now.getTime() + (now.getTimezoneOffset() + kstOffset) * 60000);
+    
+    // 시간 차이 계산 (밀리초 단위)
+    const diffInMs = nowKST.getTime() - serverDate.getTime();
+    
+    // 음수인 경우 (미래 시간) 방금 전으로 처리
+    if (diffInMs < 0) {
       return "방금 전";
     }
-    return `${diffInMinutes}분 전`;
-  } else if (diffInHours < 24) {
-    return `${diffInHours}시간 전`;
-  } else {
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}일 전`;
+    
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+      if (diffInMinutes < 1) {
+        return "방금 전";
+      }
+      return `${diffInMinutes}분 전`;
+    } else if (diffInHours < 24) {
+      return `${diffInHours}시간 전`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays}일 전`;
+    }
+  } catch (error) {
+    console.error('시간 파싱 오류:', error);
+    return "시간 오류";
   }
 };
 
