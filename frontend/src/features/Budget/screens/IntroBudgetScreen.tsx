@@ -28,7 +28,7 @@ export default function StartBugetScreen() {
       router.replace("/budget/total");
     } catch (error) {
       // 이전 달 예산이 없으면 Redis 기반 플로우로 이동 (total 페이지부터 시작)
-      console.log("이전 달 예산이 없습니다. Redis 기반 플로우로 진행합니다.");
+      // 이전 달 예산이 없습니다. Redis 기반 플로우로 진행합니다.
       // 여기서는 그대로 두고 사용자가 버튼을 눌렀을 때 이동하도록 함
     } finally {
       setIsCheckingPreviousBudget(false);

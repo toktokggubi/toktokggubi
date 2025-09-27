@@ -32,7 +32,7 @@ export default function TotalBudgetInputScreen() {
         setAiRecommendationSuccess(true);
       }
     } catch (error) {
-      console.log('AI 추천값 로딩 실패:', error);
+      // AI 추천값 로딩 실패
       setAiError('AI 추천값을 불러오는데 실패했습니다. 기본값을 사용합니다.');
       setAiRecommendationSuccess(false);
       // AI 실패해도 기본값 그대로 사용

@@ -22,6 +22,7 @@ import {
   HomeData,
   Transaction,
 } from "../templates/HomeTemplate/types";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 // 헬퍼 함수들
 const getCategoryNameById = (categoryId: number): Category => {
@@ -339,7 +340,7 @@ export const HomeScreen: React.FC = () => {
       ).length;
       setUnreadNotificationCount(unreadCount);
     } catch (error) {
-      console.error("알림 개수 조회 실패:", error);
+      // 알림 개수 조회 실패 시 무시
     }
   }, []);
 
@@ -390,6 +391,11 @@ export const HomeScreen: React.FC = () => {
         onRetry={loadHomeData}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+      />
+      
+      <LoadingOverlay
+        visible={loading && !refreshing}
+        message="홈 데이터를 불러오고 있어요..."
       />
     </View>
   );

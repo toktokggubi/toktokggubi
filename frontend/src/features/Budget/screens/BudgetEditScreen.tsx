@@ -352,14 +352,12 @@ export default function BudgetEditScreen() {
 
       // 5. API 호출
       const response = await saveAllBudget(saveRequest);
-      
-      console.log('예산 저장 성공:', response);
 
       // 6. Homepage로 이동하면서 새로고침 (replace 사용으로 뒤로가기 방지)
       router.replace('/(tabs)/home' as any);
       
     } catch (err) {
-      console.error('예산 저장 실패:', err);
+      // 예산 저장 실패
       setError(err instanceof Error ? err.message : '예산 저장에 실패했습니다.');
     } finally {
       setSaving(false);
