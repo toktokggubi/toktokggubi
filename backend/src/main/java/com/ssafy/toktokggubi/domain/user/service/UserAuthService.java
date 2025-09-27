@@ -77,7 +77,7 @@ public class UserAuthService {
                 .ageGroup(req.ageGroup())
                 .jobTitle(req.jobTitle())
                 .monthlyIncome(req.monthlyIncome())
-                .status(com.ssafy.toktokggubi.domain.user.entity.UserStatus.ACTIVE)
+                .status(UserStatus.ACTIVE)
                 .build());
         return issueTokens(userId);
     }

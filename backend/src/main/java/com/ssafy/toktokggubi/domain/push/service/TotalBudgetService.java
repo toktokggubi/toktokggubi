@@ -135,7 +135,7 @@ public class TotalBudgetService {
                 "finalAmount", totalBudget,
                 "percent", percent
         ));
-        notificationRepo.insertLog(userId, typeKey, title, body, payloadJson);
+        notificationRepo.insertLog(userId, typeKey, title, body, payloadJson, LocalDateTime.now(KST));
 
         return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, true);
     }
