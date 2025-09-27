@@ -60,19 +60,10 @@ export default function MolbbangResultScreen() {
     let mounted = true;
     (async () => {
       try {
-        console.log("🔍 [결과 페이지] API 호출 시작, code:", code);
-
         // 게임이 이미 종료되었으므로 바로 결과 조회
-        console.log("🔍 [결과 페이지] getResults 호출 시작");
         const res = await molbbangApi.getResults();
-        console.log("🔍 [결과 페이지] getResults 응답:", res);
-        console.log("🔍 [결과 페이지] getResults 응답 타입:", typeof res);
-        console.log("🔍 [결과 페이지] getResults ok:", res.ok);
-        console.log("🔍 [결과 페이지] getResults ranking:", res.ranking);
 
         if (mounted && res.ok) {
-          console.log("🔍 [결과 페이지] 랭킹 데이터 설정:", res.ranking);
-
           // 랭킹 데이터가 비어있거나 유효하지 않은 경우 처리
           if (
             res.ranking &&
@@ -82,29 +73,12 @@ export default function MolbbangResultScreen() {
             setRanking(res.ranking);
             setJackpotUserId(res.jackpotUserId);
           } else {
-            console.warn(
-              "⚠️ [결과 페이지] 랭킹 데이터가 비어있음, 빈 배열로 설정"
-            );
             setRanking([]);
           }
         } else {
-          console.error("❌ [결과 페이지] getResults 실패:", res);
-          console.error(
-            "❌ [결과 페이지] 응답 상세:",
-            JSON.stringify(res, null, 2)
-          );
-
-          // 실패 시에도 빈 랭킹으로 설정하여 UI가 깨지지 않도록 함
           setRanking([]);
         }
       } catch (error) {
-        console.error("❌ [결과 페이지] API 호출 오류:", error);
-        console.error("❌ [결과 페이지] 에러 상세:", {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        });
-
         // 에러 발생 시 빈 랭킹으로 설정
         if (mounted) {
           setRanking([]);
@@ -146,9 +120,6 @@ export default function MolbbangResultScreen() {
   };
 
   // 랭킹 데이터 로딩 상태 확인
-  console.log("🔍 [결과 페이지] 현재 랭킹 데이터:", ranking);
-  console.log("🔍 [결과 페이지] 내 순위:", myRank);
-  console.log("🔍 [결과 페이지] 잭팟 닉네임:", jackpotNick);
 
   return (
     <ResultTemplate

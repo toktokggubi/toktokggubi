@@ -71,14 +71,9 @@ function GifticonCardImpl({
           cachePolicy="disk"
           placeholder={require("@/assets/images/character/character-01.png")}
           onError={(e) => {
-            console.log("❌ Expo Image Error:", {
-              url: imageUrl,
-              error: e,
-            });
             handleImageError(imageUrl, e);
           }}
           onLoad={() => {
-        
             handleImageLoad(imageUrl);
           }}
         />

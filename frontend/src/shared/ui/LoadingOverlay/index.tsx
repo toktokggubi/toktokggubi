@@ -1,12 +1,10 @@
 // src/shared/ui/LoadingOverlay/LoadingOverlay.tsx
 import React from "react";
 import { Modal, View, Text } from "react-native";
-import { colors } from "@/shared/constants/colors";
-import { font } from "@/shared/typography/font";
+import { Image } from "expo-image";
 import { s } from "./variants";
-import LottieView from "lottie-react-native";
 
-const LoadingLottie = require("@/assets/icon/loading.json");
+const DanceGif = require("@/assets/images/illustration/dance.gif");
 
 interface LoadingOverlayProps {
   visible: boolean;
@@ -29,13 +27,7 @@ export default function LoadingOverlay({
       <View style={[s.overlay, transparent && s.overlayTransparent]}>
         <View style={s.container}>
           {/* 로딩 애니메이션 */}
-          <LottieView
-            source={LoadingLottie}
-            style={s.lottieIcon}
-            autoPlay
-            loop
-            speed={1}
-          />
+          <Image source={DanceGif} style={s.gifIcon} contentFit="contain" />
 
           {/* 로딩 메시지 */}
           <Text style={s.message}>{message}</Text>

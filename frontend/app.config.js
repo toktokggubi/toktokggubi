@@ -8,6 +8,11 @@ module.exports = {
     scheme: "frontend",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
+    splash: {
+      image: "./assets/images/favicon.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff",
+    },
     developmentClient: {
       silentLaunch: true,
     },

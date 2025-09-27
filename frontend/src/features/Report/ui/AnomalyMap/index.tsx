@@ -42,7 +42,6 @@ export const AnomalyMap: React.FC<AnomalyMapProps> = ({
       
       setGeocodedLocation(result);
     } catch (error) {
-      console.error('지오코딩 실패:', error);
       // 실패 시 기본 좌표 사용
       setGeocodedLocation({
         latitude: 36.3508, // 삼성화재 유성연수원

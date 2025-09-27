@@ -23,11 +23,13 @@ export const PaymentDetailsSlider: React.FC<PaymentDetailsSliderProps> = ({
     <View style={styles.paymentDetailItem}>
       <View style={styles.paymentDetailLeft}>
         <Text style={styles.storeName}>{item.store}</Text>
-        <Text style={styles.paymentInfo}>{item.category}</Text>
+        <Text style={styles.categoryName}>{item.category}</Text>
       </View>
-      <Text style={styles.paymentAmount}>
-        {item.amount.toLocaleString()}원
-      </Text>
+      <View style={styles.paymentDetailRight}>
+        <Text style={styles.paymentAmount}>
+          {item.amount.toLocaleString()}원
+        </Text>
+      </View>
     </View>
   );
 
@@ -110,13 +112,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.BLUE_NORMAL,
   },
   daySection: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
   },
   dayTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: colors.GRAY_DARKER,
+    color: "#FFFFFF",
+    backgroundColor: colors.BLUE_NORMAL,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
     marginBottom: 12,
+    textAlign: "center",
     ...font.bold,
   },
   paymentDetailsList: {
@@ -126,30 +133,29 @@ const styles = StyleSheet.create({
   },
   paymentDetailItem: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   paymentDetailLeft: {
     flex: 1,
+    marginRight: 12,
   },
   storeName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
-    color: colors.GRAY_DARKER,
-    marginBottom: 2,
-    ...font.medium,
+    color: "#111827",
+    marginBottom: 4,
   },
-  paymentInfo: {
-    fontSize: 12,
-    color: colors.GRAY_NORMAL,
-    ...font.regular,
+  categoryName: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  paymentDetailRight: {
+    alignItems: "flex-end",
   },
   paymentAmount: {
     fontSize: 14,
-    fontWeight: "600",
-    color: colors.GRAY_DARKER,
-    ...font.bold,
+    color: "#6B7280",
   },
   separator: {
     height: 1,

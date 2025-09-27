@@ -106,7 +106,6 @@ export default function LoginScreen() {
         router.push("/auth/personalinfo");
       }
     } catch (error: any) {
-      console.error("카카오 로그인 오류:", error);
       if (error?.message === "사용자가 로그인을 취소했습니다.") return;
       Alert.alert(
         "로그인 실패",

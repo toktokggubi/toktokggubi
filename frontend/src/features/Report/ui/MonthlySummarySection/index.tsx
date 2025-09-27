@@ -60,14 +60,6 @@ export const MonthlySummarySection: React.FC<MonthlySummarySectionProps> = ({
         ))}
       </View>
 
-      {/* 하단 장식 */}
-      <View style={styles.footer}>
-        <View style={styles.footerDots}>
-          <View style={[styles.dot, styles.dot1]} />
-          <View style={[styles.dot, styles.dot2]} />
-          <View style={[styles.dot, styles.dot3]} />
-        </View>
-      </View>
     </View>
   );
 };
@@ -108,30 +100,5 @@ const styles = StyleSheet.create({
     color: colors.GRAY_DARKER,
     marginBottom: 12,
     ...font.regular,
-  },
-  footer: {
-    alignItems: "center",
-  },
-  footerDots: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    marginHorizontal: 3,
-  },
-  dot1: {
-    backgroundColor: colors.BLUE_NORMAL,
-    opacity: 0.6,
-  },
-  dot2: {
-    backgroundColor: colors.BLUE_NORMAL,
-    opacity: 0.4,
-  },
-  dot3: {
-    backgroundColor: colors.BLUE_NORMAL,
-    opacity: 0.2,
   },
 });

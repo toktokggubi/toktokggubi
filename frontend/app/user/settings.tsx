@@ -65,7 +65,6 @@ export default function SettingsScreen() {
       
       setSettings(sections);
     } catch (error) {
-      console.error('설정 로드 실패:', error);
       Alert.alert('오류', '설정을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -86,7 +85,6 @@ export default function SettingsScreen() {
         Alert.alert('오류', '설정 변경에 실패했습니다.');
       }
     } catch (error) {
-      console.error('설정 변경 실패:', error);
       Alert.alert('오류', '설정 변경 중 오류가 발생했습니다.');
     }
   };
