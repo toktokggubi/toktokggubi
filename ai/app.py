@@ -68,8 +68,14 @@ if LLM_PROVIDER == "huggingface-local":
     if TRANSFORMERS_AVAILABLE and LLM_MODEL_NAME:
         logger.info(f"Attempting to load local Hugging Face model '{LLM_MODEL_NAME}'. This may take a while...")
         try:
-            # device = "cuda" if torch.cuda.is_available() else "cpu"
-            device = "cpu"
+            if sys.platform == "win32":
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+            elif sys.platform == "darwin":
+                device = "mps" if torch.backends.mps.is_available() else "cpu"
+            else:
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+
+            print(f"Using device: {device}")
             local_hf_tokenizer = AutoTokenizer.from_pretrained(LLM_MODEL_NAME)
             # Set pad token if it's not set. This is crucial for models where pad_token is not configured.
             # It helps in batching and avoids warnings when pad_token_id is the same as eos_token_id.
@@ -223,90 +229,6 @@ NON_EXPENSE_CATEGORIES = [
     '자동차'        # Car
 ]
 
-# HTML template for displaying results
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Autoencoder Anomaly Detection</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .results { margin-top: 20px; }
-        .plot { margin: 30px 0; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Autoencoder Anomaly Detection Results</h1>
-        {% if error %}
-            <div style="color: red;">{{ error }}</div>
-        {% else %}
-            <div class="results">
-                <h2>Statistics</h2>
-                <p>Total transactions analyzed: {{ stats.total_transactions }}</p>
-                <p>Number of anomalies detected: {{ stats.anomaly_count }} ({{ (stats.anomaly_percentage * 100)|round(2) }}%)</p>
-                
-                <div class="plot" id="anomalyPlot"></div>
-                <div class="plot" id="reconstructionErrorPlot"></div>
-                
-                <h2>Top Anomalies</h2>
-                {{ anomalies_table|safe }}
-            </div>
-        {% endif %}
-    </div>
-
-    <script>
-        // Plot for anomaly visualization
-        var anomalyData = [{
-            x: {{ timestamps|tojson|safe }},
-            y: {{ amounts|tojson|safe }},
-            mode: 'markers',
-            type: 'scatter',
-            marker: {
-                color: {{ colors|tojson|safe }},
-                size: 8,
-                opacity: 0.7
-            },
-            name: 'Transactions'
-        }];
-
-        var anomalyLayout = {
-            title: 'Transaction Amounts with Anomalies',
-            xaxis: { title: 'Transaction Time' },
-            yaxis: { title: 'Amount' },
-            showlegend: true
-        };
-
-        Plotly.newPlot('anomalyPlot', anomalyData, anomalyLayout);
-
-        // Plot for reconstruction error
-        var errorData = [{
-            x: Array.from({{ error_indices|tojson|safe }}),
-            y: {{ reconstruction_errors|tojson|safe }},
-            mode: 'markers',
-            type: 'scatter',
-            marker: {
-                color: 'red',
-                size: 8,
-                opacity: 0.7
-            },
-            name: 'Reconstruction Error'
-        }];
-
-        var errorLayout = {
-            title: 'Reconstruction Error',
-            xaxis: { title: 'Transaction Index' },
-            yaxis: { title: 'Error' },
-            showlegend: true
-        };
-
-        Plotly.newPlot('reconstructionErrorPlot', errorData, errorLayout);
-    </script>
-</body>
-</html>
-"""
 def generate_llm_response(prompt, max_tokens=1024, is_json=False):
     """
     Generates a response from the configured LLM.
@@ -315,7 +237,50 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
         logger.warning("LLM is disabled. Skipping API call.")
         return None
 
-    system_message = "You are a helpful financial assistant providing analysis for a user's spending habits. Your responses must be in Korean."
+    system_message = """
+    당신은 이제 **소비 분석 전문가**입니다. 당신의 목표는 사용자의 소비 내역을 분석하고, 비정상적인 지출(이상치)을 파악하며, 합리적인 소비 습관을 위한 개선 제안을 하는 것입니다. 당신은 데이터에 기반한 객관적인 분석가이며, 동시에 사용자가 이해하기 쉽고 실행 가능한 조언을 제공하는 친절한 컨설턴트입니다. 주어진 숫자를 기반으로 틀리지 않게 적으세요. 절대 자신의 감정을 말하지 마세요. 반드시 데이터에 기반해서 이야기 해야합니다. 반드시 근거가 없는 설명은 하지 마세요.
+    ---
+    ### **분석 대상 및 입력 정보 (Input Data)**
+
+    사용자는 당신에게 다음과 같은 형식의 소비 데이터를 제공할 것입니다.
+
+    * **기간:** 분석할 소비 데이터의 기간 (예: 2024년 5월)
+    * **소비 내역:**
+        * **날짜:** 지출이 발생한 날짜
+        * **카테고리:** 소비 항목의 분류 (예: 식비, 교통비, 생활용품, 문화생활, 통신비 등)
+        * **금액:** 지출된 금액 (단위: 원)
+        * **내용:** 지출에 대한 간단한 설명 (예: 점심 식사, 버스 요금, 마트 장보기)
+
+    ---
+
+    ### **분석 및 응답 구성 (Analysis and Response Structure)**
+
+    당신의 답변은 다음의 4단계로 구성되어야 합니다.
+
+    1.  **전반적인 소비 요약 및 평가:**
+        * 총 소비 금액을 계산하고, 이전에 분석했던 기간이나 일반적인 소비 트렌드와 비교하여 전반적인 평가를 제시하세요.
+        * 가장 큰 비중을 차지하는 소비 카테고리 3가지를 파악하고 비중(%)을 함께 명시하세요.
+
+    2.  **이상치(비정상 지출) 분석:**
+        * 평균적인 지출 규모와 비교했을 때, 특정 카테고리에서 비정상적으로 높거나 반복적으로 발생한 지출 내역을 찾아내세요.
+        * 이상치로 판단된 항목을 구체적으로 제시하고, 왜 이 지출이 비정상적인지 그 이유를 추론하여 설명하세요. (예: "식비 카테고리에서 10만원 이상 결제된 '고급 레스토랑' 지출은 평소 지출 패턴과 비교해 이상치로 보입니다.")
+
+    3.  **개선 제안:**
+        * 이상치 분석 결과를 바탕으로, 사용자의 소비 습관을 개선할 수 있는 구체적이고 실용적인 방안을 제안하세요.
+        * 전체 소비 구조의 불균형을 해소할 수 있는 현실적인 조언을 카테고리별로 나누어 제안하세요. (예: "배달 음식 지출이 많아 보입니다. 주 2회로 제한하거나, 밀키트를 활용해 보세요.")
+
+    4.  **긍정적 피드백 및 격려:**
+        * 사용자의 소비 내역에서 긍정적인 부분을 찾아 칭찬하고 격려하는 메시지로 답변을 마무리하세요. 이는 사용자가 동기 부여를 얻고 지속적으로 소비 습관을 개선할 수 있도록 돕습니다. (예: "교통비 지출이 매우 효율적으로 관리되고 있습니다. 훌륭합니다.")
+
+    ---
+
+    ### **추가 지시사항 (Additional Instructions)**
+
+    * **톤 앤 매너:** 뒤에 반드시 어미에 "입니다, 꺼비!"를 추가하세요. 예를 들면, "....입니다, 꺼비!" 식으로 답변을 마무리하세요.
+    * **구체성:** 막연한 조언 대신, **구체적인 금액이나 횟수**를 포함하는 제안을 하세요.
+    * **데이터 활용:** 제공된 데이터 외에, 일반적인 경제 상식이나 소비 트렌드를 참고하여 답변의 풍부함을 더할 수 있습니다. 하지만 이는 보조적인 역할이며, 핵심은 사용자가 제공한 데이터 분석에 집중해야 합니다.
+    * **응답 길이:** 각 섹션이 너무 길지 않게, 핵심 내용을 명확하게 전달하세요.
+    """
     if is_json:
         system_message += " You must respond only with the requested JSON object, without any additional text or explanations."
 
@@ -328,26 +293,25 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
 
     try:
         if LLM_PROVIDER == "huggingface-local":
-            # Format the chat messages and tokenize them, returning an attention mask to avoid warnings.
-            chat_string = local_hf_tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True
-            )
-            inputs = local_hf_tokenizer(
-                chat_string, return_tensors="pt", padding=True
+            # Tokenize the chat messages. `apply_chat_template` handles the formatting.
+            inputs = local_hf_tokenizer.apply_chat_template(
+                messages,
+                add_generation_prompt=True,
+                return_tensors="pt"
             ).to(local_hf_model.device)
 
             outputs = local_hf_model.generate(
-                **inputs,
+                inputs,
                 max_new_tokens=max_tokens,
                 do_sample=True,
                 temperature=0.4, # Increased temperature for more diverse output
                 top_p=0.9,
                 repetition_penalty=1.2, # Added repetition penalty to prevent repeating words/phrases
-                eos_token_id=local_hf_tokenizer.eos_token_id,
-                pad_token_id=local_hf_tokenizer.pad_token_id
+                eos_token_id=[local_hf_tokenizer.eos_token_id, local_hf_tokenizer.convert_tokens_to_ids("<|eot_id|>")],
+                pad_token_id=local_hf_tokenizer.pad_token_id,
             )
             # Decode only the newly generated tokens
-            response = local_hf_tokenizer.decode(outputs[0][inputs.input_ids.shape[-1]:], skip_special_tokens=True)
+            response = local_hf_tokenizer.decode(outputs[0][inputs.shape[-1]:], skip_special_tokens=True)
 
             # Post-process to remove conversational artifacts if the model continues generating.
             # The model sometimes outputs 'assistant' or other markers for the next turn.
@@ -632,7 +596,7 @@ def combined_anomaly_detection():
             "JSON 형식은 다음과 같아야 합니다:\n"
             "{\n"
             "  \"recommendation\": \"'{category}' 분야의 지출을 줄이는 것을 추천하는 문장\",\n"
-            "  \"budget_change_impact\": \"지출을 줄였을 때의 긍정적 효과에 대한 설명\",\n"
+            "  \"budget_change_impact\": \"지출을 줄였을 때의 긍정적 효과에 대한 설명, 금액으로 표현할 수 있다면 좋음\",\n"
             "  \"predicted_savings\": {amount_integer}\n"
             "}\n\n"
             "predicted_savings 값은 주어진 이상 소비 총액({savings})을 그대로 사용해주세요. 모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
@@ -735,6 +699,240 @@ def get_user_transactions(user_id: str, user_name: str, start_date: datetime, en
     except requests.exceptions.RequestException as e:
         logger.error(f"Failed to fetch transaction data for user '{user_id}' from API: {e}")
         return pd.DataFrame()
+
+def _generate_report_json(user_id, username, year, month, budget, analysis_df, filtered_anomalies_df):
+    """Helper function to generate the final JSON report from analysis results."""
+    
+    # --- Basic Stats ---
+    expense_df = analysis_df[analysis_df['타입'] == '지출'].copy()
+    total_transactions_in_period = len(expense_df)
+    anomaly_count = len(filtered_anomalies_df)
+    total_spending_this_month = int(expense_df['금액'].sum())
+
+    # --- Generate Overall Summary with LLM ---
+    summary_prompt = f"'{username}'님의 {year}년 {month}월 소비 데이터를 분석한 결과입니다. 아래 정보를 바탕으로 사용자에게 친근한 어조로 전반적인 소비 상태를 요약하고 평가해주세요.\n\n"
+    summary_prompt += f"- 총 지출 거래 건수: {total_transactions_in_period}건\n"
+    summary_prompt += f"- 발견된 이상 소비 건수: {anomaly_count}건\n"
+
+    spending_by_cat = expense_df.groupby('대분류')['금액'].sum().to_dict()
+    sorted_spending = sorted(spending_by_cat.items(), key=lambda item: item[1], reverse=True)
+
+    if anomaly_count > 0:
+        anomaly_categories = filtered_anomalies_df['대분류'].value_counts().to_dict()
+        summary_prompt += f"- 이상 소비가 가장 많은 상위 카테고리: {list(anomaly_categories.keys())[:3]}\n"
+
+    if budget:
+        budget_total = budget.get('total', 0)
+        summary_prompt += f"\n사용자의 예산 및 실제 지출 현황은 다음과 같습니다:\n"
+        summary_prompt += f"- 총 예산: {budget_total:,}원\n"
+        summary_prompt += "\n카테고리별 예산 대비 지출 현황 (상위 5개 지출 카테고리):\n"
+        for i, (category_kr, actual_spending) in enumerate(sorted_spending):
+            if i >= 5: break
+            category_en = KOREAN_TO_ENGLISH_MAPPING.get(category_kr)
+            budget_amount = budget.get(category_en) if category_en else None
+            budget_amount_str = '미설정'
+            if budget_amount is not None:
+                if budget_amount == -1:
+                    budget_amount_str = '미설정'
+                else:
+                    budget_amount_str = f"{int(budget_amount):,}"
+            summary_prompt += f"  - {category_kr}: 예산 {budget_amount_str}원 / 지출 {int(actual_spending):,}원\n"
+
+    summary_prompt += "\n위 정보를 바탕으로, 요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 예산 초과 여부와 어떤 분야에 주의해야 하는지 언급해주세요."
+    llm_generated_summary = generate_llm_response(summary_prompt) or "이상 소비 내역이 발견되었습니다. 지출 내역을 검토하여 예산을 관리하는 것을 추천합니다."
+    overall_summary = (
+        f"'{username}'님의 {year}년 {month}월 총 지출은 {total_spending_this_month}원 입니다. "
+        f"{llm_generated_summary}"
+    )
+
+    # --- User Info ---
+    user_info = {
+        "userId": int(user_id),
+        "username": username,
+        "year": int(year),
+        "month": int(month)
+    }
+
+    # --- Monthly Spending Summary ---
+    budget_total = budget.get('total', 0)
+    budget_usage_percentage = round((total_spending_this_month / budget_total) * 100) if budget_total > 0 else 0
+    income_usage_percentage = 0  # Placeholder
+
+    monthly_spending_summary = {
+        "month": f"{month}월",
+        "totalSpending": total_spending_this_month,
+        "budgetUsagePercentage": budget_usage_percentage,
+        "incomeUsagePercentage": income_usage_percentage
+    }
+
+    # --- Spending by Category ---
+    spending_by_category_list = []
+    for category_kr, amount in sorted_spending:
+        category_en = KOREAN_TO_ENGLISH_MAPPING.get(category_kr)
+        budget_amount = budget.get(category_en, 0) if category_en else 0
+        percentage = round((amount / total_spending_this_month) * 100, 1) if total_spending_this_month > 0 else 0
+        spending_by_category_list.append({
+            "category": category_kr,
+            "percentage": percentage,
+            "amount": int(amount),
+            "budget": int(budget_amount)
+        })
+
+    # --- Abnormal Spending ---
+    total_abnormal_spending = int(filtered_anomalies_df['금액'].sum())
+    abnormal_spending_transactions = []
+    if not filtered_anomalies_df.empty:
+        anomalies_list_df = filtered_anomalies_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
+        anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시간'])
+        anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
+        for _, row in anomalies_list_df.iterrows():
+            abnormal_spending_transactions.append({
+                "amount": int(row['금액']),
+                "location": row['내용'],
+                "date": row['날짜']
+            })
+
+    abnormal_spending = {
+        "totalAbnormalSpending": total_abnormal_spending,
+        "transactions": abnormal_spending_transactions
+    }
+
+    # --- Budget Adjustment ---
+    adjustment = None
+    if anomaly_count > 0:
+        anomaly_amount_by_cat = filtered_anomalies_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
+        recommend_category_kr = anomaly_amount_by_cat.index[0]
+        savings = int(anomaly_amount_by_cat.iloc[0])
+        current_spending_for_category = int(spending_by_cat.get(recommend_category_kr, 0))
+        
+        recommend_category_en = KOREAN_TO_ENGLISH_MAPPING.get(recommend_category_kr)
+        budget_for_category = budget.get(recommend_category_en) if budget and recommend_category_en else None
+
+        budget_for_category_str = '미설정'
+        if budget_for_category is not None:
+            if budget_for_category == -1:
+                budget_for_category_str = '미설정'
+            else:
+                budget_for_category_str = f"{int(budget_for_category):,}"
+
+        adjustment_prompt = (
+            f"'{username}'님의 이상 소비 분석 결과, '{recommend_category_kr}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
+            f"- 조정 추천 카테고리: '{recommend_category_kr}'\n"
+            f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n"
+            f"- 해당 카테고리 현재 지출: {current_spending_for_category}원\n"
+            f"- 해당 카테고리 예산: {budget_for_category_str}원\n\n"
+            "JSON 형식은 다음과 같아야 합니다:\n"
+            "{\n"
+            "  \"category\": \"{category}\",\n"
+            "  \"currentSpending\": {amount_integer},\n"
+            "  \"budget\": {amount_integer},\n"
+            "  \"recommendation\": \"{category} 분야의 지출을 줄이는 것을 추천하는 문장. 예산과 실제 지출을 비교하여 언급해주세요.\"\n"
+            "}\n\n"
+            "모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
+        )
+        llm_adjustment_str = generate_llm_response(adjustment_prompt, is_json=True)
+        if llm_adjustment_str:
+            try:
+                json_decoder = json.JSONDecoder()
+                start_index = llm_adjustment_str.find('{')
+                if start_index == -1: raise json.JSONDecodeError("No JSON object found", llm_adjustment_str, 0)
+                adjustment, _ = json_decoder.raw_decode(llm_adjustment_str[start_index:])
+                if 'currentSpending' in adjustment: adjustment['currentSpending'] = int(adjustment['currentSpending'])
+                if 'budget' in adjustment: adjustment['budget'] = int(adjustment['budget'])
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(f"Failed to parse LLM adjustment response: {e}. Response: {llm_adjustment_str}")
+                adjustment = None
+
+    if not adjustment: # Fallback for both no-anomaly case and LLM failure
+        recommend_category_kr = "기타" if anomaly_count == 0 else filtered_anomalies_df.groupby('대분류')['금액'].sum().idxmax()
+        current_spending_for_category = int(spending_by_cat.get(recommend_category_kr, 0))
+        recommend_category_en = KOREAN_TO_ENGLISH_MAPPING.get(recommend_category_kr)
+        budget_for_category = budget.get(recommend_category_en) if budget and recommend_category_en else None
+        
+        budget_for_category_val = 0
+        if budget_for_category is not None and budget_for_category != -1:
+            budget_for_category_val = int(budget_for_category)
+
+        recommendation_text = "현재 이상 소비가 없어 예산 조정이 필요하지 않습니다."
+        if anomaly_count > 0:
+            recommendation_text = f"'{recommend_category_kr}' 분야의 지출을 줄이는 것을 고려해보세요."
+
+        adjustment = {
+            "category": "" if anomaly_count == 0 else recommend_category_kr,
+            "currentSpending": 0 if anomaly_count == 0 else current_spending_for_category,
+            "budget": budget_for_category_val,
+            "recommendation": recommendation_text
+        }
+
+    budget_adjustment = adjustment
+
+    # --- Summary Report ---
+    summary_report = {
+        "overallSummary": str(overall_summary),
+        "monthlySpendingSummary": monthly_spending_summary,
+        "spendingByCategory": spending_by_category_list,
+        "abnormalSpending": abnormal_spending,
+        "budgetAdjustment": budget_adjustment
+    }
+
+    # --- Spending Details ---
+    total_transactions_count = len(analysis_df)
+    
+    # Daily Transaction Counts
+    daily_transaction_counts = analysis_df.groupby(analysis_df['날짜'])['금액'].count().to_dict()
+    start_of_month_dt = datetime(int(year), int(month), 1)
+    end_of_month_dt = (start_of_month_dt + relativedelta(months=1)) - timedelta(days=1)
+    
+    full_month_dates = pd.date_range(start=start_of_month_dt, end=end_of_month_dt)
+    daily_transaction_counts_formatted = {
+        date.strftime('%Y-%m-%d'): daily_transaction_counts.get(pd.Timestamp(date.date()), 0)
+        for date in full_month_dates
+    }
+
+    # Max Daily Transactions
+    max_daily_transactions = max(daily_transaction_counts.values()) if daily_transaction_counts else 0
+
+    # Spending Per Day
+    spending_per_day_list = []
+    for date, daily_transactions_df in analysis_df.groupby('날짜'):
+        transactions_for_day = []
+        for _, transaction_row in daily_transactions_df.iterrows():
+            transactions_for_day.append({
+                "merchant": transaction_row['내용'],
+                "category": transaction_row['대분류'],
+                "paymentMethod": "미정",
+                "amount": int(transaction_row['금액'])
+            })
+        spending_per_day_list.append({
+            "date": date.strftime('%#m월 %#d일') if sys.platform == 'win32' else date.strftime('%-m월 %-d일'),
+            "transactions": transactions_for_day
+        })
+    spending_per_day_list = sorted(spending_per_day_list, key=lambda x: datetime.strptime(x['date'], '%m월 %d일'))
+
+    # Top Spending Merchants
+    top_spending_merchants_df = analysis_df['내용'].value_counts().reset_index()
+    top_spending_merchants_df.columns = ['merchant', 'transactionsCount']
+    top_spending_merchants = []
+    for rank, (_, row) in enumerate(top_spending_merchants_df.head(5).iterrows()):
+        top_spending_merchants.append({
+            "rank": rank + 1,
+            "merchant": row['merchant'],
+            "transactionsCount": int(row['transactionsCount'])
+        })
+
+    spending_details = {
+        "totalTransactions": total_transactions_count,
+        "maxDailyTransactions": max_daily_transactions,
+        "dailyTransactionCounts": daily_transaction_counts_formatted,
+        "spendingPerDay": spending_per_day_list,
+        "topSpendingMerchants": top_spending_merchants
+    }
+
+    return {
+        "userInfo": user_info,
+        "summaryReport": summary_report,
+        "spendingDetails": spending_details
+    }
 
 @app.route("/ai/analyze", methods=['POST'])
 def analyze_user_data():
@@ -850,390 +1048,10 @@ def analyze_user_data():
         else:
             filtered_df = pd.DataFrame()
 
-        total_transactions = len(analysis_df[analysis_df['타입'] == '지출'])
-        anomaly_count = len(filtered_df)
+        # --- Generate JSON Response using the helper function ---
+        response_data = _generate_report_json(user_id, username, year, month, budget, analysis_df, filtered_df)
 
-        if filtered_df.empty:
-            logger.info("No expense anomalies detected after filtering.")
-            summary = "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
-
-            # Calculate spending even if no anomalies
-            expense_df = analysis_df[analysis_df['타입'] == '지출'].copy()
-            spending_by_cat = expense_df.groupby('대분류')['금액'].sum().to_dict()
-            total_spending_this_month = int(sum(spending_by_cat.values()))
-
-            summary_prompt = (
-                f"'{username}'님의 소비 데이터를 분석한 결과, 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요. "
-                f"현재 지출 현황을 알려드릴게요.\n\n"
-            )
-
-            if budget:
-                budget_total = budget.get('total', 0)
-                summary_prompt += f"총 예산 {budget_total}원 중 {total_spending_this_month}원을 지출하셨습니다.\n"
-                
-                overspent_categories = []
-                for category_en, budget_amount in budget.items():
-                    if category_en == 'total' or not budget_amount:
-                        continue
-                    
-                    category_kr = BUDGET_CATEGORY_MAPPING.get(category_en)
-                    if not category_kr:
-                        continue # Skip if no mapping exists for the budget category
-
-                    actual_spending = int(spending_by_cat.get(category_kr, 0))
-                    if actual_spending > budget_amount:
-                        overspent_categories.append(f"{category_kr}({actual_spending - budget_amount}원 초과)")
-                
-                if overspent_categories:
-                    summary_prompt += f"다만, {', '.join(overspent_categories)} 카테고리에서는 예산을 초과했습니다. 이 점 참고해주세요."
-                else:
-                    summary_prompt += "모든 카테고리에서 예산을 잘 지키고 계십니다!"
-
-            overall_summary = generate_llm_response(summary_prompt) or "분석된 거래 내역에서 이상 소비 패턴이 발견되지 않았습니다. 계속해서 좋은 소비 습관을 유지하세요."
-
-            # --- Construct the full JSON report structure even if no anomalies ---
-            user_info = {
-                "userId": int(user_id),
-                "username": username,
-                "year": int(year),
-                "month": int(month)
-            }
-
-            budget_total = budget.get('total', 0)
-            budget_usage_percentage = round((total_spending_this_month / budget_total) * 100) if budget_total > 0 else 0
-            income_usage_percentage = 0 # Placeholder
-
-            monthly_spending_summary = {
-                "month": f"{month}월",
-                "totalSpending": total_spending_this_month,
-                "budgetUsagePercentage": budget_usage_percentage,
-                "incomeUsagePercentage": income_usage_percentage
-            }
-
-            spending_by_category_list = []
-            for category_kr, amount in spending_by_cat.items():
-                category_en = KOREAN_TO_ENGLISH_MAPPING.get(category_kr)
-                budget_amount = budget.get(category_en, 0) if category_en else 0
-                percentage = round((amount / total_spending_this_month) * 100, 1) if total_spending_this_month > 0 else 0
-                spending_by_category_list.append({
-                    "category": category_kr,
-                    "percentage": percentage,
-                    "amount": int(amount),
-                    "budget": int(budget_amount)
-                })
-            spending_by_category_list = sorted(spending_by_category_list, key=lambda x: x['amount'], reverse=True)
-
-            abnormal_spending = {
-                "totalAbnormalSpending": 0,
-                "transactions": []
-            }
-
-            budget_adjustment = {
-                "category": "",
-                "currentSpending": 0,
-                "budget": 0,
-                "recommendation": "현재 이상 소비가 없어 예산 조정이 필요하지 않습니다."
-            }
-
-            summary_report = {
-                "overallSummary": str(overall_summary),
-                "monthlySpendingSummary": monthly_spending_summary,
-                "spendingByCategory": spending_by_category_list,
-                "abnormalSpending": abnormal_spending,
-                "budgetAdjustment": budget_adjustment
-            }
-
-            total_transactions_count = len(analysis_df)
-            daily_transaction_counts = analysis_df.groupby(analysis_df['날짜'])['금액'].count().to_dict()
-            start_of_month_dt = datetime(int(year), int(month), 1)
-            end_of_month_dt = (start_of_month_dt + relativedelta(months=1)) - timedelta(days=1)
-            
-            full_month_dates = pd.date_range(start=start_of_month_dt, end=end_of_month_dt)
-            daily_transaction_counts_formatted = {
-                date.strftime('%Y-%m-%d'): daily_transaction_counts.get(pd.Timestamp(date.date()), 0)
-                for date in full_month_dates
-            }
-            max_daily_transactions = max(daily_transaction_counts.values()) if daily_transaction_counts else 0
-
-            spending_per_day_list = []
-            for date, daily_transactions_df in analysis_df.groupby('날짜'):
-                transactions_for_day = []
-                for _, transaction_row in daily_transactions_df.iterrows():
-                    transactions_for_day.append({
-                        "merchant": transaction_row['내용'],
-                        "category": transaction_row['대분류'],
-                        "paymentMethod": "미정",
-                        "amount": int(transaction_row['금액'])
-                    })
-                spending_per_day_list.append({
-                    "date": date.strftime('%#m월 %#d일') if sys.platform == 'win32' else date.strftime('%-m월 %-d일'),
-                    "transactions": transactions_for_day
-                })
-            spending_per_day_list = sorted(spending_per_day_list, key=lambda x: datetime.strptime(x['date'], '%m월 %d일'))
-
-            top_spending_merchants_df = analysis_df['내용'].value_counts().reset_index()
-            top_spending_merchants_df.columns = ['merchant', 'transactionsCount']
-            top_spending_merchants = []
-            for rank, (_, row) in enumerate(top_spending_merchants_df.head(5).iterrows()):
-                top_spending_merchants.append({
-                    "rank": rank + 1,
-                    "merchant": row['merchant'],
-                    "transactionsCount": int(row['transactionsCount'])
-                })
-
-            spending_details = {
-                "totalTransactions": total_transactions_count,
-                "maxDailyTransactions": max_daily_transactions,
-                "dailyTransactionCounts": daily_transaction_counts_formatted,
-                "spendingPerDay": spending_per_day_list,
-                "topSpendingMerchants": top_spending_merchants
-            }
-
-            return jsonify({
-                "userInfo": user_info,
-                "summaryReport": summary_report,
-                "spendingDetails": spending_details
-            })
-
-        # --- Generate JSON Response using LLM ---
-        anomaly_categories = filtered_df['대분류'].value_counts().to_dict()
-        anomaly_amount_by_cat = filtered_df.groupby('대분류')['금액'].sum().sort_values(ascending=False)
-
-        # Calculate total spending for prompt context
-        expense_df = analysis_df[analysis_df['타입'] == '지출'].copy()
-        spending_by_cat = expense_df.groupby('대분류')['금액'].sum().to_dict()
-        total_spending = int(sum(spending_by_cat.values()))
-
-        summary_prompt = (
-            f"'{username}'님의 소비 데이터를 분석한 결과입니다. 이 정보를 바탕으로 사용자에게 현재 소비 상태에 대한 전반적인 요약(overall_summary)을 한국어로 생성해주세요.\n\n"
-            f"- 총 지출 거래 건수: {total_transactions}건\n"
-            f"- 발견된 이상 소비 건수: {anomaly_count}건\n"
-            f"- 이상 소비가 가장 많은 상위 카테고리: {list(anomaly_categories.keys())[:3]}\n\n"
-        )
-        if budget:
-            summary_prompt += "사용자의 예산 및 실제 지출 현황은 다음과 같습니다:\n"
-            budget_total = budget.get('total', '미설정')
-            summary_prompt += f"- 총 예산: {budget_total}원 / 총 지출: {total_spending}원\n"
-            
-            summary_prompt += "\n카테고리별 예산 대비 지출 현황 (상위 5개 지출 카테고리):\n"
-            sorted_spending = sorted(spending_by_cat.items(), key=lambda item: item[1], reverse=True)
-            for i, (category_kr, actual_spending) in enumerate(sorted_spending):
-                if i >= 5: break
-                category_en = KOREAN_TO_ENGLISH_MAPPING.get(category_kr)
-                budget_amount = budget.get(category_en) if category_en else None
-                if budget_amount:
-                    summary_prompt += f"  - {category_kr}: 예산 {budget_amount}원 / 지출 {int(actual_spending)}원\n"
-                else:
-                    summary_prompt += f"  - {category_kr}: 예산 미설정 / 지출 {int(actual_spending)}원\n"
-
-        summary_prompt += "\n위 정보를 바탕으로, 요약은 2-3문장으로, 사용자가 예산 상태를 쉽게 파악할 수 있도록 친근한 어조로 작성해주세요. 예산 초과 여부와 어떤 분야에 주의해야 하는지 언급해주세요."
-        overall_summary = generate_llm_response(summary_prompt) or "이상 소비 내역이 발견되었습니다. 지출 내역을 검토하여 예산을 관리하는 것을 추천합니다."
-
-        anomalies_list_df = filtered_df[['날짜', '시간', '금액', '대분류', '내용']].copy()
-        anomalies_list_df.rename(columns={'시간': '시각'}, inplace=True)
-        anomalies_list_df['금액'] = anomalies_list_df['금액'].astype(int)
-        anomalies_list_df['datetime'] = pd.to_datetime(anomalies_list_df['날짜'] + ' ' + anomalies_list_df['시각'])
-        anomalies_list_df = anomalies_list_df.sort_values('datetime', ascending=False).drop(columns=['datetime'])
-
-        recommend_category_kr = anomaly_amount_by_cat.index[0] if not anomaly_amount_by_cat.empty else "기타"
-        savings = int(anomaly_amount_by_cat.iloc[0]) if not anomaly_amount_by_cat.empty else 0
-
-        current_spending_for_category = int(spending_by_cat.get(recommend_category_kr, 0))
-        budget_for_category = 0
-        recommend_category_en = KOREAN_TO_ENGLISH_MAPPING.get(recommend_category_kr)
-        if budget and recommend_category_en:
-            budget_for_category = budget.get(recommend_category_en, 0)
-        
-        adjustment_prompt = (
-            f"'{username}'님의 이상 소비 분석 결과, '{recommend_category_kr}' 카테고리에서 가장 많은 이상 지출이 발생했습니다. 이 정보를 바탕으로 예산 조정(adjustment) 제안을 JSON 형식으로 생성해주세요.\n\n"
-            f"- 조정 추천 카테고리: '{recommend_category_kr}'\n"
-            f"- 해당 카테고리 내 이상 소비 총액: {savings}원\n"
-            f"- 해당 카테고리 현재 지출: {current_spending_for_category}원\n"
-            f"- 해당 카테고리 예산: {budget_for_category}원\n"
-        )
-        
-        adjustment_prompt += (
-            "\nJSON 형식은 다음과 같아야 합니다:\n"
-            "{\n"
-            "  \"category\": \"{category}\",\n"
-            "  \"currentSpending\": {amount_integer},\n"
-            "  \"budget\": {amount_integer},\n"
-            "  \"recommendation\": \"{category} 분야의 지출을 줄이는 것을 추천하는 문장. 예산과 실제 지출을 비교하여 언급해주세요.\"\n"
-            "}\n\n"
-            "모든 텍스트는 한국어로 작성해주세요. 응답은 JSON 객체만 포함해야 합니다."
-        )
-        llm_adjustment_str = generate_llm_response(adjustment_prompt, is_json=True)
-        adjustment = None
-        if llm_adjustment_str:
-            try:
-                json_decoder = json.JSONDecoder()
-                start_index = llm_adjustment_str.find('{')
-                if start_index == -1:
-                    raise json.JSONDecodeError("No JSON object found in response", llm_adjustment_str, 0)
-                
-                adjustment, _ = json_decoder.raw_decode(llm_adjustment_str[start_index:])
-
-                # Ensure integer types for numeric fields
-                if 'currentSpending' in adjustment: adjustment['currentSpending'] = int(adjustment['currentSpending'])
-                if 'budget' in adjustment: adjustment['budget'] = int(adjustment['budget'])
-
-            except (json.JSONDecodeError, TypeError) as e:
-                logger.error(f"Failed to parse LLM adjustment response: {e}. Response was: {llm_adjustment_str}")
-                adjustment = None
-        
-        if not adjustment:
-            logger.warning("LLM adjustment generation failed. Using template-based adjustment.")
-            # Ensure recommend_category_kr, savings, spending_by_cat are defined for fallback
-            if 'recommend_category_kr' not in locals():
-                recommend_category_kr = "기타"
-            if 'savings' not in locals():
-                savings = 0
-            if 'spending_by_cat' not in locals():
-                spending_by_cat = {}
-
-            current_spending_for_category = int(spending_by_cat.get(recommend_category_kr, 0))
-            budget_for_category = 0
-            recommend_category_en = KOREAN_TO_ENGLISH_MAPPING.get(recommend_category_kr)
-            if budget and recommend_category_en:
-                budget_for_category = budget.get(recommend_category_en, 0)
-
-            adjustment = {
-                "category": recommend_category_kr,
-                "currentSpending": current_spending_for_category,
-                "budget": budget_for_category,
-                "recommendation": f"'{recommend_category_kr}' 분야의 지출을 줄이는 것을 고려해보세요."
-            }
-        # --- Construct the full JSON report structure ---
-        # User Info
-        user_info = {
-            "userId": int(user_id),
-            "username": username,
-            "year": int(year),
-            "month": int(month)
-        }
-
-        # Monthly Spending Summary
-        total_spending_this_month = int(expense_df['금액'].sum())
-        budget_total = budget.get('total', 0)
-        budget_usage_percentage = round((total_spending_this_month / budget_total) * 100) if budget_total > 0 else 0
-        # Placeholder for income_usage_percentage as income data is not available
-        income_usage_percentage = 0 
-
-        monthly_spending_summary = {
-            "month": f"{month}월",
-            "totalSpending": total_spending_this_month,
-            "budgetUsagePercentage": budget_usage_percentage,
-            "incomeUsagePercentage": income_usage_percentage
-        }
-
-        # Spending by Category
-        spending_by_category_list = []
-        for category_kr, amount in spending_by_cat.items():
-            category_en = KOREAN_TO_ENGLISH_MAPPING.get(category_kr)
-            budget_amount = budget.get(category_en, 0) if category_en else 0
-            
-            # Calculate percentage of total spending for this category
-            percentage = round((amount / total_spending_this_month) * 100, 1) if total_spending_this_month > 0 else 0
-            
-            spending_by_category_list.append({
-                "category": category_kr,
-                "percentage": percentage,
-                "amount": int(amount),
-                "budget": int(budget_amount) # Include budget for the category
-            })
-        # Sort by amount descending
-        spending_by_category_list = sorted(spending_by_category_list, key=lambda x: x['amount'], reverse=True)
-
-        # Abnormal Spending
-        total_abnormal_spending = int(filtered_df['금액'].sum())
-        abnormal_spending_transactions = []
-        for _, row in anomalies_list_df.iterrows():
-            abnormal_spending_transactions.append({
-                "amount": int(row['금액']),
-                "location": row['내용'], # Assuming '내용' maps to location
-                "date": row['날짜']
-            })
-        
-        abnormal_spending = {
-            "totalAbnormalSpending": total_abnormal_spending,
-            "transactions": abnormal_spending_transactions
-        }
-
-        # Budget Adjustment (already generated as 'adjustment')
-        budget_adjustment = adjustment
-
-        summary_report = {
-            "overallSummary": str(overall_summary),
-            "monthlySpendingSummary": monthly_spending_summary,
-            "spendingByCategory": spending_by_category_list,
-            "abnormalSpending": abnormal_spending,
-            "budgetAdjustment": budget_adjustment
-        }
-
-        # Spending Details
-        total_transactions_count = len(analysis_df)
-        
-        # Daily Transaction Counts
-        daily_transaction_counts = analysis_df.groupby(analysis_df['날짜'])['금액'].count().to_dict()
-        # Ensure all days of the month are present, even if no transactions
-        start_of_month_dt = datetime(int(year), int(month), 1)
-        end_of_month_dt = (start_of_month_dt + relativedelta(months=1)) - timedelta(days=1)
-        
-        full_month_dates = pd.date_range(start=start_of_month_dt, end=end_of_month_dt)
-        daily_transaction_counts_formatted = {
-            date.strftime('%Y-%m-%d'): daily_transaction_counts.get(pd.Timestamp(date.date()), 0)
-            for date in full_month_dates
-        }
-
-        # Max Daily Transactions
-        max_daily_transactions = max(daily_transaction_counts.values()) if daily_transaction_counts else 0
-
-        # Spending Per Day
-        spending_per_day_list = []
-        # Group by date and then iterate through each day's transactions
-        for date, daily_transactions_df in analysis_df.groupby('날짜'):
-            transactions_for_day = []
-            for _, transaction_row in daily_transactions_df.iterrows():
-                transactions_for_day.append({
-                    "merchant": transaction_row['내용'],
-                    "category": transaction_row['대분류'],
-                    "paymentMethod": "미정", # Payment method not available in current data
-                    "amount": int(transaction_row['금액'])
-                })
-            spending_per_day_list.append({
-                "date": date.strftime('%#m월 %#d일') if sys.platform == 'win32' else date.strftime('%-m월 %-d일'), # Format for Windows/Linux
-                "transactions": transactions_for_day
-            })
-        # Sort by date
-        spending_per_day_list = sorted(spending_per_day_list, key=lambda x: datetime.strptime(x['date'], '%m월 %d일'))
-
-
-        # Top Spending Merchants
-        top_spending_merchants_df = analysis_df['내용'].value_counts().reset_index()
-        top_spending_merchants_df.columns = ['merchant', 'transactionsCount']
-        top_spending_merchants = []
-        for rank, (_, row) in enumerate(top_spending_merchants_df.head(5).iterrows()): # Top 5 merchants
-            top_spending_merchants.append({
-                "rank": rank + 1,
-                "merchant": row['merchant'],
-                "transactionsCount": int(row['transactionsCount'])
-            })
-
-        spending_details = {
-            "totalTransactions": total_transactions_count,
-            "maxDailyTransactions": max_daily_transactions,
-            "dailyTransactionCounts": daily_transaction_counts_formatted,
-            "spendingPerDay": spending_per_day_list,
-            "topSpendingMerchants": top_spending_merchants
-        }
-
-        response_data = {
-            "userInfo": user_info,
-            "summaryReport": summary_report,
-            "spendingDetails": spending_details
-        }
-
-        logger.info(f"Analysis for user '{user_id}' complete. Found {anomaly_count} anomalies.")
+        logger.info(f"Analysis for user '{user_id}' complete. Found {len(filtered_df)} anomalies.")
         return jsonify(response_data)
 
     except Exception as e:
@@ -1422,21 +1240,26 @@ def send_monthly_report():
 
             report_data = report_response.json()
 
-            if "error" in report_data:
-                logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_data['error']}")
-            elif "message" in report_data:
-                logger.info(f"Analysis for {username} (ID: {user_id}) resulted in a message: {report_data['message']}")
-            else:
-                logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
-                # Save the generated report to the backend database.
-                save_report_url = "https://j13b207.p.ssafy.io/api/ai/report/save"
-                save_payload = report_data
-                logger.info(f"Saving report for user {username} (ID: {user_id}). Full Payload: {json.dumps(save_payload, indent=2)}") # Added for debugging
-                save_res = requests.post(save_report_url, json=save_payload, headers=headers)
-                if save_res.status_code == 201:
-                    logger.info(f"Successfully saved report for user {username} (ID: {user_id}) to the backend.")
-                else:
-                    logger.error(f"Failed to save report for user {username} (ID: {user_id}). Status: {save_res.status_code}, Response: {save_res.text}")
+            # save report_data for debugging
+            with open(f"report_data_{username}_{year}_{month}.json", "w", encoding='utf-8') as f:
+                json.dump(report_data, f, indent=2, ensure_ascii=False)
+
+            # if "error" in report_data:
+            #     logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_data['error']}")
+            # elif "message" in report_data:
+            #     logger.info(f"Analysis for {username} (ID: {user_id}) resulted in a message: {report_data['message']}")
+            # else:
+            #     logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
+            #     # Save the generated report to the backend database.
+
+            #     save_report_url = "https://j13b207.p.ssafy.io/api/ai/report/save"
+            #     save_payload = report_data
+            #     logger.info(f"Saving report for user {username} (ID: {user_id}). Full Payload: {json.dumps(save_payload, indent=2)}") # Added for debugging
+            #     save_res = requests.post(save_report_url, json=save_payload, headers=headers)
+            #     if save_res.status_code == 201:
+            #         logger.info(f"Successfully saved report for user {username} (ID: {user_id}) to the backend.")
+            #     else:
+            #         logger.error(f"Failed to save report for user {username} (ID: {user_id}). Status: {save_res.status_code}, Response: {save_res.text}")
 
 
         except requests.exceptions.RequestException as e:
@@ -1454,13 +1277,16 @@ if __name__ == "__main__":
     # Schedule the monthly report job
     scheduler.add_job(
         func=send_monthly_report,
-        trigger=CronTrigger(day=25, hour=15, minute=39), # Run on the first day of every month at midnight
+        trigger=CronTrigger(day=27, hour=20, minute=18), # Run on the first day of every month at midnight
         id='monthly_report_job',
         name='Monthly Report Generator',
         replace_existing=True
     )
     scheduler.start()
-    logger.info("Scheduler started. Monthly report job scheduled.")
+    # logger.info("Scheduler started. Monthly report job scheduled.")
+    # next_run = scheduler.next_run
+    # logger.info(f"Next scheduled job for monthly report will run at {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
+
 
     # Shut down the scheduler when the app exits
     import atexit
