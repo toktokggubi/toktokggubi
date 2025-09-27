@@ -13,6 +13,7 @@ import {
   RefreshControl,
   Image,
 } from "react-native";
+import { useRouter } from "expo-router";
 import PaymentTemplate from "../templates/PaymentTemplate";
 import { useUserCards } from "@/features/User/model/card/hooks";
 import type { UserCardVM } from "@/features/User/model/card/types";
@@ -124,7 +125,7 @@ const BRAND_MAPPINGS: { [key: string]: string[] } = {
   맥도날드: ["mcdonald", "맥도날드", "맥도널드"],
   버거킹: ["burgerking", "버거킹"],
   맘스터치: ["momstouch", "맘스터치", "맘스터치치킨"],
-  세븐일레븐: ["7eleven", "세븐일레븐", "7-eleven", "세븐"],
+  세븐일레븐: ["7eleven", "세븐일레븐", "7-eleven", "세븐", "7ELEVEN"],
   롯데마트: ["lottemart", "롯데마트"],
   CU: ["cu", "씨유"],
   GS25: ["gs25", "지에스25"],
@@ -155,12 +156,14 @@ const isPlaceMatchingBenefit = (
 
 
 export default function PaymentScreen() {
+  const router = useRouter();
   // 인증 가드
   const { isAuthenticated, isLoading: authLoading } = useAuthGuard();
   
   const [tab, setTab] = useState(0);
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const activeCardIndexRef = useRef(0);
+  const [isUserManuallySwiped, setIsUserManuallySwiped] = useState(false);
 
   // activeCardIndex와 ref 동기화
   useEffect(() => {
@@ -171,6 +174,7 @@ export default function PaymentScreen() {
   const handleActiveCardChange = useCallback(
     (index: number, cardId: number) => {
       setActiveCardIndex(index);
+      setIsUserManuallySwiped(true); // 사용자가 직접 슬라이드했음을 표시
     },
     []
   );
@@ -361,8 +365,34 @@ export default function PaymentScreen() {
       
       // 첫 번째 장소의 카테고리 ID를 서버로 전송
       sendLocationToServer(firstPlace);
+      
+      // 모든 카드의 혜택 데이터가 로드되었으면 최적 카드로 전환
+      if (!allCardBenefitsQuery.isLoading && allCardBenefitsQuery.data && allCardBenefitsQuery.data.length > 0) {
+        let bestCardIndex = -1;
+        let maxDiscountRate = 0;
+
+        // 모든 카드의 혜택을 확인하여 가장 높은 할인율을 가진 카드 찾기
+        for (const cardData of allCardBenefitsQuery.data) {
+          const matchingBenefits = cardData.benefits.filter(benefit => 
+            benefit.franchiseName && 
+            isPlaceMatchingBenefit(firstPlace.place_name, benefit.franchiseName)
+          );
+
+          // 가장 높은 할인율 찾기
+          for (const benefit of matchingBenefits) {
+            if (benefit.discountRate > maxDiscountRate) {
+              maxDiscountRate = benefit.discountRate;
+              bestCardIndex = cardData.cardIndex;
+            }
+          }
+        }
+
+        if (bestCardIndex !== -1 && !isUserManuallySwiped) {
+          setActiveCardIndex(bestCardIndex);
+        }
+      }
     }
-  }, [hasNearby, selectedPlace, nearbyPlaces, sendLocationToServer]);
+  }, [hasNearby, selectedPlace, nearbyPlaces, sendLocationToServer, allCardBenefitsQuery.isLoading, allCardBenefitsQuery.data, isUserManuallySwiped]);
 
   // 현재 선택된 가맹점의 혜택 찾기
   const matchedBenefits = useMemo(() => {
@@ -397,16 +427,56 @@ export default function PaymentScreen() {
       ? [selectedPlace.place_name]
       : [nearbyNames[0]];
 
-    return gifticons.filter((gifticon) => {
+    console.log('🔍 기프티콘 필터링 디버그:');
+    console.log('전체 기프티콘:', gifticons.map(g => ({ merchantName: g.merchantName, label: g.label })));
+    console.log('타겟 장소:', targetPlaces);
+
+    const filtered = gifticons.filter((gifticon) => {
       const merchantName = gifticon.merchantName?.toLowerCase() ?? "";
 
       return targetPlaces.some((placeName) => {
         const place = placeName.toLowerCase();
 
         // 가맹점명이 장소명에 포함되거나, 장소명이 가맹점명에 포함되는 경우
-        return place.includes(merchantName) || merchantName.includes(place);
+        if (place.includes(merchantName) || merchantName.includes(place)) {
+          console.log(`✅ 직접 매칭: ${merchantName} <-> ${place}`);
+          return true;
+        }
+
+        // 브랜드별 매칭 규칙 적용
+        for (const [brand, variations] of Object.entries(BRAND_MAPPINGS)) {
+          const brandLower = brand.toLowerCase();
+          
+          // 기프티콘 가맹점명이 브랜드에 포함되거나, 브랜드가 가맹점명에 포함되는 경우
+          if (merchantName.includes(brandLower) || brandLower.includes(merchantName)) {
+            console.log(`🔍 브랜드 체크: ${merchantName} vs ${brandLower}`);
+            // 장소명이 해당 브랜드의 변형들 중 하나와 매칭되는지 확인
+            const matchingVariation = variations.find((variation) => place.includes(variation.toLowerCase()));
+            if (matchingVariation) {
+              console.log(`✅ 브랜드 매칭: ${merchantName} (${brand}) <-> ${place} (${matchingVariation})`);
+              return true;
+            }
+          }
+          
+          // 기프티콘 가맹점명이 브랜드 변형들 중 하나와 매칭되는지도 확인
+          const matchingMerchantVariation = variations.find((variation) => merchantName.includes(variation.toLowerCase()));
+          if (matchingMerchantVariation) {
+            console.log(`🔍 기프티콘 변형 체크: ${merchantName} vs ${variations}`);
+            // 장소명이 해당 브랜드의 변형들 중 하나와 매칭되는지 확인
+            const matchingPlaceVariation = variations.find((variation) => place.includes(variation.toLowerCase()));
+            if (matchingPlaceVariation) {
+              console.log(`✅ 변형 매칭: ${merchantName} (${matchingMerchantVariation}) <-> ${place} (${matchingPlaceVariation})`);
+              return true;
+            }
+          }
+        }
+
+        return false;
       });
     });
+
+    console.log('필터링된 기프티콘:', filtered.map(g => ({ merchantName: g.merchantName, label: g.label })));
+    return filtered;
   }, [gifticons, hasNearby, nearbyNames, selectedPlace]);
 
   // 모든 장소에 대한 혜택과 기프티콘 매칭을 미리 계산
@@ -431,7 +501,37 @@ export default function PaymentScreen() {
       const matchedGifticons = gifticons.filter(gifticon => {
         const merchantName = gifticon.merchantName?.toLowerCase() ?? "";
         const placeName = place.place_name.toLowerCase();
-        return placeName.includes(merchantName) || merchantName.includes(placeName);
+        
+        // 가맹점명이 장소명에 포함되거나, 장소명이 가맹점명에 포함되는 경우
+        if (placeName.includes(merchantName) || merchantName.includes(placeName)) {
+          return true;
+        }
+
+        // 브랜드별 매칭 규칙 적용
+        for (const [brand, variations] of Object.entries(BRAND_MAPPINGS)) {
+          const brandLower = brand.toLowerCase();
+          
+          // 기프티콘 가맹점명이 브랜드에 포함되거나, 브랜드가 가맹점명에 포함되는 경우
+          if (merchantName.includes(brandLower) || brandLower.includes(merchantName)) {
+            // 장소명이 해당 브랜드의 변형들 중 하나와 매칭되는지 확인
+            const matchingVariation = variations.find((variation) => placeName.includes(variation.toLowerCase()));
+            if (matchingVariation) {
+              return true;
+            }
+          }
+          
+          // 기프티콘 가맹점명이 브랜드 변형들 중 하나와 매칭되는지도 확인
+          const matchingMerchantVariation = variations.find((variation) => merchantName.includes(variation.toLowerCase()));
+          if (matchingMerchantVariation) {
+            // 장소명이 해당 브랜드의 변형들 중 하나와 매칭되는지 확인
+            const matchingPlaceVariation = variations.find((variation) => placeName.includes(variation.toLowerCase()));
+            if (matchingPlaceVariation) {
+              return true;
+            }
+          }
+        }
+
+        return false;
       });
 
       // 현재 장소의 최고 혜택률 찾기
@@ -578,6 +678,21 @@ export default function PaymentScreen() {
     [allCardBenefitsQuery.data]
   );
 
+  // 카드 혜택 데이터가 로드된 후 현재 선택된 장소에 맞는 최적 카드로 전환
+  useEffect(() => {
+    if (
+      selectedPlace && 
+      !allCardBenefitsQuery.isLoading && 
+      allCardBenefitsQuery.data &&
+      allCardBenefitsQuery.data.length > 0
+    ) {
+      const bestCardIndex = findBestCardForPlace(selectedPlace);
+      if (bestCardIndex !== -1 && bestCardIndex !== activeCardIndex && !isUserManuallySwiped) {
+        setActiveCardIndex(bestCardIndex);
+      }
+    }
+  }, [allCardBenefitsQuery.isLoading, allCardBenefitsQuery.data, selectedPlace, findBestCardForPlace, activeCardIndex, isUserManuallySwiped]);
+
   // Pull-to-Refresh 핸들러
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -600,6 +715,7 @@ export default function PaymentScreen() {
   const handlePlaceSelect = (place: KakaoPlace) => {
     setSelectedPlace(place);
     bottomSheetRef.current?.close();
+    setIsUserManuallySwiped(false); // 장소 선택 시 수동 슬라이드 상태 리셋
 
     // 선택된 장소의 카테고리 ID를 서버로 전송
     sendLocationToServer(place);
@@ -624,129 +740,164 @@ export default function PaymentScreen() {
 
   // 템플릿 슬롯 조립
   const cardTopSection =
-    tab === 0 && hasNearby ? (
+    tab === 0 ? (
       <View style={{ position: "relative" }}>
-        <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
-        <Text
-          style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
-        >
-          {selectedPlace?.place_name ||
-            (nearbyPlaces && nearbyPlaces[0]?.place_name) ||
-            "주변 가맹점"}
-        </Text>
-        <TouchableOpacity onPress={handleLocationChange}>
-          <Text style={{ color: "#94a3b8", marginTop: 4 }}>
-            이 위치가 아닌가요?
-          </Text>
-        </TouchableOpacity>
-        
-        {/* 더 나은 혜택 안내 메시지 - 캐릭터와 말풍선 */}
-        {currentPlaceBetterBenefit && (
-          <View style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 8,
-            marginTop: 8,
-          }}>
-            {/* 캐릭터 이미지 */}
-            <Image 
-              source={require("@/assets/images/character/stupid.png")}
-              style={{
-                width: 50,
-                height: 50,
-                resizeMode: "contain",
-              }}
-            />
-            {/* 동그란 말풍선 - 터치 가능 */}
-            <TouchableOpacity 
-              style={{
-                backgroundColor: colors.BLUE_LIGHT,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: colors.BLUE_NORMAL,
-                alignSelf: "flex-start",
-                marginTop: 8,
-              }}
-              onPress={() => {
-                // 더 나은 혜택을 가진 가맹점 찾기
-                const betterPlace = nearbyPlaces.find(place => 
-                  place.place_name === currentPlaceBetterBenefit.placeName
-                );
-                if (betterPlace) {
-                  handlePlaceSelect(betterPlace);
-                }
-              }}
+        {hasNearby ? (
+          <>
+            <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
+            <Text
+              style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
             >
-              <Text style={{
-                fontSize: 12,
-                color: colors.BLUE_DARKER,
-                fontWeight: "400",
-                lineHeight: 16,
-              }}>
-                <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
-                  {currentPlaceBetterBenefit.placeName}
-                </Text>
-                에서{" "}
-                {currentPlaceBetterBenefit.currentDiscountRate > 0 ? (
-                  <>
-                    <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
-                      {currentPlaceBetterBenefit.discountRate - currentPlaceBetterBenefit.currentDiscountRate}%
-                    </Text>
-                    {" "}더 많은 혜택!
-                  </>
-                ) : (
-                  <>
-                    <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
-                      {currentPlaceBetterBenefit.discountRate}%
-                    </Text>
-                    {" "}혜택 받기!
-                  </>
-                )}
+              {selectedPlace?.place_name ||
+                (nearbyPlaces && nearbyPlaces[0]?.place_name) ||
+                "주변 가맹점"}
+            </Text>
+            <TouchableOpacity onPress={handleLocationChange}>
+              <Text style={{ color: "#94a3b8", marginTop: 4 }}>
+                이 위치가 아닌가요?
               </Text>
             </TouchableOpacity>
+            
+            {/* 더 나은 혜택 안내 메시지 - 캐릭터와 말풍선 */}
+            {currentPlaceBetterBenefit && (
+              <View style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 8,
+              }}>
+                {/* 캐릭터 이미지 */}
+                <Image 
+                  source={require("@/assets/images/character/stupid.png")}
+                  style={{
+                    width: 50,
+                    height: 50,
+                    resizeMode: "contain",
+                  }}
+                />
+                {/* 동그란 말풍선 - 터치 가능 */}
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: colors.BLUE_LIGHT,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    borderRadius: 20,
+                    borderWidth: 1,
+                    borderColor: colors.BLUE_NORMAL,
+                    alignSelf: "flex-start",
+                    marginTop: 8,
+                  }}
+                  onPress={() => {
+                    // 더 나은 혜택을 가진 가맹점 찾기
+                    const betterPlace = nearbyPlaces.find(place => 
+                      place.place_name === currentPlaceBetterBenefit.placeName
+                    );
+                    if (betterPlace) {
+                      handlePlaceSelect(betterPlace);
+                    }
+                  }}
+                >
+                  <Text style={{
+                    fontSize: 12,
+                    color: colors.BLUE_DARKER,
+                    fontWeight: "400",
+                    lineHeight: 16,
+                  }}>
+                    <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                      {currentPlaceBetterBenefit.placeName}
+                    </Text>
+                    에서{" "}
+                    {currentPlaceBetterBenefit.currentDiscountRate > 0 ? (
+                      <>
+                        <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                          {currentPlaceBetterBenefit.discountRate - currentPlaceBetterBenefit.currentDiscountRate}%
+                        </Text>
+                        {" "}더 많은 혜택!
+                      </>
+                    ) : (
+                      <>
+                        <Text style={{ fontWeight: "700", color: colors.BLUE_NORMAL }}>
+                          {currentPlaceBetterBenefit.discountRate}%
+                        </Text>
+                        {" "}혜택 받기!
+                      </>
+                    )}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </>
+        ) : (
+          <View style={{ alignItems: "center", marginTop: 20 }}>
+            <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>현재 내 위치</Text>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER, marginBottom: 8 }}>
+              위치 정보를 불러오는 중...
+            </Text>
+            <Text style={{ color: "#94a3b8", fontSize: 14, textAlign: "center" }}>
+              잠시만 기다려주세요
+            </Text>
           </View>
         )}
       </View>
     ) : null;
 
-  // 가맹점이 없을 때 카드 하단에 안내문구 추가
-  const cardBottomSection =
-    tab === 0 && !hasNearby ? (
-      <View style={{ alignItems: "center", marginTop: 20 }}>
+  // 카드 하단에 안내문구 추가 (혜택이 없을 때만)
+  const cardBottomSection = 
+    tab === 0 && hasNearby && matchedBenefits.length === 0 ? (
+      <View style={{ alignItems: "center", marginTop: 8 }}>
         <Text style={{ color: "#64748b", fontSize: 14, textAlign: "center" }}>
-          휴대폰 뒷면을 카드 단말기에 대주세요
+          카드를 누르면 QR 결제를 할 수 있습니다
         </Text>
       </View>
     ) : null;
 
   // 기프티콘 탭의 위치 헤더
   const gifticonTopSection =
-    tab === 1 && hasNearby ? (
+    tab === 1 ? (
       <View>
-        <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
-        <Text
-          style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
-        >
-          {selectedPlace?.place_name ||
-            (nearbyPlaces && nearbyPlaces[0]?.place_name) ||
-            "주변 가맹점"}
-        </Text>
-        <TouchableOpacity onPress={handleLocationChange}>
-          <Text style={{ color: "#94a3b8", marginTop: 4 }}>
-            이 위치가 아닌가요?
-          </Text>
-        </TouchableOpacity>
+        {hasNearby ? (
+          <>
+            <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
+            <Text
+              style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
+            >
+              {selectedPlace?.place_name ||
+                (nearbyPlaces && nearbyPlaces[0]?.place_name) ||
+                "주변 가맹점"}
+            </Text>
+            <TouchableOpacity onPress={handleLocationChange}>
+              <Text style={{ color: "#94a3b8", marginTop: 4 }}>
+                이 위치가 아닌가요?
+              </Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={{ alignItems: "center", marginTop: 20 }}>
+            <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>현재 내 위치</Text>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER, marginBottom: 8 }}>
+              위치 정보를 불러오는 중...
+            </Text>
+            <Text style={{ color: "#94a3b8", fontSize: 14, textAlign: "center" }}>
+              잠시만 기다려주세요
+            </Text>
+          </View>
+        )}
       </View>
     ) : null;
 
   const benefitsSection =
     tab !== 0 ? null : hasNearby && matchedBenefits.length > 0 ? (
       <View>
+        {/* 카드 터치 안내 문구 */}
+        <View style={{ alignItems: "center", marginBottom: 12 }}>
+          <Text style={{ color: "#64748b", fontSize: 14, textAlign: "center" }}>
+            카드를 누르면 QR 결제를 할 수 있습니다
+          </Text>
+        </View>
+        
         {selectedPlace && (
-          <View style={{ marginBottom: 8, paddingHorizontal: 16 }}>
-            <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>
+          <View style={{ marginBottom: 4, paddingHorizontal: 16 }}>
+            <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 2 }}>
               {selectedPlace.place_name}에서 사용 가능한 혜택
             </Text>
           </View>
@@ -772,16 +923,8 @@ export default function PaymentScreen() {
     );
   }
 
-  // 카드가 없는 경우
-  if (cardsError || cards.length === 0) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: colors.GRAY_DARK, textAlign: "center" }}>
-          등록된 카드가 없습니다.
-        </Text>
-      </View>
-    );
-  }
+  // 카드가 없는 경우 - 화면은 표시하되 카드 관련 기능만 비활성화
+  const hasCards = !cardsError && cards.length > 0;
 
   // 기프티콘 에러가 있는 경우 (카드는 있지만 기프티콘만 에러)
   if (gifticonsError) {
@@ -793,17 +936,143 @@ export default function PaymentScreen() {
       <PaymentTemplate
         selectedTab={tab}
         onChangeTab={setTab}
-        cards={cards as UserCardVM[]}
-        activeCardIndex={activeCardIndex}
-        onActiveCardChange={handleActiveCardChange}
-        cardTopSection={cardTopSection}
+        cards={hasCards ? (cards as UserCardVM[]) : []}
+        activeCardIndex={hasCards ? activeCardIndex : 0}
+        onActiveCardChange={hasCards ? handleActiveCardChange : () => {}}
+        cardTopSection={hasCards ? cardTopSection : (
+          <View style={{ position: "relative" }}>
+            {/* 위치 정보 - 카드가 없을 때도 표시 */}
+            {hasNearby ? (
+              <>
+                <Text style={{ fontSize: 12, color: "#64748b" }}>현재 내 위치</Text>
+                <Text
+                  style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER }}
+                >
+                  {selectedPlace?.place_name ||
+                    (nearbyPlaces && nearbyPlaces[0]?.place_name) ||
+                    "주변 가맹점"}
+                </Text>
+                <TouchableOpacity onPress={handleLocationChange}>
+                  <Text style={{ color: "#94a3b8", marginTop: 4 }}>
+                    이 위치가 아닌가요?
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={{ alignItems: "center", marginTop: 20 }}>
+                <Text style={{ fontSize: 12, color: "#64748b", marginBottom: 4 }}>현재 내 위치</Text>
+                <Text style={{ fontSize: 16, fontWeight: "700", color: colors.BLUE_DARKER, marginBottom: 8 }}>
+                  위치 정보를 불러오는 중...
+                </Text>
+                <Text style={{ color: "#94a3b8", fontSize: 14, textAlign: "center" }}>
+                  잠시만 기다려주세요
+                </Text>
+              </View>
+            )}
+            
+            {/* 카드가 없을 때의 UI */}
+            <View style={{ alignItems: "center", marginTop: 80 }}>
+              {/* 캐릭터 이미지 */}
+              <Image 
+                source={require("@/assets/images/character/big-character-06.png")}
+                style={{
+                  width: 120,
+                  height: 120,
+                  resizeMode: "contain",
+                  marginBottom: 16,
+                }}
+              />
+              {/* 안내 메시지 */}
+              <Text style={{ color: colors.GRAY_DARK, fontSize: 18, fontWeight: "600", marginBottom: 8 }}>
+                아직 등록된 카드가 없어요
+              </Text>
+              <Text style={{ color: "#64748b", fontSize: 14, textAlign: "center", marginBottom: 20 }}>
+                카드를 등록하면 결제할 수 있습니다
+              </Text>
+              {/* 카드 관리 버튼 */}
+              <TouchableOpacity 
+                style={{
+                  backgroundColor: colors.BLUE_NORMAL,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                }}
+                  onPress={() => {
+                    console.log("Payment에서 카드 관리 버튼 클릭됨");
+                    // 네비게이션 스택을 리셋하고 카드 관리 페이지로 이동
+                    router.replace("/cards");
+                  }}
+              >
+                <Text style={{ color: "white", fontSize: 16, fontWeight: "600" }}>
+                  카드 관리
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
         cardBottomSection={cardBottomSection}
-        benefitsSection={benefitsSection}
+        benefitsSection={hasCards ? benefitsSection : null}
         // Gifticon 관련 props 추가
         gifticons={filteredGifticons as SharedGifticon[]}
         activeGifticonIndex={0}
         onActiveGifticonChange={(i, id) => {}}
         gifticonTopSection={gifticonTopSection}
+        gifticonBottomSection={(() => {
+          const activeGifticons = gifticons.filter(gifticon => gifticon.status === "ACTIVE");
+          const activeFilteredGifticons = filteredGifticons.filter(gifticon => gifticon.status === "ACTIVE");
+          
+          console.log('🎫 기프티콘 탭 디버그:');
+          console.log('전체 활성 기프티콘:', activeGifticons.map(g => ({ merchantName: g.merchantName, label: g.label, status: g.status })));
+          console.log('필터링된 활성 기프티콘:', activeFilteredGifticons.map(g => ({ merchantName: g.merchantName, label: g.label, status: g.status })));
+          
+          // 전체 기프티콘이 없거나, 현재 위치에서 사용 가능한 기프티콘이 없을 때
+          if (activeGifticons.length === 0 || activeFilteredGifticons.length === 0) {
+            return (
+              <View style={{ alignItems: "center", marginTop: 80 }}>
+                {/* 캐릭터 이미지 */}
+                <Image 
+                  source={require("@/assets/images/character/big-character-06.png")}
+                  style={{
+                    width: 120,
+                    height: 120,
+                    resizeMode: "contain",
+                    marginBottom: 16,
+                  }}
+                />
+                {/* 안내 메시지 */}
+                <Text style={{ color: colors.GRAY_DARK, fontSize: 18, fontWeight: "600", marginBottom: 8 }}>
+                  {activeGifticons.length === 0 
+                    ? "사용 가능한 기프티콘이 없어요" 
+                    : "현재 위치에서 사용 가능한 기프티콘이 없어요"}
+                </Text>
+                <Text style={{ color: "#64748b", fontSize: 14, textAlign: "center", marginBottom: 20 }}>
+                  {activeGifticons.length === 0 
+                    ? "기프티콘을 등록하면 사용할 수 있습니다" 
+                    : "기프티콘을 등록해보세요"}
+                </Text>
+                {/* 기프티콘 관리 버튼 */}
+                <TouchableOpacity 
+                  style={{
+                    backgroundColor: colors.BLUE_NORMAL,
+                    paddingHorizontal: 24,
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                  }}
+                  onPress={() => {
+                    console.log("Payment에서 기프티콘 관리 버튼 클릭됨");
+                    // 네비게이션 스택을 리셋하고 기프티콘 관리 페이지로 이동
+                    router.replace("/gifticons");
+                  }}
+                >
+                  <Text style={{ color: "white", fontSize: 16, fontWeight: "600" }}>
+                    기프티콘 관리
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          return null;
+        })()}
         // Pull-to-Refresh 관련 props
         refreshControl={
           <RefreshControl
