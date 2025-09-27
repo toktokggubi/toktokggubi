@@ -51,7 +51,7 @@ const MypageScreen = () => {
   };
 
   const handleAIBudgetSetup = () => {
-    router.push("/budget/ai-setup" as Href);
+    router.push("/budget/total" as Href);
   };
 
   // 인증 로딩 중이거나 인증되지 않은 경우

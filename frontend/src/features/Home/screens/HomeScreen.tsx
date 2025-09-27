@@ -22,6 +22,7 @@ import {
   HomeData,
   Transaction,
 } from "../templates/HomeTemplate/types";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 // 헬퍼 함수들
 const getCategoryNameById = (categoryId: number): Category => {
@@ -259,7 +260,7 @@ export const HomeScreen: React.FC = () => {
           budgetTotalResponse.totalAmount
         ),
         month: getCurrentMonth(),
-        listTitle: "카테고리별 사용현황",
+        listTitle: `${getCurrentMonth()} 카테고리별 사용현황`,
         categoryBudgets: updatedCategoryBudgets,
         transactions: transactions,
       };
@@ -298,8 +299,8 @@ export const HomeScreen: React.FC = () => {
       const budgetStatus = await checkBudgetStatus();
 
       if (budgetStatus.totalAmount > 0) {
-        // 이전 달에 예산이 있으면 AI 추천으로 새로운 예산 설정
-        router.push("/budget/ai-setup" as any);
+        // 이전 달에 예산이 있으면 기존 예산 설정 과정으로 이동
+        router.push("/budget/total" as any);
       } else {
         // 이전 달에 예산이 없으면 초기 단계별 프로세스
         router.push("/budget");
@@ -313,8 +314,8 @@ export const HomeScreen: React.FC = () => {
         // 이전 달에 예산이 없음 → 초기 단계별 프로세스
         router.push("/budget");
       } else {
-        // 다른 에러의 경우 AI 추천으로 폴백
-        router.push("/budget/ai-setup" as any);
+        // 다른 에러의 경우 기존 예산 설정 과정으로 폴백
+        router.push("/budget/total" as any);
       }
     }
   };
@@ -339,7 +340,7 @@ export const HomeScreen: React.FC = () => {
       ).length;
       setUnreadNotificationCount(unreadCount);
     } catch (error) {
-      console.error("알림 개수 조회 실패:", error);
+      // 알림 개수 조회 실패 시 무시
     }
   }, []);
 
@@ -390,6 +391,11 @@ export const HomeScreen: React.FC = () => {
         onRetry={loadHomeData}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+      />
+      
+      <LoadingOverlay
+        visible={loading && !refreshing}
+        message="홈 데이터를 불러오고 있어요..."
       />
     </View>
   );

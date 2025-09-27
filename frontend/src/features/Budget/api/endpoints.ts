@@ -9,4 +9,6 @@ export const BUDGET_ENDPOINTS = {
   commit: "/budget/commit",
   // 예산 설정 여부 확인
   getTotalAmount: "/budget/total",
+  // 예산 전체 저장/수정 (Redis 없이 한번에)
+  saveAllBudget: "/budget/all/recommend",
 } as const;

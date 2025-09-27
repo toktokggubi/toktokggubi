@@ -1,4 +1,4 @@
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text, TouchableOpacity, ActivityIndicator, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { colors } from "@/shared/constants/colors";
@@ -18,6 +18,10 @@ export default function TotalBudgetTemplate({
   min = 100_000,
   max = 4_000_000,
   step = 50_000,
+  loadingAI = false,
+  aiError = null,
+  onRetryAI,
+  aiRecommendationSuccess = false,
 }: TotalBudgetTemplateProps) {
   // 키패드 입력용 상태 (슬라이더와 분리)
   const [keyboardValue, setKeyboardValue] = useState<string>("");
@@ -49,6 +53,36 @@ export default function TotalBudgetTemplate({
           title="전체 예산 설정"
           subtitle="이번 달 사용할 총 예산을 정해주세요."
         />
+        
+        {/* AI 추천 상태 표시 */}
+        {loadingAI && (
+          <View style={s.aiStatus}>
+            <ActivityIndicator size="small" color={colors.BLUE_NORMAL} />
+            <Text style={s.aiStatusText}>AI가 추천 예산을 분석 중입니다...</Text>
+          </View>
+        )}
+        
+        {aiRecommendationSuccess && !loadingAI && !aiError && (
+          <View style={s.aiSuccess}>
+            <Image 
+              source={require("@/assets/images/character/stupid.png")} 
+              style={s.characterImage}
+              resizeMode="contain"
+            />
+            <Text style={s.aiSuccessText}>꺼비가 추천해준 전체 예산 값입니다</Text>
+          </View>
+        )}
+        
+        {aiError && (
+          <View style={s.aiError}>
+            <Text style={s.aiErrorText}>{aiError}</Text>
+            {onRetryAI && (
+              <TouchableOpacity onPress={onRetryAI} style={s.retryButton}>
+                <Text style={s.retryButtonText}>다시 시도</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
 
       {/* 중앙 금액 표시 */}
@@ -93,6 +127,66 @@ const s = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 24,
+  },
+  aiStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.GRAY_LIGHT,
+    borderRadius: 8,
+  },
+  aiStatusText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: colors.GRAY_NORMAL,
+  },
+  aiSuccess: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.BLUE_LIGHT,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.BLUE_NORMAL,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  characterImage: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+  },
+  aiSuccessText: {
+    fontSize: 14,
+    color: colors.BLUE_NORMAL,
+    fontWeight: '500',
+    flex: 1,
+  },
+  aiError: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.YELLOW_LIGHT,
+    borderRadius: 8,
+  },
+  aiErrorText: {
+    fontSize: 14,
+    color: colors.GRAY_DARK,
+    marginBottom: 8,
+  },
+  retryButton: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: colors.BLUE_NORMAL,
+    borderRadius: 4,
+  },
+  retryButtonText: {
+    fontSize: 12,
+    color: colors.BACKGROUND_PRIMARY,
+    fontWeight: "500",
   },
   centerContent: {
     flex: 1,
