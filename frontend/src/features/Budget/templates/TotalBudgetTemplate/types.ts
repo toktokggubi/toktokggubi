@@ -16,4 +16,5 @@ export interface TotalBudgetTemplateProps {
   loadingAI?: boolean;
   aiError?: string | null;
   onRetryAI?: () => void;
+  aiRecommendationSuccess?: boolean;
 }

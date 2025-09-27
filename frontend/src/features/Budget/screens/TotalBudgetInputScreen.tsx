@@ -8,6 +8,7 @@ export default function TotalBudgetInputScreen() {
   const [totalAmount, setTotalAmount] = useState(500_000); // 기본값을 500,000으로 설정
   const [loadingAI, setLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiRecommendationSuccess, setAiRecommendationSuccess] = useState(false);
   const { 
     saveTotal, 
     isSavingTotal, 
@@ -23,14 +24,17 @@ export default function TotalBudgetInputScreen() {
     try {
       setLoadingAI(true);
       setAiError(null);
+      setAiRecommendationSuccess(false);
       
       const aiRecommendation = await fetchAITotalRecommendation();
       if (aiRecommendation && aiRecommendation.totalAmount > 0) {
         setTotalAmount(aiRecommendation.totalAmount);
+        setAiRecommendationSuccess(true);
       }
     } catch (error) {
       console.log('AI 추천값 로딩 실패:', error);
       setAiError('AI 추천값을 불러오는데 실패했습니다. 기본값을 사용합니다.');
+      setAiRecommendationSuccess(false);
       // AI 실패해도 기본값 그대로 사용
     } finally {
       setLoadingAI(false);
@@ -69,6 +73,7 @@ export default function TotalBudgetInputScreen() {
       loadingAI={loadingAI}
       aiError={aiError}
       onRetryAI={loadAIRecommendation}
+      aiRecommendationSuccess={aiRecommendationSuccess}
     />
   );
 }

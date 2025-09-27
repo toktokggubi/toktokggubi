@@ -21,6 +21,7 @@ export default function TotalBudgetTemplate({
   loadingAI = false,
   aiError = null,
   onRetryAI,
+  aiRecommendationSuccess = false,
 }: TotalBudgetTemplateProps) {
   // 키패드 입력용 상태 (슬라이더와 분리)
   const [keyboardValue, setKeyboardValue] = useState<string>("");
@@ -56,8 +57,14 @@ export default function TotalBudgetTemplate({
         {/* AI 추천 상태 표시 */}
         {loadingAI && (
           <View style={s.aiStatus}>
-            <ActivityIndicator size="small" color={colors.PRIMARY} />
+            <ActivityIndicator size="small" color={colors.BLUE_NORMAL} />
             <Text style={s.aiStatusText}>AI가 추천 예산을 분석 중입니다...</Text>
+          </View>
+        )}
+        
+        {aiRecommendationSuccess && !loadingAI && !aiError && (
+          <View style={s.aiSuccess}>
+            <Text style={s.aiSuccessText}>🤖 AI가 추천해준 전체 예산 값입니다</Text>
           </View>
         )}
         
@@ -122,36 +129,50 @@ const s = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.BACKGROUND_SECONDARY,
+    backgroundColor: colors.GRAY_LIGHT,
     borderRadius: 8,
   },
   aiStatusText: {
     marginLeft: 8,
     fontSize: 14,
-    color: colors.TEXT_SECONDARY,
+    color: colors.GRAY_NORMAL,
+  },
+  aiSuccess: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.BLUE_LIGHT,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.BLUE_NORMAL,
+  },
+  aiSuccessText: {
+    fontSize: 14,
+    color: colors.BLUE_NORMAL,
+    fontWeight: '500',
   },
   aiError: {
     marginTop: 16,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: colors.ERROR_LIGHT,
+    backgroundColor: colors.YELLOW_LIGHT,
     borderRadius: 8,
   },
   aiErrorText: {
     fontSize: 14,
-    color: colors.ERROR,
+    color: colors.GRAY_DARK,
     marginBottom: 8,
   },
   retryButton: {
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: colors.PRIMARY,
+    backgroundColor: colors.BLUE_NORMAL,
     borderRadius: 4,
   },
   retryButtonText: {
     fontSize: 12,
-    color: colors.WHITE,
+    color: colors.BACKGROUND_PRIMARY,
     fontWeight: "500",
   },
   centerContent: {
