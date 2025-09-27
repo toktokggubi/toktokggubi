@@ -75,6 +75,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     position: "relative",
     backgroundColor: "transparent",
+    marginLeft: 20,
   },
   svg: {
     position: "absolute",
