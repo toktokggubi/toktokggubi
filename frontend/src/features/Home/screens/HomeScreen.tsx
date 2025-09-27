@@ -259,7 +259,7 @@ export const HomeScreen: React.FC = () => {
           budgetTotalResponse.totalAmount
         ),
         month: getCurrentMonth(),
-        listTitle: "카테고리별 사용현황",
+        listTitle: `${getCurrentMonth()} 카테고리별 사용현황`,
         categoryBudgets: updatedCategoryBudgets,
         transactions: transactions,
       };
