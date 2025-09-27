@@ -5,16 +5,11 @@ module.exports = {
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/favicon.png",
-    scheme: "toktokggubi",
+    scheme: "frontend",
     userInterfaceStyle: "automatic",
-    splash: {
-      image: "./assets/images/favicon.png",
-      resizeMode: "contain",
-      backgroundColor: "#288CFF",
-    },
     newArchEnabled: true,
     developmentClient: {
-      silentLaunch: false,
+      silentLaunch: true,
     },
     ios: {
       supportsTablet: true,

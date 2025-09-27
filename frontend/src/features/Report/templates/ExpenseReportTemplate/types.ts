@@ -27,6 +27,8 @@ export interface ExpenseReportTemplateProps {
   year: number;
   month: number;
   totalAmount: number;
+  fixedExpenseAmount?: number;
+  variableExpenseAmount?: number;
 
   // 차트 데이터
   chartData: DonutChartData[];
@@ -37,9 +39,10 @@ export interface ExpenseReportTemplateProps {
 
   // 결제 내역 데이터
   dailyPaymentData: DailyPaymentData[];
-  maxPaymentDay: string;
-  maxPaymentDayDetails: PaymentDetail[];
-  onMoreDetailsPress: () => void;
+  allDaysPaymentDetails: Array<{
+    date: string;
+    details: PaymentDetail[];
+  }>;
 
   // VIP 매장 데이터
   vipStores: VIPStore[];
@@ -48,6 +51,9 @@ export interface ExpenseReportTemplateProps {
   // 이상탐지 데이터
   anomalyData?: AnomalyData[];
   totalAnomalyAmount?: number;
+
+  // 월간 소비 한마디
+  overallSummary?: string;
 
   // 알림 아이콘
   onNotificationPress?: () => void;

@@ -20,14 +20,9 @@ public class CategoryService {
 
     /**
      * @param q    부분 검색 (name LIKE %q%), null 허용
-     * @param sort sortOrder|name (기본 sortOrder ASC)
      */
-    public CategoryListResponse list(String q, String sort) {
-        Sort s = switch (sort == null ? "" : sort.toLowerCase()) {
-            case "name" -> Sort.by(Sort.Direction.ASC, "name");
-            default -> Sort.by(Sort.Direction.ASC, "sortOrder").and(Sort.by("name"));
-        };
-
+    public CategoryListResponse list(String q) {
+        Sort s = Sort.by(Sort.Direction.ASC, "sortOrder");
         List<Category> rows = (q == null || q.isBlank())
                 ? categoryRepository.findAll(s)
                 : categoryRepository.findByNameContaining(q, s);
