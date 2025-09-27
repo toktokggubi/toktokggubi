@@ -53,3 +53,19 @@ export interface DraftCategoriesRequest {
   selectedCategories: number[];
   categoryAllocations: CategoryAllocation[];
 }
+
+// 예산 전체 저장/수정 요청 타입
+export interface BudgetAllSaveRequest {
+  totalAmount: number;
+  fixedExpenses: FixedExpense[];
+  selectedCategories: number[];
+  categoryAllocations: CategoryAllocation[];
+}
+
+// 예산 전체 저장/수정 응답 타입
+export interface BudgetAllSaveResponse {
+  budgetYm: string;
+  userMonthlyBudgetId: number;
+  fixedExpenseCount: number;
+  budgetCategoryCount: number;
+}

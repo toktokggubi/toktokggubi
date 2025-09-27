@@ -2,8 +2,8 @@
 import { z } from "zod";
 import * as molbbangFetchers from "./fetchers";
 import type { RoomView } from "./types";
-import * as SecureStore from "expo-secure-store";
 import { Client, IMessage } from "@stomp/stompjs";
+import * as SecureStore from "expo-secure-store";
 
 // ===== 기존 타입 호환성을 위한 변환 함수들 =====
 export interface MolbbangMember {
@@ -29,38 +29,10 @@ export interface MolbbangRoom {
 
 // ===== Utils =====
 
-// 토큰 갱신 함수
-async function refreshToken(): Promise<string | null> {
-  try {
-    const refreshToken = await SecureStore.getItemAsync("refresh_token");
-    if (!refreshToken) {
-      if (__DEV__) {
-        console.warn("🔍 리프레시 토큰이 없음");
-      }
-      return null;
-    }
-
-    // TODO: 실제 토큰 갱신 API 호출
-    // const response = await http.post("/auth/token/refresh", { refreshToken });
-    // await SecureStore.setItemAsync("access_token", response.data.accessToken);
-    // return response.data.accessToken;
-
-    if (__DEV__) {
-      console.log("🔍 토큰 갱신 API 호출 필요");
-    }
-    return null;
-  } catch (error) {
-    if (__DEV__) {
-      console.warn("🔍 토큰 갱신 실패:", error);
-    }
-    return null;
-  }
-}
+// 토큰 갱신은 http.ts의 자동 갱신 로직에 의존
 
 // ===== Schemas =====
 const SetReadyReq = z.object({
-  userId: z.string().optional(),
-  nickname: z.string().optional(),
   ready: z.boolean(),
 });
 type SetReadyReq = z.infer<typeof SetReadyReq>;
@@ -118,7 +90,7 @@ async function createRoom(dto: {
   const response = await molbbangFetchers.createRoom({
     amount: dto.amount,
     nickname: dto.nickname,
-    totalRounds: 3, // 기본값
+    totalRounds: 1, // 기본값
   });
 
   return { code: response.code };
@@ -135,19 +107,19 @@ async function joinRoom(dto: {
   return { ok: true };
 }
 
-async function fetchRoom(code: string): Promise<MolbbangRoom> {
+async function fetchRoom(): Promise<MolbbangRoom> {
   const roomView = await molbbangFetchers.getMyRoom();
   return convertRoomViewToMolbbangRoom(roomView);
 }
 
-async function setReady(code: string, payload: SetReadyReq): Promise<void> {
+async function setReady(payload: SetReadyReq): Promise<void> {
   SetReadyReq.parse(payload);
   await molbbangFetchers.setReady({
     ready: payload.ready,
   });
 }
 
-async function startRound(code: string): Promise<{
+async function startRound(): Promise<{
   ok: boolean;
   reason?: "not_ready";
   round?: number;
@@ -168,43 +140,64 @@ async function startRound(code: string): Promise<{
   }
 }
 
-async function finishRound(
-  code: string,
-  payload?: { totals?: Record<string, number> }
-): Promise<{ ok: boolean; status?: string; round?: number }> {
-  const response = await molbbangFetchers.endRound();
-  return {
-    ok: response.ok,
-    status: response.status,
-    round: response.round,
-  };
+async function finishRound(payload?: {
+  totals?: Record<string, number>;
+}): Promise<{ ok: boolean; status?: string }> {
+  try {
+    const response = await molbbangFetchers.endGame();
+    return {
+      ok: response.ok,
+      status: response.status,
+    };
+  } catch (error: any) {
+    throw error;
+  }
 }
 
-async function submitScore(
-  code: string,
-  score: number
-): Promise<{ ok: boolean }> {
-  const response = await molbbangFetchers.submitScore({ score });
-  return { ok: response.ok };
+async function submitScore(score: number): Promise<{ ok: boolean }> {
+  try {
+    const response = await molbbangFetchers.submitScore({ score });
+    return { ok: response.ok };
+  } catch (error: any) {
+    // 백엔드 에러 코드에 따른 처리
+    if (error.response?.status === 400) {
+      const errorMessage = error.response?.data?.message || error.message;
+      if (errorMessage.includes("already_submitted")) {
+        return { ok: true }; // 이미 제출된 경우 성공으로 처리
+      } else if (errorMessage.includes("not_in_round")) {
+        throw new Error("라운드가 종료되었습니다");
+      } else if (errorMessage.includes("no_active_round")) {
+        throw new Error("게임이 시작되지 않았습니다");
+      }
+    }
+    throw error;
+  }
 }
 
-async function getResults(code: string): Promise<{
+async function getResults(): Promise<{
   ok: boolean;
   ranking: { userId: string; nickname: string; total: number }[];
   jackpotUserId?: string;
   amount?: number;
 }> {
-  const response = await molbbangFetchers.getResults();
-  return {
-    ok: response.ok,
-    ranking: response.ranking.map((row) => ({
-      userId: row.userId.toString(),
-      nickname: row.nickname,
-      total: row.totalScore,
-    })),
-    jackpotUserId: response.jackpotUserId?.toString(),
-    amount: response.amount,
-  };
+  try {
+    const response = await molbbangFetchers.getResults();
+
+    const result = {
+      ok: response.ok,
+      ranking: response.ranking.map((row) => ({
+        userId: row.userId.toString(),
+        nickname: row.nickname,
+        total: row.score, // totalScore → score로 변경
+      })),
+      jackpotUserId: response.jackpotUserId?.toString(),
+      amount: response.amount,
+    };
+
+    return result;
+  } catch (error: any) {
+    throw error;
+  }
 }
 
 // ===== 웹소켓 연결 관리 =====
@@ -221,7 +214,6 @@ class MolbbangWebSocketManager {
   ) {
     if (this.client?.connected) {
       if (__DEV__) {
-        console.log("WebSocket already connected");
       }
       return;
     }
@@ -240,46 +232,14 @@ class MolbbangWebSocketManager {
       const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
       const currentTime = Math.floor(Date.now() / 1000);
 
-      if (__DEV__) {
-        console.log("🔍 토큰 정보:", {
-          exp: tokenPayload.exp,
-          current: currentTime,
-          remaining: tokenPayload.exp - currentTime,
-          userId: tokenPayload.sub,
-          type: tokenPayload.t,
-        });
-      }
-
       if (tokenPayload.exp && tokenPayload.exp < currentTime) {
-        if (__DEV__) {
-          console.warn("🔍 토큰이 만료됨:", {
-            exp: tokenPayload.exp,
-            current: currentTime,
-            expired: currentTime - tokenPayload.exp,
-          });
-        }
         throw new Error("Access token expired");
       }
-    } catch (error) {
-      if (__DEV__) {
-        console.warn("🔍 토큰 파싱 실패:", error);
-      }
-    }
-
-    if (__DEV__) {
-      console.log("🔍 WebSocket 연결 시도 - 토큰 길이:", accessToken.length);
-    }
+    } catch (error) {}
 
     const wsUrl = "wss://j13b207.p.ssafy.io/api/ws";
     // 쿼리 파라미터와 헤더 둘 다로 토큰 전달 (백엔드에서 둘 다 지원)
     const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(accessToken)}`;
-
-    if (__DEV__) {
-      console.log(
-        "🔍 WebSocket URL:",
-        wsUrlWithToken.substring(0, 100) + "..."
-      );
-    }
 
     this.client = new Client({
       brokerURL: wsUrlWithToken,
@@ -292,35 +252,23 @@ class MolbbangWebSocketManager {
       reconnectDelay: 2000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      debug: (str) => debug && console.log("[STOMP]", str), // 몰빵 웹소켓 로그만 유지
+      debug: (str) => debug && false, // 몰빵 웹소켓 로그만 유지
       onConnect: () => {
-        if (__DEV__) {
-          console.log("WebSocket connected");
-        }
+      if (__DEV__) {
+      }
         this.subscribeToRoom();
       },
       onStompError: (frame) => {
-        if (__DEV__) {
-          console.warn("🔍 STOMP error:", {
-            headers: frame.headers,
-            body: frame.body,
-            command: frame.command,
-          });
-        }
+      if (__DEV__) {
+      }
       },
       onWebSocketError: (ev) => {
-        if (__DEV__) {
-          console.warn("🔍 WebSocket error:", {
-            type: ev.type,
-            target: ev.target?.url,
-            readyState: ev.target?.readyState,
-          });
-        }
+      if (__DEV__) {
+      }
       },
       onDisconnect: () => {
-        if (__DEV__) {
-          console.log("WebSocket disconnected");
-        }
+      if (__DEV__) {
+      }
       },
     });
 
@@ -337,15 +285,13 @@ class MolbbangWebSocketManager {
         const convertedRoom = convertRoomViewToMolbbangRoom(roomView);
         this.onRoomUpdateCallback?.(convertedRoom);
         if (this.debug) {
-          console.log("Room update received:", convertedRoom);
         }
       } catch (error) {
-        console.error("Error parsing room update:", error);
+        // Error parsing room update
       }
     });
 
     if (this.debug) {
-      console.log("Subscribed to:", destination);
     }
   }
 
@@ -368,7 +314,6 @@ class MolbbangWebSocketManager {
       body: JSON.stringify({ ready }),
     });
     if (this.debug) {
-      console.log("Sent ready:", ready);
     }
   }
 
@@ -381,7 +326,6 @@ class MolbbangWebSocketManager {
       body: "{}",
     });
     if (this.debug) {
-      console.log("Sent start game");
     }
   }
 
@@ -389,12 +333,17 @@ class MolbbangWebSocketManager {
     if (!this.client?.connected) {
       throw new Error("WebSocket not connected");
     }
+
+    // 점수 유효성 검사
+    if (typeof score !== "number" || score < 0) {
+      throw new Error("유효하지 않은 점수입니다");
+    }
+
     this.client.publish({
       destination: "/app/molbbang/me/score",
       body: JSON.stringify({ score }),
     });
     if (this.debug) {
-      console.log("Sent score:", score);
     }
   }
 
@@ -407,7 +356,6 @@ class MolbbangWebSocketManager {
       body: "{}",
     });
     if (this.debug) {
-      console.log("Sent end game");
     }
   }
 

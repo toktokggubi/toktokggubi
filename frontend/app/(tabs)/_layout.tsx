@@ -39,7 +39,6 @@ export default function TabLayout() {
       const isShakeEnabled = await notificationService.isNotificationEnabled('shakeTriggerOn');
       
       if (!isShakeEnabled) {
-        console.log('쉐이크 트리거가 비활성화되어 있습니다.');
         return;
       }
 
@@ -66,7 +65,6 @@ export default function TabLayout() {
         params: { source: "shake" },
       });
     } catch (error) {
-      console.error('쉐이크 처리 중 오류:', error);
     }
   };
 

@@ -48,7 +48,7 @@ public class SaleEventQueryService {
                 se.getSaleEventId(),
                 new FranchiseSummaryResponse(
                         f.getFranchiseId(),
-                        f.getMerchantName(),
+                        f.getFranchiseName(),
                         f.getImageUrl()
                 ),
                 se.getTitle(),

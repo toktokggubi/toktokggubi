@@ -44,7 +44,6 @@ export default function QRScannerScreen() {
         };
       }
     } catch (error) {
-      console.log("JSON 파싱 실패, 다른 형식으로 시도");
     }
 
     // JSON이 아닌 경우 다른 형식으로 파싱 시도 (예: "merchantName:amount" 형태)
@@ -91,11 +90,6 @@ export default function QRScannerScreen() {
       const accessToken = await SecureStore.getItemAsync("access_token");
       const refreshToken = await SecureStore.getItemAsync("refresh_token");
       
-      console.log("토큰 상태:", {
-        hasAccessToken: !!accessToken,
-        hasRefreshToken: !!refreshToken,
-        accessTokenLength: accessToken?.length || 0
-      });
 
       // 결제 API 호출
       const paymentRequest: PaymentRequest = {
@@ -105,12 +99,9 @@ export default function QRScannerScreen() {
         amount: paymentInfo.amount,
       };
 
-      console.log("결제 요청:", paymentRequest);
       
       const response = await processPayment(paymentRequest);
       
-      console.log("결제 응답:", response);
-      console.log("결제 상태:", response.status, "→", response.status?.toUpperCase());
       
       if (response.status?.toUpperCase() === "APPROVED") {
         Alert.alert(
@@ -143,8 +134,6 @@ export default function QRScannerScreen() {
         );
       }
     } catch (error: any) {
-      console.error("결제 처리 오류:", error);
-      
       let errorMessage = "결제 처리 중 오류가 발생했습니다.";
       
       if (error?.response?.status === 401) {
@@ -159,12 +148,6 @@ export default function QRScannerScreen() {
         errorMessage = error.message;
       }
       
-      console.log("에러 상세 정보:", {
-        status: error?.response?.status,
-        statusText: error?.response?.statusText,
-        data: error?.response?.data,
-        message: error?.message
-      });
       
       Alert.alert(
         "결제 오류",

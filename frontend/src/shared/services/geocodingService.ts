@@ -25,7 +25,6 @@ export async function geocodeStoreName(
 ): Promise<GeocodingResult> {
   try {
     if (!KAKAO_KEY) {
-      console.warn("카카오 API 키가 설정되지 않았습니다.");
       return {
         latitude: fallbackLat,
         longitude: fallbackLng,
@@ -59,14 +58,12 @@ export async function geocodeStoreName(
     }
 
     // 검색 결과가 없으면 기본 좌표 반환
-    console.warn(`매장 "${storeName}"을 찾을 수 없습니다. 기본 좌표를 사용합니다.`);
     return {
       latitude: fallbackLat,
       longitude: fallbackLng,
       placeName: storeName,
     };
   } catch (error) {
-    console.error(`지오코딩 실패 (${storeName}):`, error);
     return {
       latitude: fallbackLat,
       longitude: fallbackLng,
@@ -98,7 +95,6 @@ export async function geocodeMultipleStores(
       // API 호출 간격 조절 (100ms)
       await new Promise(resolve => setTimeout(resolve, 100));
     } catch (error) {
-      console.error(`매장 "${storeName}" 지오코딩 실패:`, error);
       results.push({
         latitude: fallbackLat,
         longitude: fallbackLng,

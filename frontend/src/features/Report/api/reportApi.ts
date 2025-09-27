@@ -125,20 +125,14 @@ export const fetchAiReportInformation = async (
 export const fetchAiUserReport = async (
   request: AiUserReportGetRequest
 ): Promise<UserReportResponse> => {
-  console.log("fetchAiUserReport 호출:", request);
   
   try {
     const response = await http.post<UserReportResponse>(
       "/ai/report/get",
       request
     );
-    console.log("fetchAiUserReport 성공:", response.data);
     return response.data;
   } catch (error: any) {
-    console.error("fetchAiUserReport 실패:", error);
-    console.error("에러 상태:", error.response?.status);
-    console.error("에러 데이터:", error.response?.data);
-    console.error("에러 헤더:", error.response?.headers);
     throw error;
   }
 };

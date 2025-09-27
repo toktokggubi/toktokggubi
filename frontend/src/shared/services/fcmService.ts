@@ -236,7 +236,6 @@ class FCMService {
         const shouldShow = await this.notificationSettingsService.shouldSendNotification(notificationType);
         
         if (!shouldShow) {
-          console.log(`알림 차단됨: ${notificationType}`);
           return;
         }
         
@@ -251,7 +250,6 @@ class FCMService {
         });
       }
     } catch (error) {
-      console.error('포그라운드 알림 표시 실패:', error);
     }
   }
 
@@ -307,7 +305,6 @@ class FCMService {
     try {
       router.push('/(tabs)/home');
     } catch (error) {
-      console.error('홈 페이지 이동 실패:', error);
     }
   }
 

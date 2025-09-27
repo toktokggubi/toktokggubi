@@ -170,10 +170,8 @@ function PaymentTemplate({
   };
 
   const renderCard = useCallback(({ item }: { item: UserCardVM }) => {
-    console.log('Payment Template - Rendering card:', item);
-    console.log('Payment Template - Selected tab:', selectedTab);
     return <CardSlide card={item} />;
-  }, [selectedTab]);
+  }, []); // selectedTab 의존성 제거로 불필요한 리렌더링 방지
 
   // 카드 기프티콘
   const giftCarouselRef = useRef<ICarouselInstance | null>(null);
@@ -220,17 +218,18 @@ function PaymentTemplate({
       >
         {/* 카드 탭일 때 카드 캐러셀 표시 */}
         {selectedTab === 0 ? (
-          cards.length === 0 ? (
-            <View style={[styles.cardContainer, styles.empty]}>
-              <Text style={styles.emptyText}>등록된 카드가 없어요</Text>
-            </View>
-          ) : (
-            <View style={styles.cardContainer}>
-              {cardTopSection ? (
-                <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
-                  {cardTopSection}
-                </View>
-              ) : null}
+          <View style={styles.cardContainer}>
+            {cardTopSection ? (
+              <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+                {cardTopSection}
+              </View>
+            ) : null}
+            {cards.length === 0 ? (
+              <View style={styles.empty}>
+                {/* cardTopSection에서 전달된 UI가 표시됨 */}
+              </View>
+            ) : (
+              <>
               {selectedTab === 0 && (
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -276,7 +275,7 @@ function PaymentTemplate({
               )}
               {benefitsSection ? (
                 <View
-                  style={{ marginTop: 8, marginBottom: 12 }}
+                  style={{ marginTop: 8, marginBottom:12 }}
                   {...panResponder.panHandlers}
                 >
                   {benefitsSection}
@@ -284,14 +283,15 @@ function PaymentTemplate({
               ) : null}
               {cardBottomSection ? (
                 <View
-                  style={{ marginTop: 8, marginBottom: 12 }}
+                  style={{ marginTop: 0, marginBottom: 12 }}
                   {...panResponder.panHandlers}
                 >
                   {cardBottomSection}
                 </View>
               ) : null}
-            </View>
-          )
+              </>
+            )}
+          </View>
         ) : (
           // 기프티콘 탭일 때 children 표시
           <View style={styles.cardContainer}>
@@ -305,10 +305,11 @@ function PaymentTemplate({
               // 만료되지 않은 기프티콘만 필터링
               const activeGifticons = gifticons.filter(gifticon => gifticon.status === "ACTIVE");
               
-              if (activeGifticons.length === 0) {
+              if (activeGifticons.length === 0 || gifticonBottomSection) {
+                // 기프티콘이 없거나 gifticonBottomSection이 있을 때는 여기서 직접 표시
                 return (
-                  <View style={[styles.cardContainer, styles.empty]}>
-                    <Text style={styles.emptyText}>사용 가능한 기프티콘이 없어요</Text>
+                  <View style={{ flex: 1 }}>
+                    {gifticonBottomSection}
                   </View>
                 );
               }
@@ -338,14 +339,17 @@ function PaymentTemplate({
               );
             })()}
 
-            {gifticonBottomSection ? (
-              <View
-                style={styles.gifticonBottomContainer}
-                {...panResponder.panHandlers}
-              >
-                {gifticonBottomSection}
-              </View>
-            ) : null}
+            {(() => {
+              const activeGifticons = gifticons.filter(gifticon => gifticon.status === "ACTIVE");
+              return activeGifticons.length > 0 && gifticonBottomSection ? (
+                <View
+                  style={styles.gifticonBottomContainer}
+                  {...panResponder.panHandlers}
+                >
+                  {gifticonBottomSection}
+                </View>
+              ) : null;
+            })()}
             
             {/* 기프티콘 탭에서만 정보와 PagerDots 표시 */}
             {selectedTab === 1 && (() => {
@@ -368,12 +372,6 @@ function PaymentTemplate({
               ) : null;
             })()}
             
-            <View
-              style={styles.instructionContainer}
-              {...panResponder.panHandlers}
-            >
-              <Text style={styles.instructionText}>바코드를 찍어주세요</Text>
-            </View>
           </View>
         )}
       </ScrollView>

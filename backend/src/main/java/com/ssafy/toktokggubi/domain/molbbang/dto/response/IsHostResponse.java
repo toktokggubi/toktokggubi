@@ -7,4 +7,4 @@ public record IsHostResponse(
         boolean inRoom,
         boolean isHost,
         String roomCode
-) { }
+) {}

@@ -64,14 +64,11 @@ export default class KakaoAuthService {
         (result.type === "success" && result.url?.startsWith(APP_RETURN_URL) ? result.url : null);
 
       if (!finalUrl) {
-        console.log("openAuthSessionAsync result:", result);
-        console.log("APP_RETURN_URL:", APP_RETURN_URL);
         throw new Error("앱으로 돌아오지 못했습니다. (딥링크 미수신)");
       }
 
       const { token, refreshToken, signupToken, userId } = parseDeepLinkParams(finalUrl);
       if (!userId || (!token && !signupToken)) {
-        console.log("deep link url:", finalUrl);
         throw new Error("카카오 로그인 결과가 올바르지 않습니다.");
       }
 

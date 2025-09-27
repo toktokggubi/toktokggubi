@@ -15,8 +15,8 @@ public class Franchise {
     @Column(name = "franchise_id", nullable = false)
     private Long franchiseId;
 
-    @Column(name = "merchant_name", nullable = false, length = 150)
-    private String merchantName;
+    @Column(name = "franchise_name", nullable = false, length = 150)
+    private String franchiseName;
 
     @Column(name = "image_url", length = 255)
     private String imageUrl;

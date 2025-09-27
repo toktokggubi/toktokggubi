@@ -32,4 +32,7 @@ export interface CategoryBudgetTemplateProps {
   /** 스텝 정보 */
   stepIndex: number;
   stepTotal: number;
+
+  /** AI 추천 상태 */
+  aiRecommendationSuccess?: boolean;
 }

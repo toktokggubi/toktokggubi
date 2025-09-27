@@ -5,15 +5,23 @@ import com.ssafy.toktokggubi.domain.budget.service.BudgetCommitService;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetDraftService;
 
 import com.ssafy.toktokggubi.domain.budget.service.BudgetReadService;
+import com.ssafy.toktokggubi.domain.budget.service.BudgetRecommendService;
+import com.ssafy.toktokggubi.domain.gms.service.AiBudgetService;
 import com.ssafy.toktokggubi.domain.gms.service.AiSuggestService;
 import com.ssafy.toktokggubi.domain.gms.service.GmsTextService;
+import com.ssafy.toktokggubi.domain.report.service.AiReportInformationService;
+import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -30,11 +38,12 @@ public class BudgetController {
     private final BudgetCommitService commitService;
     private final YmResolver ymResolver;
     private final BudgetReadService budgetReadService;
-private final AiSuggestService aiSuggestService;
-private final GmsTextService gmsTextService;
-    // BD-1, BD-3, BD-6 (draft 저장)
-    // BD-1, BD-3, BD-6 (draft 저장)
-    // import 생략: Operation, ApiResponse, ApiResponses 등
+    private final AiSuggestService aiSuggestService;
+    private final GmsTextService gmsTextService;
+    private final AiReportInformationService reportInfoService; // 이미 있는 서비스(값 조회)
+    private final AiBudgetService aiBudgetService;
+    private final UserRepository userRepository;
+    private final BudgetRecommendService budgetRecommendService;
 
     @PostMapping("/draft/save/total")
     public DraftSaveResponseDto saveDraftTotal(
@@ -55,7 +64,7 @@ private final GmsTextService gmsTextService;
 
     @PostMapping("/draft/save/fixed")
     public DraftSaveResponseDto saveDraftFixed(
-                                            @RequestBody DraftFixedRequestDto req) {
+            @RequestBody DraftFixedRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
         DraftPatchRequestDto patch = new DraftPatchRequestDto(
                 req.expectedVersion(),
@@ -70,7 +79,7 @@ private final GmsTextService gmsTextService;
     @PostMapping("/draft/save/categories")
     public DraftSaveResponseDto saveDraftCategories(
 
-                                                 @RequestBody DraftCategoriesSelectRequestDto req) {
+            @RequestBody DraftCategoriesSelectRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
         String ym   = ymResolver.nowYm();
 
@@ -110,7 +119,7 @@ private final GmsTextService gmsTextService;
     // BD-6 마지막 버튼 (commit)
     @PostMapping("/commit")
     public BudgetCommitResponseDto commit(
-            ) {
+    ) {
         Long userId =SecurityUtils.currentUserIdOrNull();
         String ym = ymResolver.nowYm();
         return commitService.commit(userId, ym, null);
@@ -172,7 +181,7 @@ private final GmsTextService gmsTextService;
             }
         }
 
-// 5) id 매핑으로 CategoryAllocDto 리스트 구성
+
         List<CategoryAllocDto> allocDtos = new java.util.ArrayList<>(selectedIds.size());
         for (Long id : selectedIds) {
             String name = namesById.getOrDefault(id, "카테고리#" + id);
@@ -250,66 +259,40 @@ private final GmsTextService gmsTextService;
         String ym = ymResolver.nowYm();
         return budgetReadService.getPreviousFixedList(userId, ym);
     }
+
     @GetMapping("/ai/total/set")
     public TotalAmountResponseDto getAiSet() {
         Long userId = SecurityUtils.currentUserIdOrNull();
         return aiSuggestService.suggestLivingBudget(userId);
     }
-
-
-    @PostMapping("/all/commit")
-    public BudgetCommitResponseDto saveAllAtOnce(@RequestBody BudgetAllSaveRequestDto req) {
+    /**
+     * 추천안 저장/덮어쓰기(전월 기본).
+     * - ym 미지정 시: prevYm()
+     * - 동일 (user, ym) 존재 시: 기존 UserMonthlyBudget 삭제 → 신규 생성 (CASCADE로 종속 삭제)
+     */
+    @PostMapping("/all/recommend")
+    public BudgetSaveResponseDto saveFrontRecommend(@RequestBody @Valid BudgetAllSaveRequestDto req) {
         Long userId = SecurityUtils.currentUserIdOrNull();
-        String ym   = ymResolver.nowYm();
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        return budgetRecommendService.saveOrUpdateMonthlyBudget(userId, ymResolver.nowYm(), req);
+    }
 
-        // 0) selectedCategories 보정
-        BudgetAllSaveRequestDto normalized = normalizeAllSave(req);
+    /** selected이 비면 allocations의 카테고리로 채우고, null 리스트는 빈 리스트로 치환 */
+    private static BudgetAllSaveRequestDto normalize(BudgetAllSaveRequestDto req) {
+        List<Long> selected = (req.selectedCategories() == null || req.selectedCategories().isEmpty())
+                ? (req.categoryAllocations() == null ? List.of()
+                : req.categoryAllocations().stream().map(CategoryAllocDto::categoryId).distinct().toList())
+                : req.selectedCategories();
 
-        // 1) expectedVersion=null 로 고정하여 버전 체크 스킵
-        DraftPatchRequestDto patch = new DraftPatchRequestDto(
-                null, // ★ 버전 체크 건너뛰기
-                normalized.totalAmount(),
-                normalized.fixedExpenses(),
-                normalized.selectedCategories(),
-                normalized.categoryAllocations()
-        );
-
-        // 2) 드래프트에 병합 저장
-        draftService.mergeAndSave(userId, ym, patch);
-
-        // 3) 즉시 커밋(DB 반영)
-        var committed = commitService.commit(userId, ym, null);
-
-        // 4) 기존 응답 타입 재사용
-        return BudgetCommitResponseDto.committed(
-                committed.budgetId(),
-                userId,
-                ym,
-                committed.totalAmount(),
-                committed.fixedExpenseCount(),
-                committed.categoryCount()
+        return new BudgetAllSaveRequestDto(
+                req.totalAmount(),
+                req.fixedExpenses() == null ? List.of() : req.fixedExpenses(),
+                selected,
+                req.categoryAllocations() == null ? List.of() : req.categoryAllocations()
         );
     }
 
-    private BudgetAllSaveRequestDto normalizeAllSave(BudgetAllSaveRequestDto req) {
-        if (req == null) return new BudgetAllSaveRequestDto(null, null, null, null);
 
-        var selected = req.selectedCategories();
-        var allocs   = req.categoryAllocations();
 
-        if ((selected == null || selected.isEmpty()) && allocs != null && !allocs.isEmpty()) {
-            List<Long> derived = allocs.stream()
-                    .map(CategoryAllocDto::categoryId)
-                    .distinct()
-                    .toList();
-            return new BudgetAllSaveRequestDto(
-                    req.totalAmount(),
-                    req.fixedExpenses(),
-                    derived,                 // ★ allocations에서 유도
-                    req.categoryAllocations()
-            );
-        }
-        return req;
-    }
 
 }

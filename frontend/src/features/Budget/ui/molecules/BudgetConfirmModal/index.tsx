@@ -40,16 +40,10 @@ export default function BudgetConfirmModal({
           </View>
 
           <View style={styles.budgetInfo}>
-            <Text style={styles.budgetLabel}>확정할 예산</Text>
+            <Text style={styles.budgetLabel}>{month} 예산</Text>
             <Text style={styles.budgetAmount}>{krw(totalBudget)}</Text>
           </View>
 
-          <View style={styles.warningBox}>
-            <Text style={styles.warningIcon}>⚠️</Text>
-            <Text style={styles.warningText}>
-              확정 후에는 이번 달 예산을 수정할 수 없습니다.
-            </Text>
-          </View>
 
           <View style={styles.buttonContainer}>
             <Pressable
@@ -117,24 +111,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     ...font.bold,
     color: colors.BLUE_NORMAL,
-  },
-  warningBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF3CD",
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 24,
-  },
-  warningIcon: {
-    fontSize: 16,
-    marginRight: 8,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#856404",
-    lineHeight: 20,
   },
   buttonContainer: {
     flexDirection: "row",

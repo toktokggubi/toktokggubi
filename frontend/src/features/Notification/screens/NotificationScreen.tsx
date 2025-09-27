@@ -65,9 +65,7 @@ export default function NotificationScreen() {
             router.push('/(tabs)/home');
         }
         
-        console.log("알림 클릭 처리 완료:", notification.title);
       } catch (error) {
-        console.error("알림 클릭 처리 실패:", error);
         // 에러가 발생해도 기본적으로 홈으로 이동
         router.push('/(tabs)/home');
       }
@@ -83,7 +81,6 @@ export default function NotificationScreen() {
     // 월이 바뀌었는지 확인
     if (currentMonth !== newMonth) {
       try {
-        console.log(`월이 바뀌었습니다: ${currentMonth} → ${newMonth}`);
         // 이전 달 알림 삭제
         await deleteNotifications();
         // 현재 월 업데이트
@@ -91,7 +88,6 @@ export default function NotificationScreen() {
         // 삭제 후 알림 목록 다시 로드
         await loadNotifications();
       } catch (error) {
-        console.error("이전 달 알림 삭제 실패:", error);
       }
     }
   }, [currentMonth]);
@@ -130,7 +126,6 @@ export default function NotificationScreen() {
           await Notifications.dismissAllNotificationsAsync();
         }
       } catch (error) {
-        console.error("알림 로드 실패:", error);
         // 에러 시 빈 배열로 설정
         setNotifications([]);
       } finally {
@@ -157,7 +152,6 @@ export default function NotificationScreen() {
   useEffect(() => {
     // 새로운 알림이 올 때마다 알림 목록 새로고침
     const subscription = Notifications.addNotificationReceivedListener(() => {
-      console.log('새로운 알림 수신됨, 목록 새로고침');
       loadNotifications(true);
     });
 

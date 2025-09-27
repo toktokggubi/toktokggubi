@@ -14,9 +14,6 @@ export default function MyPageTemplate({
   onPressLogout,
   onPressSettings,
   onPressProfileEdit,
-  onPressBudgetSetup,
-  onPressAIBudgetSetup,
-  onPressFCMTest,
   cardImage,
   gifticonImage,
   isLoggingOut = false,
@@ -90,33 +87,7 @@ export default function MyPageTemplate({
         </TouchableOpacity>
       </View>
 
-      {/* 개발용 임시 버튼들 */}
-      <View style={s.tempButtonContainer}>
-        <Text style={s.tempButtonTitle}>🧪 예산 설정 테스트</Text>
-        
-        <View style={s.tempButtonRow}>
-          <TouchableOpacity style={[s.tempButtonSmall, s.tempButtonBlue]} onPress={onPressBudgetSetup}>
-            <Text style={[s.tempButtonTextSmall, s.tempButtonTextBlue]}>
-              📋 초기설정
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={[s.tempButtonSmall, s.tempButtonGreen]} onPress={onPressAIBudgetSetup}>
-            <Text style={[s.tempButtonTextSmall, s.tempButtonTextGreen]}>
-              🤖 AI추천
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={[s.tempButtonTitle, { marginTop: 16 }]}>🔔 FCM 토큰 테스트</Text>
-        
-        <TouchableOpacity style={[s.tempButtonSmall, s.tempButtonPurple]} onPress={onPressFCMTest}>
-          <Text style={[s.tempButtonTextSmall, s.tempButtonTextPurple]}>
-            📱 FCM 토큰 확인
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -228,56 +199,5 @@ const s = StyleSheet.create({
     height: 1,
     backgroundColor: colors.BLUE_LIGHT,
     alignSelf: "center",
-  },
-  tempButtonContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 40,
-  },
-  tempButtonTitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "600",
-    marginBottom: 8,
-    textAlign: "center",
-    ...font.bold,
-  },
-  tempButtonRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  tempButtonSmall: {
-    flex: 1,
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  tempButtonBlue: {
-    backgroundColor: "#EFF6FF",
-    borderColor: "#3B82F6",
-  },
-  tempButtonGreen: {
-    backgroundColor: "#F0FDF4",
-    borderColor: "#10B981",
-  },
-  tempButtonPurple: {
-    backgroundColor: "#FAF5FF",
-    borderColor: "#8B5CF6",
-  },
-  tempButtonTextSmall: {
-    fontSize: 12,
-    fontWeight: "500",
-    ...font.medium,
-  },
-  tempButtonTextBlue: {
-    color: "#1E40AF",
-  },
-  tempButtonTextGreen: {
-    color: "#047857",
-  },
-  tempButtonTextPurple: {
-    color: "#6B21A8",
   },
 });

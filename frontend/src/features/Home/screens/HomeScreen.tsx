@@ -18,6 +18,12 @@ import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { HomeTemplate } from "../templates/HomeTemplate";
+import {
+  CategoryBudget,
+  HomeData,
+  Transaction,
+} from "../templates/HomeTemplate/types";
+import LoadingOverlay from "@/shared/ui/LoadingOverlay";
 
 // 헬퍼 함수들
 const getCategoryNameById = (categoryId: number): Category => {
@@ -59,7 +65,8 @@ const getCharacterMessage = (
   currentAmount: number,
   totalAmount: number
 ): string => {
-  const usageRate = (currentAmount / totalAmount) * 100;
+  // 안전한 사용률 계산 (0으로 나누기 방지)
+  const usageRate = totalAmount > 0 ? (currentAmount / totalAmount) * 100 : 0;
 
   if (usageRate < 30) {
     return "아직은 넉넉하다꺼비";
@@ -249,26 +256,19 @@ export const HomeScreen: React.FC = () => {
         );
       }
 
-      // 고정 지출 제외한 사용 금액 계산
-      const fixedIncludedTotal = fixedIncludedTotalResponse?.fixedIncludedTotal || 0;
-      const variableExpenseAmount = Math.max(0, monthlySummaryResponse.totalAmount - fixedIncludedTotal);
+      // HomeData 형식으로 변환 (안전한 기본값 처리)
+      const currentAmount = monthlySummaryResponse?.totalAmount || 0;
+      const totalAmount = budgetTotalResponse?.totalAmount || 0;
       
-      // 변동 지출 예산 계산 (전체 예산 - 고정 지출)
-      const variableBudgetAmount = budgetTotalResponse.totalAmount - fixedIncludedTotal;
-
-      // HomeData 형식으로 변환
       const homeData: HomeData = {
         totalBudget: {
-          currentAmount: variableExpenseAmount, // 고정 지출 제외한 사용 금액
-          totalAmount: budgetTotalResponse.totalAmount, // 전체 예산 (고정 지출 포함)
+          currentAmount: currentAmount,
+          totalAmount: totalAmount,
         },
-        availableAmount: variableBudgetAmount - variableExpenseAmount, // 변동 지출 기준 잔액
-        characterMessage: getCharacterMessage(
-          variableExpenseAmount, // 고정 지출 제외한 사용 금액
-          variableBudgetAmount   // 변동 지출 예산
-        ),
+        availableAmount: Math.max(totalAmount - currentAmount, 0),
+        characterMessage: getCharacterMessage(currentAmount, totalAmount),
         month: getCurrentMonth(),
-        listTitle: "카테고리별 사용현황",
+        listTitle: `${getCurrentMonth()} 카테고리별 사용현황`,
         categoryBudgets: updatedCategoryBudgets,
         transactions: transactions,
       };
@@ -307,8 +307,8 @@ export const HomeScreen: React.FC = () => {
       const budgetStatus = await checkBudgetStatus();
 
       if (budgetStatus.totalAmount > 0) {
-        // 이전 달에 예산이 있으면 AI 추천으로 새로운 예산 설정
-        router.push("/budget/ai-setup" as any);
+        // 이전 달에 예산이 있으면 기존 예산 설정 과정으로 이동
+        router.push("/budget/total" as any);
       } else {
         // 이전 달에 예산이 없으면 초기 단계별 프로세스
         router.push("/budget");
@@ -322,8 +322,8 @@ export const HomeScreen: React.FC = () => {
         // 이전 달에 예산이 없음 → 초기 단계별 프로세스
         router.push("/budget");
       } else {
-        // 다른 에러의 경우 AI 추천으로 폴백
-        router.push("/budget/ai-setup" as any);
+        // 다른 에러의 경우 기존 예산 설정 과정으로 폴백
+        router.push("/budget/total" as any);
       }
     }
   };
@@ -348,7 +348,7 @@ export const HomeScreen: React.FC = () => {
       ).length;
       setUnreadNotificationCount(unreadCount);
     } catch (error) {
-      console.error("알림 개수 조회 실패:", error);
+      // 알림 개수 조회 실패 시 무시
     }
   }, []);
 
@@ -399,6 +399,11 @@ export const HomeScreen: React.FC = () => {
         onRetry={loadHomeData}
         onRefresh={handleRefresh}
         refreshing={refreshing}
+      />
+      
+      <LoadingOverlay
+        visible={loading && !refreshing}
+        message="홈 데이터를 불러오고 있어요..."
       />
     </View>
   );
