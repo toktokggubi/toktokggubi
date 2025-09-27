@@ -58,6 +58,14 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
           {
             text: '확인',
             style: 'default',
+            onPress: () => {
+              // 확인 버튼을 누르면 항상 홈으로 이동
+              try {
+                router.push('/(tabs)/home');
+              } catch (error) {
+                console.error('홈 페이지 이동 실패:', error);
+              }
+            },
           },
           {
             text: '바로가기',
@@ -99,7 +107,7 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
     try {
       // 링크에 따른 네비게이션 처리
       if (link.includes('budget')) {
-        router.push('/budget');
+        router.push('/(tabs)/home');
       } else if (link.includes('home')) {
         router.push('/(tabs)/home');
       } else if (link.includes('lucky')) {
@@ -121,7 +129,7 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
    */
   const navigateToBudgetPage = () => {
     try {
-      router.push('/budget');
+      router.push('/(tabs)/home');
     } catch (error) {
       router.push('/(tabs)/home');
     }
