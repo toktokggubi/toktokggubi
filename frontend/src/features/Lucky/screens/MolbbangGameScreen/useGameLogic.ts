@@ -75,7 +75,6 @@ export function useGameLogic({
 
     // 실시간으로 저장된 최종 점수 사용
     const finalScore = finalScoreRef.current;
-    console.log("🎯 [최종 점수] 실시간 저장된 점수:", finalScore, "점");
 
     // 타이머 즉시 정리
     if (timerRef.current) {
@@ -112,7 +111,6 @@ export function useGameLogic({
           setIsSubmittingScore(true); // 로딩 시작
           await molbbangApi.submitScore(finalScore);
         } catch (error: any) {
-          console.error("❌ [점수 제출] 점수 제출 실패:", error);
         } finally {
           setIsSubmittingScore(false); // 로딩 종료
         }

@@ -202,15 +202,12 @@ export default function PaymentScreen() {
       const isLocationNotificationEnabled = await notificationService.isNotificationEnabled('locationBasedOn');
       
       if (!isLocationNotificationEnabled) {
-        console.log('위치기반 알림이 비활성화되어 있습니다.');
         return;
       }
 
       const categoryId = getCategoryIdFromPlace(place);
       await pushLocation(categoryId);
-      console.log('위치기반 알림 요청 전송:', place.place_name, '카테고리:', categoryId);
     } catch (error) {
-      console.error('위치기반 알림 전송 실패:', error);
       // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
     }
   }, []);
@@ -427,9 +424,6 @@ export default function PaymentScreen() {
       ? [selectedPlace.place_name]
       : [nearbyNames[0]];
 
-    console.log('🔍 기프티콘 필터링 디버그:');
-    console.log('전체 기프티콘:', gifticons.map(g => ({ merchantName: g.merchantName, label: g.label })));
-    console.log('타겟 장소:', targetPlaces);
 
     const filtered = gifticons.filter((gifticon) => {
       const merchantName = gifticon.merchantName?.toLowerCase() ?? "";
@@ -439,7 +433,6 @@ export default function PaymentScreen() {
 
         // 가맹점명이 장소명에 포함되거나, 장소명이 가맹점명에 포함되는 경우
         if (place.includes(merchantName) || merchantName.includes(place)) {
-          console.log(`✅ 직접 매칭: ${merchantName} <-> ${place}`);
           return true;
         }
 
@@ -449,11 +442,9 @@ export default function PaymentScreen() {
           
           // 기프티콘 가맹점명이 브랜드에 포함되거나, 브랜드가 가맹점명에 포함되는 경우
           if (merchantName.includes(brandLower) || brandLower.includes(merchantName)) {
-            console.log(`🔍 브랜드 체크: ${merchantName} vs ${brandLower}`);
             // 장소명이 해당 브랜드의 변형들 중 하나와 매칭되는지 확인
             const matchingVariation = variations.find((variation) => place.includes(variation.toLowerCase()));
             if (matchingVariation) {
-              console.log(`✅ 브랜드 매칭: ${merchantName} (${brand}) <-> ${place} (${matchingVariation})`);
               return true;
             }
           }
@@ -461,11 +452,9 @@ export default function PaymentScreen() {
           // 기프티콘 가맹점명이 브랜드 변형들 중 하나와 매칭되는지도 확인
           const matchingMerchantVariation = variations.find((variation) => merchantName.includes(variation.toLowerCase()));
           if (matchingMerchantVariation) {
-            console.log(`🔍 기프티콘 변형 체크: ${merchantName} vs ${variations}`);
             // 장소명이 해당 브랜드의 변형들 중 하나와 매칭되는지 확인
             const matchingPlaceVariation = variations.find((variation) => place.includes(variation.toLowerCase()));
             if (matchingPlaceVariation) {
-              console.log(`✅ 변형 매칭: ${merchantName} (${matchingMerchantVariation}) <-> ${place} (${matchingPlaceVariation})`);
               return true;
             }
           }
@@ -475,7 +464,6 @@ export default function PaymentScreen() {
       });
     });
 
-    console.log('필터링된 기프티콘:', filtered.map(g => ({ merchantName: g.merchantName, label: g.label })));
     return filtered;
   }, [gifticons, hasNearby, nearbyNames, selectedPlace]);
 
@@ -971,7 +959,7 @@ export default function PaymentScreen() {
             )}
             
             {/* 카드가 없을 때의 UI */}
-            <View style={{ alignItems: "center", marginTop: 80 }}>
+            <View style={{ alignItems: "center", marginTop: 88 }}>
               {/* 캐릭터 이미지 */}
               <Image 
                 source={require("@/assets/images/character/big-character-06.png")}
@@ -998,7 +986,6 @@ export default function PaymentScreen() {
                   borderRadius: 8,
                 }}
                   onPress={() => {
-                    console.log("Payment에서 카드 관리 버튼 클릭됨");
                     // 네비게이션 스택을 리셋하고 카드 관리 페이지로 이동
                     router.replace("/cards");
                   }}
@@ -1021,9 +1008,6 @@ export default function PaymentScreen() {
           const activeGifticons = gifticons.filter(gifticon => gifticon.status === "ACTIVE");
           const activeFilteredGifticons = filteredGifticons.filter(gifticon => gifticon.status === "ACTIVE");
           
-          console.log('🎫 기프티콘 탭 디버그:');
-          console.log('전체 활성 기프티콘:', activeGifticons.map(g => ({ merchantName: g.merchantName, label: g.label, status: g.status })));
-          console.log('필터링된 활성 기프티콘:', activeFilteredGifticons.map(g => ({ merchantName: g.merchantName, label: g.label, status: g.status })));
           
           // 전체 기프티콘이 없거나, 현재 위치에서 사용 가능한 기프티콘이 없을 때
           if (activeGifticons.length === 0 || activeFilteredGifticons.length === 0) {
@@ -1059,7 +1043,6 @@ export default function PaymentScreen() {
                     borderRadius: 8,
                   }}
                   onPress={() => {
-                    console.log("Payment에서 기프티콘 관리 버튼 클릭됨");
                     // 네비게이션 스택을 리셋하고 기프티콘 관리 페이지로 이동
                     router.replace("/gifticons");
                   }}

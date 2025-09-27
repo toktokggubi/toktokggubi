@@ -127,7 +127,6 @@ export default function GifticonsScreen() {
 
               Alert.alert("삭제 완료", "선택한 기프티콘이 삭제되었습니다.");
             } catch (error) {
-              console.error("기프티콘 삭제 실패:", error);
               Alert.alert("삭제 실패", "기프티콘 삭제 중 오류가 발생했습니다.");
             }
           },
@@ -224,7 +223,6 @@ export default function GifticonsScreen() {
         
         // 이미지 업로드 및 OCR 처리
         setUploading(true);
-        console.log("기프티콘 등록 시작 - OCR 처리 중...");
         
         await uploadGifticon(imageUri);
         
@@ -234,7 +232,6 @@ export default function GifticonsScreen() {
         Alert.alert("등록 완료", "기프티콘이 등록되었습니다!");
       }
     } catch (error) {
-      console.error("기프티콘 등록 실패:", error);
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('timeout')) {
         Alert.alert("등록 실패", "OCR 처리 시간이 오래 걸려서 타임아웃되었습니다. 다시 시도해주세요.");
