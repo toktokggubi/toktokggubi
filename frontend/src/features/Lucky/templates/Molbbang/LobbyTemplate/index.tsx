@@ -57,11 +57,9 @@ export default function LobbyTemplate(props: LobbyTemplateProps) {
         </View>
       </View>
 
-      {/* 라운드 헤더 */}
+      {/* 게임 정보 헤더 */}
       <View style={s.sectionHeader}>
-        <Text style={[s.sectionTitle, font.bold]}>
-          라운드 {round}/{totalRounds}
-        </Text>
+        <Text style={[s.sectionTitle, font.bold]}>게임 참여자</Text>
         <Text style={s.sectionMeta}>현재 인원수 {presentCount}명</Text>
       </View>
 

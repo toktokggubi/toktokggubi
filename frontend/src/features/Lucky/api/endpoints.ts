@@ -13,8 +13,10 @@ export const MOLBBANG_ENDPOINTS = {
   startGame: "/molbbang/me/start",
   // 점수 제출
   submitScore: "/molbbang/me/score",
-  // 라운드 종료
-  endRound: "/molbbang/me/endRound",
+  // 게임 종료
+  endGame: "/molbbang/me/end",
   // 최종 결과 조회
   getResults: "/molbbang/me/results",
+  // 디버깅용 - 방 정보 상세 조회
+  debugRoom: "/molbbang/me/debug",
 } as const;
