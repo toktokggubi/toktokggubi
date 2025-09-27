@@ -3,6 +3,3 @@ export { default } from "./MolbbangGameScreen";
 export * from "./utils";
 export * from "./useGameState";
 export * from "./useGameLogic";
-export * from "./useModalHandlers";
-
-

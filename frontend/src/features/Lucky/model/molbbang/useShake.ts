@@ -11,7 +11,7 @@ interface UseShakeOptions {
 
 export function useShake({
   sampleHz = 60,
-  smoothing = 0.2,
+  smoothing = 0.4, // 스무딩 증가로 더 안정적으로
   shakeThreshold = 1.0,
   enabled = true,
 }: UseShakeOptions) {
@@ -45,8 +45,8 @@ export function useShake({
 
       if (next > shakeThreshold) {
         // 더 안정적인 점수 계산: magnitude 기반으로 점수 증가
-        // 하지만 너무 빠르게 증가하지 않도록 제한
-        const scoreIncrement = Math.min(next * 2, 1); // 최대 1점씩만 증가
+        // 실제로 흔들어야만 점수가 올라가도록 제한
+        const scoreIncrement = Math.min(next * 0.5, 0.3); // 최대 0.3점씩만 증가, 감도 낮춤
         setShakeValue((v) => v + scoreIncrement);
       }
     });

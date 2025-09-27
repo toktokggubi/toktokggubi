@@ -49,16 +49,7 @@ export function parseGameParams(params: {
       : 0;
 
   // URL 파라미터 디버깅 (한 번만 출력)
-  if (typeof window !== "undefined" && !window.__gameParamsLogged) {
-    console.log("🔍 [게임 화면] URL 파라미터 받기:", {
-      rawParams: params,
-      parsedCode: code,
-      parsedNickname: nickname,
-      parsedAmount: amount,
-      hostFlag: params.host,
-    });
-    window.__gameParamsLogged = true;
-  }
+  // URL 파라미터 처리
 
   const hostFlagFromParams =
     typeof params.host === "string"
@@ -77,8 +68,8 @@ export function parseGameParams(params: {
 
 // 게임 상수
 export const GAME_CONSTANTS = {
-  ROUND_MS: 10000, // 10초
+  GAME_MS: 10000, // 10초 (라운드 대신 게임 시간)
   INITIAL_SECONDS: 10,
   INITIAL_SCORE: 0,
-  POLLING_INTERVAL: 3000,
+  POLLING_INTERVAL: 1000, // 3초 → 1초로 단축
 } as const;

@@ -6,7 +6,6 @@ export interface GameState {
   isGameActive: boolean;
   isTimerRunning: boolean;
   isProcessingFinish: boolean;
-  hasShownModal: boolean;
   isStartingGame: boolean;
 }
 
@@ -14,12 +13,6 @@ export interface GameState {
 export function useGameState() {
   const [remainingSeconds, setRemainingSeconds] = useState<number>(10);
   const [currentScore, setCurrentScore] = useState<number>(0);
-  const [rankModalVisible, setRankModalVisible] = useState<boolean>(false);
-
-  // 모달 상태 디버깅
-  console.log("🔍 [모달 상태] rankModalVisible:", rankModalVisible);
-  const [rankModalData, setRankModalData] = useState<any[]>([]);
-  const [isFinalRound, setIsFinalRound] = useState<boolean>(false);
 
   // 타이머 refs
   const timerRef = useRef<number | null>(null);
@@ -30,7 +23,6 @@ export function useGameState() {
     isGameActive: false,
     isTimerRunning: false,
     isProcessingFinish: false,
-    hasShownModal: false,
     isStartingGame: false,
   });
 
@@ -40,12 +32,6 @@ export function useGameState() {
     setRemainingSeconds,
     currentScore,
     setCurrentScore,
-    rankModalVisible,
-    setRankModalVisible,
-    rankModalData,
-    setRankModalData,
-    isFinalRound,
-    setIsFinalRound,
 
     // refs
     timerRef,

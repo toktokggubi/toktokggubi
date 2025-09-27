@@ -46,16 +46,7 @@ export default function MolbbangResultScreen() {
       : 0
   );
 
-  // URL 파라미터 디버깅 (한 번만 출력)
-  if (typeof window !== "undefined" && !window.__resultParamsLogged) {
-    console.log("🔍 [결과 화면] URL 파라미터 받기:", {
-      rawParams: params,
-      parsedCode: code,
-      parsedNickname: nickname,
-      parsedAmount: amount,
-    });
-    window.__resultParamsLogged = true;
-  }
+  // URL 파라미터 처리
 
   const [room, setRoom] = useState<MolbbangRoom | null>(null);
   const [ranking, setRanking] = useState<
@@ -68,13 +59,56 @@ export default function MolbbangResultScreen() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const r = await molbbangApi.fetchRoom();
-      if (!mounted) return;
-      if (isRoom(r)) setRoom(r);
-      const res = await molbbangApi.getResults();
-      if (mounted && res.ok) {
-        setRanking(res.ranking);
-        setJackpotUserId(res.jackpotUserId);
+      try {
+        console.log("🔍 [결과 페이지] API 호출 시작, code:", code);
+
+        // 게임이 이미 종료되었으므로 바로 결과 조회
+        console.log("🔍 [결과 페이지] getResults 호출 시작");
+        const res = await molbbangApi.getResults();
+        console.log("🔍 [결과 페이지] getResults 응답:", res);
+        console.log("🔍 [결과 페이지] getResults 응답 타입:", typeof res);
+        console.log("🔍 [결과 페이지] getResults ok:", res.ok);
+        console.log("🔍 [결과 페이지] getResults ranking:", res.ranking);
+
+        if (mounted && res.ok) {
+          console.log("🔍 [결과 페이지] 랭킹 데이터 설정:", res.ranking);
+
+          // 랭킹 데이터가 비어있거나 유효하지 않은 경우 처리
+          if (
+            res.ranking &&
+            Array.isArray(res.ranking) &&
+            res.ranking.length > 0
+          ) {
+            setRanking(res.ranking);
+            setJackpotUserId(res.jackpotUserId);
+          } else {
+            console.warn(
+              "⚠️ [결과 페이지] 랭킹 데이터가 비어있음, 빈 배열로 설정"
+            );
+            setRanking([]);
+          }
+        } else {
+          console.error("❌ [결과 페이지] getResults 실패:", res);
+          console.error(
+            "❌ [결과 페이지] 응답 상세:",
+            JSON.stringify(res, null, 2)
+          );
+
+          // 실패 시에도 빈 랭킹으로 설정하여 UI가 깨지지 않도록 함
+          setRanking([]);
+        }
+      } catch (error) {
+        console.error("❌ [결과 페이지] API 호출 오류:", error);
+        console.error("❌ [결과 페이지] 에러 상세:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name,
+        });
+
+        // 에러 발생 시 빈 랭킹으로 설정
+        if (mounted) {
+          setRanking([]);
+        }
       }
     })();
     return () => {
@@ -83,30 +117,8 @@ export default function MolbbangResultScreen() {
   }, [code]);
 
   const myRank = useMemo(() => {
-    // TODO: 실제로는 사용자 인증 정보(userId)로 찾아야 함
-    // 현재는 임시로 첫 번째 순위를 사용 (백엔드에서 사용자별로 정렬되어 있다고 가정)
-    let idx = 0;
-
-    if (ranking.length > 0) {
-      console.log(
-        "🔍 [결과 화면] 서버에서 받은 실제 닉네임 사용:",
-        ranking[0]?.nickname
-      );
-    }
-
-    console.log("🔍 [결과 화면] 랭킹 찾기:", {
-      urlNickname: nickname,
-      serverRanking: ranking.map((r) => ({
-        nickname: r.nickname,
-        total: r.total,
-      })),
-      foundRank: idx >= 0 ? idx + 1 : null,
-      searchMethod:
-        idx === ranking.findIndex((x) => x.nickname === nickname)
-          ? "URL"
-          : "SERVER",
-    });
-
+    // 닉네임으로 사용자 순위 찾기
+    const idx = ranking.findIndex((r) => r.nickname === nickname);
     return idx >= 0 ? idx + 1 : null;
   }, [ranking, nickname]);
 
@@ -132,6 +144,11 @@ export default function MolbbangResultScreen() {
   const onExit = () => {
     router.replace("/molbbang"); // ✅ 원하는 경로로 이동 (예: 홈 화면)
   };
+
+  // 랭킹 데이터 로딩 상태 확인
+  console.log("🔍 [결과 페이지] 현재 랭킹 데이터:", ranking);
+  console.log("🔍 [결과 페이지] 내 순위:", myRank);
+  console.log("🔍 [결과 페이지] 잭팟 닉네임:", jackpotNick);
 
   return (
     <ResultTemplate

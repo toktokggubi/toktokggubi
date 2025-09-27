@@ -5,7 +5,6 @@ import GameTemplate from "@/features/Lucky/templates/Molbbang/GameTemplate";
 import { parseGameParams, GAME_CONSTANTS } from "./utils";
 import { useGameState } from "./useGameState";
 import { useGameLogic } from "./useGameLogic";
-import { useModalHandlers } from "./useModalHandlers";
 
 const idlePng = require("@/assets/images/character/big-character-02.png");
 const shakePng = require("@/assets/images/character/big-character-05.png");
@@ -28,12 +27,6 @@ export default function MolbbangGameScreen() {
     setRemainingSeconds,
     currentScore,
     setCurrentScore,
-    rankModalVisible,
-    setRankModalVisible,
-    rankModalData,
-    setRankModalData,
-    isFinalRound,
-    setIsFinalRound,
     timerRef,
     countdownRef,
     gameStateRef,
@@ -50,45 +43,22 @@ export default function MolbbangGameScreen() {
     countdownRef,
     setRemainingSeconds,
     setCurrentScore,
-    setRankModalVisible,
-    setRankModalData,
-    setIsFinalRound,
     currentScore, // 현재 점수 상태 전달
   });
 
-  // 모달 핸들러
-  const { onNextRound, onViewFinal } = useModalHandlers({
-    code,
-    nickname,
-    amount,
-    hostFlagFromParams,
-    room,
-    currentScore,
-    gameStateRef,
-    setRankModalVisible,
-    setRankModalData,
-    setIsFinalRound,
-    stopGame,
-    resetSensor: reset, // 센서 리셋 함수 전달
-  });
+  // 모달 핸들러는 더 이상 필요하지 않음 (바로 결과 화면으로 이동)
 
   return (
     <GameTemplate
       code={code}
       amount={amount}
-      round={room?.round ?? 1}
+      round={1} // 라운드는 항상 1
       remainingSeconds={remainingSeconds}
       magnitude={magnitude}
       myScore={currentScore}
       idleImage={idlePng}
       shakeImage={shakePng}
       onFinishRound={handleFinishRound}
-      // 모달 관련
-      rankModalVisible={rankModalVisible}
-      rankModalData={rankModalData}
-      isFinalRound={isFinalRound}
-      onNextRound={onNextRound}
-      onViewFinal={onViewFinal}
     />
   );
 }

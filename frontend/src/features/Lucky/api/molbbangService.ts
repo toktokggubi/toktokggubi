@@ -90,7 +90,7 @@ async function createRoom(dto: {
   const response = await molbbangFetchers.createRoom({
     amount: dto.amount,
     nickname: dto.nickname,
-    totalRounds: 3, // 기본값
+    totalRounds: 1, // 기본값
   });
 
   return { code: response.code };
@@ -142,13 +142,25 @@ async function startRound(): Promise<{
 
 async function finishRound(payload?: {
   totals?: Record<string, number>;
-}): Promise<{ ok: boolean; status?: string; round?: number }> {
-  const response = await molbbangFetchers.endRound();
-  return {
-    ok: response.ok,
-    status: response.status,
-    round: response.round,
-  };
+}): Promise<{ ok: boolean; status?: string }> {
+  try {
+    console.log("🔍 [API] finishRound 호출 시작");
+    const response = await molbbangFetchers.endGame();
+    console.log("🔍 [API] finishRound 응답:", response);
+    return {
+      ok: response.ok,
+      status: response.status,
+    };
+  } catch (error: any) {
+    console.error("❌ [API] finishRound 오류:", error);
+    console.error("❌ [API] finishRound 오류 상세:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+    });
+    throw error;
+  }
 }
 
 async function submitScore(score: number): Promise<{ ok: boolean }> {
@@ -160,13 +172,10 @@ async function submitScore(score: number): Promise<{ ok: boolean }> {
     if (error.response?.status === 400) {
       const errorMessage = error.response?.data?.message || error.message;
       if (errorMessage.includes("already_submitted")) {
-        console.log("🔍 [점수 제출] 이미 제출된 점수");
         return { ok: true }; // 이미 제출된 경우 성공으로 처리
       } else if (errorMessage.includes("not_in_round")) {
-        console.log("🔍 [점수 제출] 라운드가 활성 상태가 아님");
         throw new Error("라운드가 종료되었습니다");
       } else if (errorMessage.includes("no_active_round")) {
-        console.log("🔍 [점수 제출] 활성 라운드가 없음");
         throw new Error("게임이 시작되지 않았습니다");
       }
     }
@@ -180,41 +189,31 @@ async function getResults(): Promise<{
   jackpotUserId?: string;
   amount?: number;
 }> {
-  console.log("🔍 [getResults] API 호출 시작");
-
   try {
+    console.log("🔍 [API] getResults 호출 시작");
     const response = await molbbangFetchers.getResults();
-    console.log("🔍 [getResults] API 호출 성공:", {
-      ok: response.ok,
-      rankingCount: response.ranking.length,
-      jackpotUserId: response.jackpotUserId,
-      amount: response.amount,
-      firstRanking: response.ranking[0],
-    });
+    console.log("🔍 [API] getResults 원본 응답:", response);
 
-    return {
+    const result = {
       ok: response.ok,
       ranking: response.ranking.map((row) => ({
         userId: row.userId.toString(),
         nickname: row.nickname,
-        total: row.totalScore,
+        total: row.score, // totalScore → score로 변경
       })),
       jackpotUserId: response.jackpotUserId?.toString(),
       amount: response.amount,
     };
+
+    console.log("🔍 [API] getResults 변환된 결과:", result);
+    return result;
   } catch (error: any) {
-    console.error("🔍 [getResults] API 호출 실패 - 상세 정보:", {
-      error: error,
+    console.error("❌ [API] getResults 오류:", error);
+    console.error("❌ [API] getResults 오류 상세:", {
       message: error.message,
-      response: error.response,
+      response: error.response?.data,
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data,
-      responseHeaders: error.response?.headers,
-      config: error.config,
-      url: error.config?.url,
-      method: error.config?.method,
-      requestHeaders: error.config?.headers,
     });
     throw error;
   }
@@ -253,46 +252,14 @@ class MolbbangWebSocketManager {
       const tokenPayload = JSON.parse(atob(accessToken.split(".")[1]));
       const currentTime = Math.floor(Date.now() / 1000);
 
-      if (__DEV__) {
-        console.log("🔍 토큰 정보:", {
-          exp: tokenPayload.exp,
-          current: currentTime,
-          remaining: tokenPayload.exp - currentTime,
-          userId: tokenPayload.sub,
-          type: tokenPayload.t,
-        });
-      }
-
       if (tokenPayload.exp && tokenPayload.exp < currentTime) {
-        if (__DEV__) {
-          console.warn("🔍 토큰이 만료됨:", {
-            exp: tokenPayload.exp,
-            current: currentTime,
-            expired: currentTime - tokenPayload.exp,
-          });
-        }
         throw new Error("Access token expired");
       }
-    } catch (error) {
-      if (__DEV__) {
-        console.warn("🔍 토큰 파싱 실패:", error);
-      }
-    }
-
-    if (__DEV__) {
-      console.log("🔍 WebSocket 연결 시도 - 토큰 길이:", accessToken.length);
-    }
+    } catch (error) {}
 
     const wsUrl = "wss://j13b207.p.ssafy.io/api/ws";
     // 쿼리 파라미터와 헤더 둘 다로 토큰 전달 (백엔드에서 둘 다 지원)
     const wsUrlWithToken = `${wsUrl}?token=${encodeURIComponent(accessToken)}`;
-
-    if (__DEV__) {
-      console.log(
-        "🔍 WebSocket URL:",
-        wsUrlWithToken.substring(0, 100) + "..."
-      );
-    }
 
     this.client = new Client({
       brokerURL: wsUrlWithToken,
