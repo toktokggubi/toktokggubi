@@ -48,9 +48,7 @@ export default function RootLayout() {
         const fcmService = FCMService.getInstance();
         await fcmService.initialize();
         fcmService.setupTokenRefreshListener();
-        console.log('FCM 서비스가 성공적으로 초기화되었습니다.');
       } catch (error) {
-        console.error('FCM 초기화 실패:', error);
       }
     };
 
@@ -64,7 +62,6 @@ export default function RootLayout() {
         
         setAppIsReady(true);
       } catch (error) {
-        console.error('앱 초기화 실패:', error);
         setAppIsReady(true); // 에러가 발생해도 앱은 실행
       }
     };
@@ -133,7 +130,6 @@ export default function RootLayout() {
         try {
           await SplashScreen.hideAsync();
         } catch (error) {
-          console.log('스플래시 스크린 숨기기 실패:', error);
         }
       };
       hideSplash();
@@ -154,7 +150,10 @@ export default function RootLayout() {
                 <Stack.Screen name="auth" options={{ headerShown: false }} />
                 <Stack.Screen name="pay" options={{ headerShown: false }} />
                 <Stack.Screen name="budget" options={{ headerShown: false }} />
+                <Stack.Screen name="cards" options={{ headerShown: false }} />
+                <Stack.Screen name="gifticons" options={{ headerShown: false }} />
                 <Stack.Screen name="notification" options={{ headerShown: false }} />
+                <Stack.Screen name="molbbang" options={{ headerShown: false }} />
                 <Stack.Screen name="+not-found" />
               </Stack>
             </NotificationHandler>

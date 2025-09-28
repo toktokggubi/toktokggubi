@@ -49,7 +49,6 @@ export default function GifticonRegisterScreen() {
     
     try {
       setUploading(true);
-      console.log("기프티콘 등록 시작 - OCR 처리 중...");
       await uploadGifticon(localImageUri);
       
       // ✅ 등록 성공 후 캐시 무효화
@@ -58,8 +57,6 @@ export default function GifticonRegisterScreen() {
       Alert.alert("등록 완료", "기프티콘이 등록되었습니다!");
       router.back();
     } catch (error) {
-      console.error("기프티콘 등록 실패:", error);
-      console.error("에러 상세:", JSON.stringify(error, null, 2));
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('timeout')) {
         Alert.alert("등록 실패", "OCR 처리 시간이 오래 걸려서 타임아웃되었습니다. 다시 시도해주세요.");

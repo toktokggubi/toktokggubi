@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
   childrenContainer: {
     position: "absolute",
     top: "20%",
-    right: "17%",
+    right: "15%",
     zIndex: 4,
     backgroundColor: "transparent",
   },

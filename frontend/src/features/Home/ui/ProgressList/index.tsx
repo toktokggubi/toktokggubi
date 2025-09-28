@@ -19,6 +19,11 @@ export const ProgressList: React.FC<ProgressListProps> = ({
     null
   );
 
+  // 예산 크기 순으로 정렬된 카테고리 배열 (내림차순)
+  const sortedCategoryBudgets = [...categoryBudgets].sort(
+    (a, b) => b.totalAmount - a.totalAmount
+  );
+
   const handleUsageDetailsPress = (category: Category) => {
     setExpandedCategory(expandedCategory === category ? null : category);
   };
@@ -50,8 +55,8 @@ export const ProgressList: React.FC<ProgressListProps> = ({
 
       {/* 카테고리별 예산 리스트 */}
       <View style={styles.listContent}>
-        {categoryBudgets.length > 0 ? (
-          categoryBudgets.map((item, index) => {
+        {sortedCategoryBudgets.length > 0 ? (
+          sortedCategoryBudgets.map((item, index) => {
             const isExpanded = expandedCategory === item.category;
             const categoryTransactions = transactions[item.category] || [];
 
@@ -80,7 +85,7 @@ export const ProgressList: React.FC<ProgressListProps> = ({
                 )}
 
                 {/* 구분선 */}
-                {index < categoryBudgets.length - 1 && (
+                {index < sortedCategoryBudgets.length - 1 && (
                   <View style={styles.separator} />
                 )}
               </View>

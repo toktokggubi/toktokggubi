@@ -61,6 +61,11 @@ public class MolbbangService {
         messagingTemplate.convertAndSend("/topic/molbbang." + code, view);
     }
 
+    private void broadcastResults(MolbbangRoom room) {
+        var results = getResultsInTx(room);
+        messagingTemplate.convertAndSend("/topic/molbbang." + room.getRoomCode() + ".results", results);
+    }
+
     private String generateCode() {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         StringBuilder sb = new StringBuilder(6);
@@ -262,6 +267,10 @@ public class MolbbangService {
         MolbbangMember me = memberRepo.findByRoom_RoomIdAndUser_UserId(room.getRoomId(), userId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
+        var actives = memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId());
+        long submitted = scoreRepo.countByRoom_RoomId(room.getRoomId());
+        if (submitted < actives.size()) throw new IllegalStateException("not_all_scored");
+
         if (!me.isHost()) throw new IllegalStateException("호스트만 종료할 수 있습니다.");
         if (room.getStatus() != RoomStatus.IN_PROGRESS)
             throw new IllegalStateException("not_in_progress");
@@ -276,6 +285,7 @@ public class MolbbangService {
                 .forEach(m -> memberRepo.save(m.toBuilder()
                         .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
 
+        broadcastResults(room);
         broadcastRoom(room.getRoomCode());
         return new EndGameResponse(true, "finished");
     }
@@ -341,6 +351,7 @@ public class MolbbangService {
                 .build());
 
         broadcastRoom(room.getRoomCode());
+        broadcastResults(room);
         return new OkResponse(true);
     }
 }

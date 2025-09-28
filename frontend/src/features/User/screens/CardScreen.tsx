@@ -53,30 +53,40 @@ export default function CardsScreen() {
   }, []);
 
   useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      title: "나의 카드",
-      headerTitleAlign: "center",
-      headerTintColor: TXT,
-      headerStyle: { backgroundColor: BG },
-      headerShadowVisible: false,
-      headerTitleStyle: { fontSize: 18, ...font.bold },
-      headerLeft: () => (
-        <Pressable
-          onPress={() => router.back()}
-          style={{ paddingHorizontal: 12, paddingVertical: 6 }}
-        >
-          <Ionicons name="chevron-back" size={24} color={TXT} />
-        </Pressable>
-      ),
-      headerRight: () => (
-        <CardActionMenu
-          color={ACCENT}
-          onSelectImport={handleImport}
-          onSelectDelete={handleDelete}
-        />
-      ),
-    });
+    // 네비게이션 옵션을 강제로 설정
+    const setNavigationOptions = () => {
+      navigation.setOptions({
+        headerShown: true,
+        title: "나의 카드",
+        headerTitleAlign: "center",
+        headerTintColor: TXT,
+        headerStyle: { backgroundColor: BG },
+        headerShadowVisible: false,
+        headerTitleStyle: { fontSize: 18, ...font.bold },
+        headerLeft: () => (
+          <Pressable
+            onPress={() => router.back()}
+            style={{ paddingHorizontal: 12, paddingVertical: 6 }}
+          >
+            <Ionicons name="chevron-back" size={24} color={TXT} />
+          </Pressable>
+        ),
+        headerRight: () => (
+          <CardActionMenu
+            color={ACCENT}
+            onSelectImport={handleImport}
+            onSelectDelete={handleDelete}
+          />
+        ),
+      });
+    };
+
+    setNavigationOptions();
+    
+    // 컴포넌트가 마운트된 후에도 다시 한 번 설정
+    const timeoutId = setTimeout(setNavigationOptions, 100);
+    
+    return () => clearTimeout(timeoutId);
   }, [navigation, handleImport, handleDelete]);
 
   const loading = isLoading || isFetching;

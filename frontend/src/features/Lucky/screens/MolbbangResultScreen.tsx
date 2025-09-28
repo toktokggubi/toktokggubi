@@ -73,29 +73,12 @@ export default function MolbbangResultScreen() {
             setRanking(res.ranking);
             setJackpotUserId(res.jackpotUserId);
           } else {
-            console.warn(
-              "⚠️ [결과 페이지] 랭킹 데이터가 비어있음, 빈 배열로 설정"
-            );
             setRanking([]);
           }
         } else {
-          console.error("❌ [결과 페이지] getResults 실패:", res);
-          console.error(
-            "❌ [결과 페이지] 응답 상세:",
-            JSON.stringify(res, null, 2)
-          );
-
-          // 실패 시에도 빈 랭킹으로 설정하여 UI가 깨지지 않도록 함
           setRanking([]);
         }
       } catch (error) {
-        console.error("❌ [결과 페이지] API 호출 오류:", error);
-        console.error("❌ [결과 페이지] 에러 상세:", {
-          message: error.message,
-          stack: error.stack,
-          name: error.name,
-        });
-
         // 에러 발생 시 빈 랭킹으로 설정
         if (mounted) {
           setRanking([]);
@@ -118,8 +101,39 @@ export default function MolbbangResultScreen() {
     return hit?.nickname;
   }, [ranking, jackpotUserId]);
   // ✅ 내가 꼴등인지 판단 (jackpot 닉네임과 동일 = 꼴등 규칙)
-  const isLoser =
-    jackpotNick === nickname || (myRank !== null && myRank === ranking.length);
+  const isLoser = useMemo(() => {
+    // 1. jackpotNick과 일치하는 경우
+    if (jackpotNick === nickname) {
+      return true;
+    }
+
+    // 2. 랭킹에서 꼴등인 경우 (마지막 순위)
+    if (myRank !== null && myRank === ranking.length && ranking.length > 0) {
+      return true;
+    }
+
+    // 3. 랭킹이 비어있지 않고 내가 가장 낮은 점수를 가진 경우
+    if (ranking.length > 0 && myRank !== null) {
+      const myRanking = ranking.find((r) => r.nickname === nickname);
+      const lowestScore = Math.min(...ranking.map((r) => r.total));
+      if (myRanking && myRanking.total === lowestScore) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [jackpotNick, nickname, myRank, ranking]);
+
+  // 디버깅을 위한 로그
+  console.log("결제 버튼 표시 조건 확인:", {
+    nickname,
+    jackpotNick,
+    myRank,
+    rankingLength: ranking.length,
+    isLoser,
+    ranking: ranking.map((r) => ({ nickname: r.nickname, total: r.total })),
+    myRanking: ranking.find((r) => r.nickname === nickname),
+  });
   const onBackToLobby = () => {
     router.replace({
       pathname: "/molbbang/room/[code]",

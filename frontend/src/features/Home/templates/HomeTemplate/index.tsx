@@ -102,7 +102,9 @@ export const HomeTemplate: React.FC<HomeTemplateProps> = ({
       <CharacterBackground
         message={characterMessage}
         progressPercentage={
-          (totalBudget.currentAmount / totalBudget.totalAmount) * 100
+          totalBudget.totalAmount > 0 
+            ? Math.min((totalBudget.currentAmount / totalBudget.totalAmount) * 100, 100)
+            : 0
         }
         size={screenWidth}
       >

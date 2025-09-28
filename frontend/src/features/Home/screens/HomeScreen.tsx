@@ -64,7 +64,8 @@ const getCharacterMessage = (
   currentAmount: number,
   totalAmount: number
 ): string => {
-  const usageRate = (currentAmount / totalAmount) * 100;
+  // 안전한 사용률 계산 (0으로 나누기 방지)
+  const usageRate = totalAmount > 0 ? (currentAmount / totalAmount) * 100 : 0;
 
   if (usageRate < 30) {
     return "아직은 넉넉하다꺼비";
@@ -93,6 +94,7 @@ export const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+
 
   // 예산 설정 여부 확인
   const budgetStatusQuery = useBudgetStatusQuery();
@@ -247,18 +249,17 @@ export const HomeScreen: React.FC = () => {
         );
       }
 
-      // HomeData 형식으로 변환
+      // HomeData 형식으로 변환 (안전한 기본값 처리)
+      const currentAmount = monthlySummaryResponse?.totalAmount || 0;
+      const totalAmount = budgetTotalResponse?.totalAmount || 0;
+      
       const homeData: HomeData = {
         totalBudget: {
-          currentAmount: monthlySummaryResponse.totalAmount,
-          totalAmount: budgetTotalResponse.totalAmount,
+          currentAmount: currentAmount,
+          totalAmount: totalAmount,
         },
-        availableAmount:
-          budgetTotalResponse.totalAmount - monthlySummaryResponse.totalAmount,
-        characterMessage: getCharacterMessage(
-          monthlySummaryResponse.totalAmount,
-          budgetTotalResponse.totalAmount
-        ),
+        availableAmount: Math.max(totalAmount - currentAmount, 0),
+        characterMessage: getCharacterMessage(currentAmount, totalAmount),
         month: getCurrentMonth(),
         listTitle: `${getCurrentMonth()} 카테고리별 사용현황`,
         categoryBudgets: updatedCategoryBudgets,
@@ -327,6 +328,7 @@ export const HomeScreen: React.FC = () => {
   const handleNotificationPress = useCallback(() => {
     router.push("/notification");
   }, [router]);
+
 
   // 읽지 않은 알림 개수 계산
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
@@ -397,6 +399,7 @@ export const HomeScreen: React.FC = () => {
         visible={loading && !refreshing}
         message="홈 데이터를 불러오고 있어요..."
       />
+
     </View>
   );
 };
@@ -414,21 +417,5 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: colors.GRAY_DARK,
-  },
-  testButton: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: colors.BLUE_NORMAL,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    zIndex: 1000,
-  },
-  testButtonText: {
-    color: "white",
-    fontSize: 12,
-    lineHeight: 14,
-    ...font.bold,
   },
 });

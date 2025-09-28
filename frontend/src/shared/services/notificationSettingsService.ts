@@ -98,7 +98,6 @@ class NotificationSettingsService {
       }
       return this.getDefaultSettings();
     } catch (error) {
-      console.error('알림 설정 로드 실패:', error);
       return this.getDefaultSettings();
     }
   }
@@ -111,7 +110,6 @@ class NotificationSettingsService {
       await SecureStore.setItemAsync(STORAGE_KEY, JSON.stringify(settings));
       return true;
     } catch (error) {
-      console.error('알림 설정 저장 실패:', error);
       return false;
     }
   }
@@ -149,7 +147,6 @@ class NotificationSettingsService {
       
       return await this.saveSettings(newSettings);
     } catch (error) {
-      console.error('알림 설정 업데이트 실패:', error);
       return false;
     }
   }
@@ -162,7 +159,6 @@ class NotificationSettingsService {
       const settings = await this.loadSettings();
       return settings[settingKey];
     } catch (error) {
-      console.error('알림 설정 확인 실패:', error);
       return false;
     }
   }
@@ -175,7 +171,6 @@ class NotificationSettingsService {
       await SecureStore.deleteItemAsync(STORAGE_KEY);
       return true;
     } catch (error) {
-      console.error('알림 설정 초기화 실패:', error);
       return false;
     }
   }
@@ -214,7 +209,6 @@ class NotificationSettingsService {
           return settings.allNotificationsOn;
       }
     } catch (error) {
-      console.error('알림 허용 여부 확인 실패:', error);
       return false;
     }
   }

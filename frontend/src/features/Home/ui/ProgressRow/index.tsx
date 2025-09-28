@@ -17,9 +17,12 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
   onUsageDetailsPress,
   onEditPress,
 }) => {
-  const progressPercentage = Math.min((currentAmount / totalAmount) * 100, 100);
+  // 안전한 퍼센트 계산 (0으로 나누기 방지)
+  const progressPercentage = totalAmount > 0 
+    ? Math.min((currentAmount / totalAmount) * 100, 100)
+    : 0;
   const remainingAmount = totalAmount - currentAmount;
-  const isOverBudget = currentAmount > totalAmount;
+  const isOverBudget = currentAmount > totalAmount || (totalAmount === 0 && currentAmount > 0);
 
   const isTotalType = type === "total";
   const label = isTotalType
@@ -32,9 +35,15 @@ export const ProgressRow: React.FC<ProgressRowProps> = ({
   const categoryIcon =
     !isTotalType && category ? CATEGORY_ICON_BY_NAME[label] : null;
 
-  // 80% 이상 사용 시 빨간색, 미만 시 파란색
+  // 80% 미만: 파란색, 80% 이상 100% 미만: 노란색, 100% 이상: 빨간색
   const progressBarColor =
-    progressPercentage >= 80 ? "#FF4444" : colors.BLUE_NORMAL;
+    totalAmount === 0 && currentAmount > 0
+      ? "#FF4444"  // 예산 0원 + 지출 있음 = 빨간색
+      : progressPercentage >= 100
+      ? "#FF4444"  // 100% 이상 = 빨간색
+      : progressPercentage >= 80
+      ? colors.YELLOW_NORMAL  // 80% 이상 100% 미만 = 노란색
+      : colors.BLUE_NORMAL;   // 80% 미만 = 파란색
 
   return (
     <TouchableOpacity

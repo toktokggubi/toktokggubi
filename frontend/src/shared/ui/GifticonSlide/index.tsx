@@ -11,10 +11,15 @@ interface Props {
 }
 export default function GifticonSlide({ gifticon }: Props) {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   const src = gifticon.imageSource ?? "";
   const openModal = () => setIsModalVisible(true);
   const closeModal = () => setIsModalVisible(false);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
 
   return (
     <>
@@ -22,13 +27,20 @@ export default function GifticonSlide({ gifticon }: Props) {
         <View style={styles.card}>
           {/* 메인 컨텐츠 */}
           <TouchableOpacity style={styles.content} onPress={openModal} activeOpacity={0.9}>
-            <ExpoImage
-              source={src}
-              style={styles.image}
-              contentFit="cover"
-              contentPosition="top"
-              transition={200}
-            />
+            {imageError ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>이미지를 불러올 수 없습니다</Text>
+              </View>
+            ) : (
+              <ExpoImage
+                source={src}
+                style={styles.image}
+                contentFit="cover"
+                contentPosition="top"
+                transition={200}
+                onError={handleImageError}
+              />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -47,13 +59,20 @@ export default function GifticonSlide({ gifticon }: Props) {
             activeOpacity={1}
           >
             <View style={styles.modalContent}>
-              <ExpoImage
-                source={src}
-                style={styles.modalImage}
-                contentFit="contain"
-                contentPosition="center"
-                transition={200}
-              />
+              {imageError ? (
+                <View style={styles.modalErrorContainer}>
+                  <Text style={styles.modalErrorText}>이미지를 불러올 수 없습니다</Text>
+                </View>
+              ) : (
+                <ExpoImage
+                  source={src}
+                  style={styles.modalImage}
+                  contentFit="contain"
+                  contentPosition="center"
+                  transition={200}
+                  onError={handleImageError}
+                />
+              )}
             </View>
           </TouchableOpacity>
         </View>
@@ -110,5 +129,29 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 8,
+  },
+  errorContainer: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  errorText: {
+    color: "#666",
+    fontSize: 14,
+    textAlign: "center",
+  },
+  modalErrorContainer: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  modalErrorText: {
+    color: "#666",
+    fontSize: 16,
+    textAlign: "center",
   },
 });

@@ -169,16 +169,37 @@ export default function MolbbangLobbyScreen() {
 
   const members: MolbbangMember[] = room?.members ?? [];
   const me = useMemo(() => {
-    // 서버에서 받은 실제 닉네임으로 me 객체 찾기
-    // TODO: 실제로는 사용자 인증 정보(userId)로 찾아야 함
-    // 현재는 임시로 첫 번째 멤버를 사용 (백엔드에서 사용자별로 정렬되어 있다고 가정)
-    let found = null;
-    if (room?.members && room.members.length > 0) {
-      found = members[0];
+    // 현재 사용자의 닉네임으로 me 객체 찾기
+    if (!room?.members || room.members.length === 0) {
+      console.log("me 객체 찾기: 멤버가 없음");
+      return null;
     }
 
-    return found ?? null;
-  }, [members, room?.members]);
+    console.log("me 객체 찾기:", {
+      myNickname: nickname,
+      availableMembers: room.members.map((m) => ({
+        nickname: m.nickname,
+        userId: m.userId,
+      })),
+    });
+
+    // 1. 닉네임으로 정확히 매칭되는 멤버 찾기
+    const foundByNickname = room.members.find(
+      (member) => member.nickname === nickname
+    );
+
+    if (foundByNickname) {
+      console.log("me 객체 찾기: 닉네임으로 정확히 매칭됨", foundByNickname);
+      return foundByNickname;
+    }
+
+    // 2. 닉네임이 일치하지 않으면 첫 번째 멤버 사용 (폴백)
+    // 이는 서버에서 닉네임이 변경되었거나 다른 문제가 있을 때 사용
+    console.warn(
+      `현재 사용자 닉네임 "${nickname}"과 일치하는 멤버를 찾을 수 없습니다. 첫 번째 멤버를 사용합니다.`
+    );
+    return room.members[0];
+  }, [members, room?.members, nickname]);
 
   // 웹소켓 또는 HTTP API 사용
   const handleSendReady = useCallback(
@@ -309,7 +330,8 @@ export default function MolbbangLobbyScreen() {
         });
       }
 
-      // 게임 시작 성공 시 즉시 게임 화면으로 이동
+      // 게임 시작 성공 시 즉시 게임 화면으로 이동 (호스트만)
+      navigatedToGameRef.current = true; // 중복 이동 방지
       const gameParams = {
         code,
         nick: nickname,
@@ -336,23 +358,6 @@ export default function MolbbangLobbyScreen() {
     }
   }, [code, nickname, amount, hostFlagFromParams, router]);
 
-  // 이미 게임 화면으로 이동했는지 여부를 추적하여 중복 이동 방지 (자동 게임 시작 제거로 불필요해짐)
-  // const navigatedToGameRef = useRef(false);
-
-  // 게임 상태 변경 감지 제거 - 호스트 버튼 클릭으로만 게임 시작
-  // useEffect(() => {
-  //   if (room && room.status === "playing") {
-  //     // 자동 게임 시작 로직 제거
-  //   }
-  // }, [room?.status, code, router, nickname, amount, hostFlagFromParams, connected]);
-
-  // 대기방 상태로 돌아오면 이동 락 해제 (자동 게임 시작 제거로 불필요해짐)
-  // useEffect(() => {
-  //   if (room?.status === "lobby") {
-  //     navigatedToGameRef.current = false;
-  //   }
-  // }, [room?.status]);
-
   const myReady = !!me?.ready;
 
   const presentCount = members.some((m) => typeof m.online === "boolean")
@@ -360,19 +365,76 @@ export default function MolbbangLobbyScreen() {
     : members.length;
   const allReady = members.length > 0 && members.every((m) => m.ready);
 
-  // ✅ 방장 판별: 1) hostId가 있으면 그걸로, 2) 없으면 첫 번째 멤버를 방장으로 간주(폴백)
+  // ✅ 방장 판별: 1) hostId가 있으면 그걸로, 2) 없으면 params로 받은 host 플래그 사용
   const isHost = useMemo(() => {
     // 내가 누구인지 모르면 params로 받은 host 플래그를 그대로 사용
-    if (!room || !me) return hostFlagFromParams;
+    if (!room || !me) {
+      console.log(
+        "호스트 판별: room 또는 me가 없어서 params 플래그 사용:",
+        hostFlagFromParams
+      );
+      return hostFlagFromParams;
+    }
 
     // 서버가 hostId를 내려줬다면 string 비교로 안전 비교
     if (hasHostId(room)) {
-      return String(me.userId) === String(room.hostId);
+      const isHostByServer = String(me.userId) === String(room.hostId);
+      console.log("호스트 판별: 서버 hostId로 판별", {
+        myUserId: me.userId,
+        roomHostId: room.hostId,
+        isHost: isHostByServer,
+      });
+      return isHostByServer;
     }
 
     // 서버가 hostId를 안 준 경우: 최초 진입 시 받은 host 플래그 사용
+    console.log(
+      "호스트 판별: 서버 hostId가 없어서 params 플래그 사용:",
+      hostFlagFromParams
+    );
     return hostFlagFromParams;
   }, [room, me, hostFlagFromParams]);
+
+  // 이미 게임 화면으로 이동했는지 여부를 추적하여 중복 이동 방지
+  const navigatedToGameRef = useRef(false);
+
+  // 게임 상태 변경 감지 - 모든 참가자가 자동으로 게임 화면으로 이동
+  useEffect(() => {
+    if (room && room.status === "playing" && !navigatedToGameRef.current) {
+      // 중복 이동 방지
+      navigatedToGameRef.current = true;
+
+      // 호스트는 이미 버튼 클릭으로 이동했으므로 참가자들만 자동 이동
+      if (!isHost) {
+        const gameParams = {
+          code,
+          nick: nickname,
+          amount: String(amount),
+          host: hostFlagFromParams ? "1" : "0",
+        };
+
+        router.push({
+          pathname: "/molbbang/room/[code]/game",
+          params: gameParams,
+        });
+      }
+    }
+  }, [
+    room?.status,
+    code,
+    router,
+    nickname,
+    amount,
+    hostFlagFromParams,
+    isHost,
+  ]);
+
+  // 대기방 상태로 돌아오면 이동 락 해제
+  useEffect(() => {
+    if (room?.status === "lobby") {
+      navigatedToGameRef.current = false;
+    }
+  }, [room?.status]);
 
   const onToggleReady = useCallback(async () => {
     const next = !myReady;
@@ -460,6 +522,7 @@ export default function MolbbangLobbyScreen() {
         onToggleReady={onToggleReady}
         onStart={onStart}
         onCopyCode={onCopyCode} // 방 코드 복사 기능 추가
+        showStartButton={isHost} // 호스트가 아닌 경우 게임시작 버튼 숨김
       />
 
       <MolbbangAlert
