@@ -115,14 +115,8 @@ export default function NotificationScreen() {
         const notificationData = await fetchNotifications();
         setNotifications(notificationData.items);
 
-        // 2. 읽지 않은 알림이 있으면 읽음 처리
-        const unreadCount = notificationData.items.filter(
-          (notification) => notification.readAt === null
-        ).length;
-
-        if (unreadCount > 0) {
-          await markNotificationsAsRead();
-        }
+        // 2. 읽지 않은 알림이 있으면 읽음 처리 (자동 읽음 처리 제거)
+        // 사용자가 직접 알림을 클릭했을 때만 읽음 처리하도록 변경
       } catch (error) {
         // 에러 시 빈 배열로 설정
         setNotifications([]);
