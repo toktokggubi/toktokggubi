@@ -296,8 +296,14 @@ export function useGameLogic({
       return;
     }
 
-    const interval = setInterval(
-      async () => {
+    let interval: ReturnType<typeof setInterval>;
+
+    const startPolling = () => {
+      const pollInterval = gameStateRef.current.isGameActive
+        ? 1000
+        : GAME_CONSTANTS.POLLING_INTERVAL;
+
+      interval = setInterval(async () => {
         try {
           const r = await molbbangApi.fetchRoom();
           if (isRoom(r)) {
@@ -306,12 +312,21 @@ export function useGameLogic({
         } catch {
           // ignore
         }
-      },
-      // 게임이 활성화된 상태에서는 더 빠른 폴링으로 서버 상태 변경 감지
-      gameStateRef.current.isGameActive ? 1000 : GAME_CONSTANTS.POLLING_INTERVAL
-    );
+      }, pollInterval);
+    };
 
-    return () => clearInterval(interval);
+    startPolling();
+
+    // 게임 상태가 변경될 때마다 폴링 주기 재설정
+    const gameStateInterval = setInterval(() => {
+      clearInterval(interval);
+      startPolling();
+    }, 2000); // 2초마다 폴링 주기 재설정
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(gameStateInterval);
+    };
   }, [code]);
 
   // 게임 시작 감지 (서버 기반 동기화)
@@ -359,8 +374,13 @@ export function useGameLogic({
           clearTimeout(timerRef.current);
         }
         timerRef.current = setTimeout(() => {
+          console.log("타이머 종료: handleFinishGame 호출");
           void handleFinishGame();
         }, timeUntilEnd);
+      } else {
+        // 게임 시간이 이미 지났다면 즉시 종료
+        console.log("게임 시간이 이미 지남: 즉시 종료");
+        void handleFinishGame();
       }
 
       // 종료시각 기반 카운트다운
@@ -388,11 +408,13 @@ export function useGameLogic({
         gameEndTime: gameEndAtRef.current,
         timeUntilEnd,
         initialRemaining,
+        isHost: hostFlagFromParams,
+        nickname,
       });
     }
   }, [room?.status]); // 의존성 최소화
 
-  // 게임 종료 감지 (서버 상태 또는 타이머 기반)
+  // 서버 상태 기반 게임 종료 감지
   useEffect(() => {
     if (!room) return;
     if (Date.now() < startLockUntilRef.current) return;
@@ -421,54 +443,86 @@ export function useGameLogic({
       return;
     }
 
-    // 2. 타이머가 끝났는데 아직 게임이 활성화된 경우 (참가자들의 경우)
-    if (
-      gameEndAtRef.current &&
-      Date.now() >= gameEndAtRef.current &&
-      gameStateRef.current.isGameActive &&
-      !navigatedToResultRef.current
-    ) {
-      console.log("타이머 게임 종료 감지: 점수 제출 후 결과화면으로 이동");
-      navigatedToResultRef.current = true;
+    // 2. 대기방으로 돌아온 경우 (게임 취소 또는 오류)
+    if (room.status === "lobby" && gameStateRef.current.isGameActive) {
+      console.log("대기방 상태로 변경: 게임 취소됨, 대기실로 이동");
+      stopGame();
 
-      // 참가자들도 점수를 제출하도록 처리
-      const handleParticipantFinish = async () => {
-        try {
-          // 현재 점수 제출
-          const currentScore = finalScoreRef.current;
-          console.log("참가자 점수 제출:", { currentScore, nickname });
+      // 게임이 취소되었으므로 대기실로 이동
+      router.replace({
+        pathname: "/molbbang/room/[code]",
+        params: {
+          code,
+          nick: nickname,
+          amount,
+          host: hostFlagFromParams ? "1" : "0",
+        },
+      });
+    }
+  }, [room?.status, stopGame, code, nickname, amount, router]);
 
-          await molbbangApi.submitScore(currentScore);
-          console.log("참가자 점수 제출 성공");
-        } catch (error) {
-          console.error("참가자 점수 제출 실패:", error);
-        } finally {
-          stopGame();
-
-          // 결과화면으로 이동
-          const resultParams = {
-            code,
-            nick: nickname,
-            amount: String(amount),
-          };
-
-          router.replace({
-            pathname: "/molbbang/room/[code]/result",
-            params: resultParams,
-          });
-        }
-      };
-
-      void handleParticipantFinish();
+  // 타이머 기반 게임 종료 감지 (더 자주 체크)
+  useEffect(() => {
+    if (!gameStateRef.current.isGameActive || navigatedToResultRef.current) {
       return;
     }
 
-    // 3. 대기방으로 돌아온 경우
-    if (room.status === "lobby" && gameStateRef.current.isGameActive) {
-      console.log("대기방 상태로 변경: 게임 종료");
-      stopGame();
-    }
-  }, [room?.status, stopGame, code, nickname, amount, router]);
+    const checkTimer = () => {
+      if (
+        gameEndAtRef.current &&
+        Date.now() >= gameEndAtRef.current &&
+        gameStateRef.current.isGameActive &&
+        !navigatedToResultRef.current
+      ) {
+        console.log("타이머 게임 종료 감지: 점수 제출 후 결과화면으로 이동");
+        navigatedToResultRef.current = true;
+
+        // 참가자들도 점수를 제출하도록 처리
+        const handleParticipantFinish = async () => {
+          try {
+            // 현재 점수 제출
+            const currentScore = finalScoreRef.current;
+            console.log("참가자 점수 제출:", { currentScore, nickname });
+
+            await molbbangApi.submitScore(currentScore);
+            console.log("참가자 점수 제출 성공");
+          } catch (error) {
+            console.error("참가자 점수 제출 실패:", error);
+            // 점수 제출 실패해도 결과화면으로 이동 (서버에서 0점으로 처리될 것)
+          } finally {
+            stopGame();
+
+            // 점수 제출 성공/실패 관계없이 결과화면으로 이동
+            const resultParams = {
+              code,
+              nick: nickname,
+              amount: String(amount),
+            };
+
+            router.replace({
+              pathname: "/molbbang/room/[code]/result",
+              params: resultParams,
+            });
+          }
+        };
+
+        void handleParticipantFinish();
+        return;
+      }
+    };
+
+    // 0.5초마다 타이머 체크
+    const interval = setInterval(checkTimer, 500);
+
+    return () => clearInterval(interval);
+  }, [
+    gameStateRef.current.isGameActive,
+    stopGame,
+    code,
+    nickname,
+    amount,
+    router,
+  ]);
 
   // 점수 업데이트 (게임이 활성화된 상태에서만)
   useEffect(() => {
