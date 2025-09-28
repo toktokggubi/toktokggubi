@@ -1,12 +1,23 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { router } from "expo-router";
 import { molbbangApi } from "@/features/Lucky/api/molbbangService";
 import JoinRoomTemplate from "@/features/Lucky/templates/Molbbang/JoinRoomTemplate";
 import MolbbangAlert from "@/shared/ui/MolbbangAlert";
+import { useProfileQuery } from "@/features/Auth/model/useAuthQueries";
 
 export default function MolbbangJoinScreen() {
   const [code, setCode] = useState("");
   const [nickname, setNickname] = useState("참가자");
+
+  // 사용자 프로필 정보 가져오기
+  const { data: profileData } = useProfileQuery();
+
+  // 사용자 닉네임이 로드되면 기본값으로 설정
+  useEffect(() => {
+    if (profileData?.nickname) {
+      setNickname(profileData.nickname);
+    }
+  }, [profileData?.nickname]);
 
   // Alert 상태 관리
   const [alert, setAlert] = useState<{
