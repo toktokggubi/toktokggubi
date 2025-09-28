@@ -194,10 +194,12 @@ export default function PaymentScreen() {
   const bottomSheetRef = useRef<BottomSheetRef>(null);
   const [refreshing, setRefreshing] = useState(false);
   const lastSentCategoryIdRef = useRef<number | null>(null);
+  const lastSentTimeRef = useRef<number | null>(null);
 
   // 페이지 마운트 시 마지막 전송 카테고리 ID 초기화
   useEffect(() => {
     lastSentCategoryIdRef.current = null;
+    lastSentTimeRef.current = null;
   }, []);
 
   // 위치 정보를 서버로 전송하는 함수
@@ -212,14 +214,18 @@ export default function PaymentScreen() {
       }
 
       const categoryId = getCategoryIdFromPlace(place);
+      const currentTime = Date.now();
       
-      // 이전에 전송한 카테고리 ID와 동일하면 중복 전송 방지
-      if (lastSentCategoryIdRef.current === categoryId) {
+      // 1분 전에 같은 카테고리로 전송했다면 중복 전송 방지
+      if (lastSentCategoryIdRef.current === categoryId && 
+          lastSentTimeRef.current && 
+          currentTime - lastSentTimeRef.current < 60000) { // 1분 = 60000ms
         return;
       }
       
       await pushLocation(categoryId);
       lastSentCategoryIdRef.current = categoryId;
+      lastSentTimeRef.current = currentTime;
     } catch (error) {
       // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
     }
