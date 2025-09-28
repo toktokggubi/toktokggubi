@@ -13,4 +13,5 @@ public record AiReportInformationRequest(
         String username, // User.nickname 에 매칭
         String year,     // "2025"
         String month     // "06" 또는 "12" 같이 두글자
-) {}
+) {
+}

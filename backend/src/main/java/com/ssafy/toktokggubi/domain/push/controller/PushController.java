@@ -20,14 +20,6 @@ public class PushController {
 
     private final FcmService fcmService;
 
-    /** (A) 단일 토큰 전송 */
-    public record SendTokenRequest(
-            @NotBlank String token,
-            @NotBlank String title,
-            @NotBlank String body,
-            Boolean dryRun
-    ) {}
-
     @Operation(summary = "단일 토큰으로 전송", description = "FCM 디바이스 토큰 1개에 전송합니다.")
     @PostMapping("/send-token")
     public ResponseEntity<?> sendToToken(@Valid @RequestBody SendTokenRequest req) throws Exception {
@@ -39,7 +31,16 @@ public class PushController {
         ));
     }
 
-
+    /**
+     * (A) 단일 토큰 전송
+     */
+    public record SendTokenRequest(
+            @NotBlank String token,
+            @NotBlank String title,
+            @NotBlank String body,
+            Boolean dryRun
+    ) {
+    }
 
 
 }

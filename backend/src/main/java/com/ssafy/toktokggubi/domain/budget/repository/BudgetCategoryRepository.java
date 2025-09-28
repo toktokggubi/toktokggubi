@@ -14,25 +14,25 @@ public interface BudgetCategoryRepository extends JpaRepository<BudgetCategory, 
 
     // 해당 유저/월(활성) 예산 카테고리: (categoryId, finalAmount)
     @Query("""
-        select bc.userSelectedCategory.category.categoryId, bc.finalAmount
-        from BudgetCategory bc
-        where bc.userMonthlyBudget.user.userId = :userId
-          and bc.userMonthlyBudget.budgetYm    = :ym
-          and bc.userMonthlyBudget.isActive    = true
-    """)
+                select bc.userSelectedCategory.category.categoryId, bc.finalAmount
+                from BudgetCategory bc
+                where bc.userMonthlyBudget.user.userId = :userId
+                  and bc.userMonthlyBudget.budgetYm    = :ym
+                  and bc.userMonthlyBudget.isActive    = true
+            """)
     List<Object[]> findCatIdAndAmountForUserYm(Long userId, String ym);
 
     // ✅ 엔티티 연관만 사용하는 JPQL
     @Query("""
-        SELECT COALESCE(bc.finalAmount, 0)
-          FROM BudgetCategory bc
-          JOIN bc.userMonthlyBudget umb
-          JOIN bc.userSelectedCategory usc
-          JOIN usc.category c
-         WHERE umb.user.userId = :userId
-           AND umb.budgetYm = :budgetYm
-           AND c.categoryId = :categoryId
-    """)
+                SELECT COALESCE(bc.finalAmount, 0)
+                  FROM BudgetCategory bc
+                  JOIN bc.userMonthlyBudget umb
+                  JOIN bc.userSelectedCategory usc
+                  JOIN usc.category c
+                 WHERE umb.user.userId = :userId
+                   AND umb.budgetYm = :budgetYm
+                   AND c.categoryId = :categoryId
+            """)
     Long findFinalAmountByUserYmAndCategory(
             @Param("userId") long userId,
             @Param("budgetYm") String budgetYm,    // "YYYYMM"

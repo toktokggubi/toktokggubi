@@ -4,5 +4,7 @@ import com.ssafy.toktokggubi.global.dto.response.TokenEnvelope;
 import lombok.Builder;
 
 public record RefreshResponse(TokenEnvelope token) {
-    @Builder public RefreshResponse {}
+    @Builder
+    public RefreshResponse {
+    }
 }

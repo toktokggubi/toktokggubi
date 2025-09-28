@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
 @Repository
@@ -18,11 +19,11 @@ public interface UserMonthlyBudgetRepository extends JpaRepository<UserMonthlyBu
     Optional<UserMonthlyBudget> findByUser_UserIdAndBudgetYm(Long userId, String budgetYm);
 
     @Query("""
-    SELECT u.totalAmount
-      FROM UserMonthlyBudget u
-     WHERE u.user.userId = :userId
-       AND u.budgetYm = :budgetYm
-""")
+                SELECT u.totalAmount
+                  FROM UserMonthlyBudget u
+                 WHERE u.user.userId = :userId
+                   AND u.budgetYm = :budgetYm
+            """)
     Long findFinalTotalAmount(
             @Param("userId") Long userId,
             @Param("budgetYm") String budgetYm

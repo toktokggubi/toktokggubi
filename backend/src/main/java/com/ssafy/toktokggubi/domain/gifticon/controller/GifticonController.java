@@ -21,7 +21,9 @@ public class GifticonController {
 
     private final GifticonService gifticonService;
 
-    /** 기프티콘 이미지 업로드 + OCR 파싱 + 저장 */
+    /**
+     * 기프티콘 이미지 업로드 + OCR 파싱 + 저장
+     */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<GifticonCreateResponse> upload(@RequestPart("file") MultipartFile file) throws Exception {
         Long userId = SecurityUtils.currentUserIdOrNull();
@@ -49,7 +51,9 @@ public class GifticonController {
         return ResponseEntity.ok(gifticonService.list(userId, franchiseId, usableOnly, sort));
     }
 
-    /** 기프티콘 삭제(수동) — 상태를 INACTIVE 로 변경 */
+    /**
+     * 기프티콘 삭제(수동) — 상태를 INACTIVE 로 변경
+     */
     @DeleteMapping("/{gifticonId}")
     public ResponseEntity<Map<String, String>> delete(@PathVariable Long gifticonId) {
         Long userId = SecurityUtils.currentUserIdOrNull();

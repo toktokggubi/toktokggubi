@@ -14,4 +14,5 @@ public record GifticonCreateResponse(
         String imageUrl,
         GifticonStatus status,
         String ocrPreview
-) {}
+) {
+}

@@ -7,4 +7,5 @@ public record FinMemberResponse(
         String userKey,
         String created,
         String modified
-) {}
+) {
+}

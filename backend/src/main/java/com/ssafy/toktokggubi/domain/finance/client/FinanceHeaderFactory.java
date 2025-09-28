@@ -13,9 +13,12 @@ import java.util.concurrent.ThreadLocalRandom;
 @Component
 @RequiredArgsConstructor
 public class FinanceHeaderFactory {
-    @Value("${finance.api.key}") private String apiKey;
-    @Value("${finance.api.institution-code:00100}") private String institutionCode;
-    @Value("${finance.api.fintech-app-no:001}") private String fintechAppNo;
+    @Value("${finance.api.key}")
+    private String apiKey;
+    @Value("${finance.api.institution-code:00100}")
+    private String institutionCode;
+    @Value("${finance.api.fintech-app-no:001}")
+    private String fintechAppNo;
 
     public FinanceHeaderRequest build(String apiName, String userKey) {
         var now = LocalDateTime.now(ZoneId.of("Asia/Seoul"));

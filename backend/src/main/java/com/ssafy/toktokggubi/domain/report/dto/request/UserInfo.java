@@ -18,13 +18,13 @@ public class UserInfo {
 
     @Field("userId")
     private Integer userId;
-    
+
     @Field("username")
     private String username;
-    
+
     @Field("year")
     private Integer year;
-    
+
     @Field("month")
     private Integer month;
 }

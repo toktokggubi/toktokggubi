@@ -1,8 +1,8 @@
 package com.ssafy.toktokggubi.domain.notification.service;
 
-import com.ssafy.toktokggubi.domain.notification.dto.NotificationListResponseDto;
 import com.ssafy.toktokggubi.domain.notification.dto.NotificationDeleteResponseDto;
 import com.ssafy.toktokggubi.domain.notification.dto.NotificationItemDto;
+import com.ssafy.toktokggubi.domain.notification.dto.NotificationListResponseDto;
 import com.ssafy.toktokggubi.domain.notification.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,9 @@ public class NotificationService {
 
     private final NotificationRepository repo;
 
-    /** (이전: listByReadFilter) → 월 단위 조회로 이름 명확화 */
+    /**
+     * (이전: listByReadFilter) → 월 단위 조회로 이름 명확화
+     */
     public NotificationListResponseDto getMonthlyNotifications(
             long userId, String ym, String readFilter, Integer limitNullable
     ) {
@@ -44,7 +46,9 @@ public class NotificationService {
         return new NotificationListResponseDto(read, limit, total, items);
     }
 
-    /** (이전: markAllUnreadInMonthAsRead) → 월 단위 unread → read */
+    /**
+     * (이전: markAllUnreadInMonthAsRead) → 월 단위 unread → read
+     */
     @Transactional
     public int markMonthlyUnreadAsRead(long userId, String ym) {
         Range r = parseYmToRange(ym);
@@ -60,7 +64,9 @@ public class NotificationService {
         return ids.isEmpty() ? 0 : repo.markAsRead(userId, ids);
     }
 
-    /** (이전: deleteAllInMonth) → 월 단위 전체 삭제 */
+    /**
+     * (이전: deleteAllInMonth) → 월 단위 전체 삭제
+     */
     @Transactional
     public NotificationDeleteResponseDto deleteAllInMonth(long userId, String ym) {
         Range r = parseYmToRange(ym);
@@ -71,10 +77,10 @@ public class NotificationService {
     /* ---------- helpers ---------- */
 
     private NotificationItemDto mapRowToItem(Object[] r) {
-        long id        = ((Number) r[0]).longValue();
-        String type    = r[1] == null ? "" : r[1].toString();
-        String title   = r[2] == null ? "" : r[2].toString();
-        String body    = r[3] == null ? "" : r[3].toString();
+        long id = ((Number) r[0]).longValue();
+        String type = r[1] == null ? "" : r[1].toString();
+        String title = r[2] == null ? "" : r[2].toString();
+        String body = r[3] == null ? "" : r[3].toString();
         LocalDateTime sentAt = toLdt(r[4]);
         LocalDateTime readAt = toLdt(r[5]);
         return new NotificationItemDto(id, type, title, body, sentAt, readAt);
@@ -102,7 +108,9 @@ public class NotificationService {
         return Math.max(1, Math.min(limit, 100));
     }
 
-    /** ym("yyyyMM") → [from, toExclusive) */
+    /**
+     * ym("yyyyMM") → [from, toExclusive)
+     */
     private Range parseYmToRange(String ym) {
         if (ym == null || ym.length() != 6 || !ym.chars().allMatch(Character::isDigit))
             throw new IllegalArgumentException("ym must be 'yyyyMM'");
@@ -113,5 +121,6 @@ public class NotificationService {
         return new Range(from, toExclusive);
     }
 
-    private record Range(LocalDateTime from, LocalDateTime toExclusive) {}
+    private record Range(LocalDateTime from, LocalDateTime toExclusive) {
+    }
 }

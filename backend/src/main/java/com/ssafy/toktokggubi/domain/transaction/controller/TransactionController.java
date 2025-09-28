@@ -9,7 +9,10 @@ import com.ssafy.toktokggubi.global.time.YmResolver;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -21,6 +24,8 @@ import java.time.format.DateTimeFormatter;
 @Tag(name = "소비내역조회", description = "소비내역조회 관련 API")
 public class TransactionController {
 
+    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE;         // yyyy-MM-dd
+    private static final DateTimeFormatter COMPACT = DateTimeFormatter.BASIC_ISO_DATE;     // yyyyMMdd
     private final TransactionService service;
     private final YmResolver ymResolver;
 
@@ -29,7 +34,7 @@ public class TransactionController {
 
     public TxSummaryResponseDto getMonthlySummary(
             @RequestParam(name = "from", required = false) String fromStr,
-            @RequestParam(name = "to",   required = false) String toStr
+            @RequestParam(name = "to", required = false) String toStr
     ) {
 
         Long userId = SecurityUtils.currentUserIdOrNull();
@@ -44,10 +49,10 @@ public class TransactionController {
             int y = Integer.parseInt(ym.substring(0, 4));
             int m = Integer.parseInt(ym.substring(4, 6));
             from = LocalDate.of(y, m, 1);
-            to   = LocalDate.of(y, m, 1).withDayOfMonth(LocalDate.of(y, m, 1).lengthOfMonth());
+            to = LocalDate.of(y, m, 1).withDayOfMonth(LocalDate.of(y, m, 1).lengthOfMonth());
         } else if (fromStr != null && toStr != null) {
             from = parseFlexibleDate(fromStr);
-            to   = parseFlexibleDate(toStr);
+            to = parseFlexibleDate(toStr);
             if (to.isBefore(from)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "'to' must be on/after 'from'.");
             }
@@ -61,6 +66,7 @@ public class TransactionController {
         return service.getSummaryByRange(userId, from, to);
 
     }
+    /* ---------- helpers ---------- */
 
     // ---- TX-1 이번 달 소비 금액 조회 (카테고리별) ----
     @GetMapping("/summary/category")
@@ -86,10 +92,6 @@ public class TransactionController {
         return service.getCurrentMonthCategoryList(userId, ym); // 내부에서 이번 달 계산
 
     }
-    /* ---------- helpers ---------- */
-
-    private static final DateTimeFormatter ISO = DateTimeFormatter.ISO_LOCAL_DATE;         // yyyy-MM-dd
-    private static final DateTimeFormatter COMPACT = DateTimeFormatter.BASIC_ISO_DATE;     // yyyyMMdd
 
     private LocalDate parseFlexibleDate(String s) {
         // 공백 트리밍

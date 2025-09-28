@@ -17,7 +17,7 @@ public class GmsProbeController {
     private final GmsTextService gms;
 
     @GetMapping("/ping")
-    public Map<String,Object> ping() {
+    public Map<String, Object> ping() {
         long t0 = System.currentTimeMillis();
         String body = gms.locationRemainBody(10_000L, "카페", 7); // 아주 짧은 호출
         long ms = System.currentTimeMillis() - t0;

@@ -9,5 +9,6 @@ import java.util.Optional;
 
 public interface FranchiseRepository extends JpaRepository<Franchise, Long> {
     Optional<Franchise> findFirstByFranchiseName(String merchantName);
+
     List<Franchise> findByFranchiseNameContaining(String keyword, Sort sort);
 }

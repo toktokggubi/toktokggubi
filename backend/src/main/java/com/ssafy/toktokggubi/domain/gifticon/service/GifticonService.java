@@ -30,25 +30,28 @@ import java.util.regex.Pattern;
 @Transactional(readOnly = true)
 public class GifticonService {
 
+    // 기프티콘 여부 힌트: 키워드 + 바코드 유사 패턴
+    private static final Pattern BARCODE_LIKE = Pattern.compile("\\b\\d{10,}\\b"); // 10자리 이상 숫자
+    private static final String[] GIFTICON_KEYWORDS = {
+            "유효기간", "교환처", "교환권", "주문번호", "바코드", "쿠폰번호", "교환만료", "사용기간"
+    };
     private final GifticonRepository gifticonRepository;
     private final FranchiseRepository franchiseRepository;
     private final UserRepository userRepository;
     private final OcrClient ocrClient;
     private final FileStorage fileStorage;
 
-    // 기프티콘 여부 힌트: 키워드 + 바코드 유사 패턴
-    private static final Pattern BARCODE_LIKE = Pattern.compile("\\b\\d{10,}\\b"); // 10자리 이상 숫자
-    private static final String[] GIFTICON_KEYWORDS = {
-            "유효기간", "교환처", "교환권", "주문번호", "바코드", "쿠폰번호", "교환만료", "사용기간"
-    };
-
     private boolean looksLikeGifticon(String text) {
         if (text == null || text.isBlank()) return false;
         int hit = 0;
         for (String kw : GIFTICON_KEYWORDS) {
-            if (text.contains(kw)) { hit++; }
+            if (text.contains(kw)) {
+                hit++;
+            }
         }
-        if (BARCODE_LIKE.matcher(text.replaceAll("\\s+", "")).find()) { hit++; }
+        if (BARCODE_LIKE.matcher(text.replaceAll("\\s+", "")).find()) {
+            hit++;
+        }
         return hit >= 2; // 키워드+바코드 유사 패턴 2점 이상이면 통과
     }
 
@@ -114,9 +117,10 @@ public class GifticonService {
 
     /**
      * 조회 파라미터
-     * @param franchiseId  프랜차이즈(브랜드) 필터 (nullable)
-     * @param usableOnly   사용 가능만 (null이면 무시)
-     * @param sort         latest | expires (기본 latest)
+     *
+     * @param franchiseId 프랜차이즈(브랜드) 필터 (nullable)
+     * @param usableOnly  사용 가능만 (null이면 무시)
+     * @param sort        latest | expires (기본 latest)
      */
     public GifticonListResponse list(Long userId, Long franchiseId, Boolean usableOnly, String sort) {
         // 사용자 존재 체크

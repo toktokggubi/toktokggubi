@@ -11,13 +11,14 @@ import java.util.Optional;
 
 public interface MolbbangRoomRepository extends JpaRepository<MolbbangRoom, Long> {
     Optional<MolbbangRoom> findByRoomCode(String code);
+
     @Query("""
-        select r
-        from MolbbangRoom r
-        join MolbbangMember m on m.room = r
-        where m.user.userId = :userId
-          and r.status = :status
-        order by r.endedAt desc
-    """)
+                select r
+                from MolbbangRoom r
+                join MolbbangMember m on m.room = r
+                where m.user.userId = :userId
+                  and r.status = :status
+                order by r.endedAt desc
+            """)
     List<MolbbangRoom> findRecentRoomsByUserAndStatus(Long userId, RoomStatus status, Pageable pageable);
 }

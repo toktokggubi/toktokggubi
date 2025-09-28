@@ -1,17 +1,13 @@
 package com.ssafy.toktokggubi.domain.report.service;
 
 import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportRequest;
+import com.ssafy.toktokggubi.domain.report.dto.request.UserInfo;
+import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
 import com.ssafy.toktokggubi.domain.report.entity.AiUserReport;
 import com.ssafy.toktokggubi.domain.report.repository.AiUserReportRepository;
 import com.ssafy.toktokggubi.global.exception.DataNotFoundException;
-import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
-import com.ssafy.toktokggubi.domain.report.dto.request.UserInfo;
-import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportGetRequest;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 /**
  * AI 월간 사용자 리포트 관련 비즈니스 로직을 처리하는 서비스.
@@ -31,7 +27,7 @@ public class AiUserReportService {
     public UserReportResponse getAiUserReport(UserInfo userInfo) {
         AiUserReport report = aiUserReportRepository.findByUserInfo_UserIdAndUserInfo_UsernameAndUserInfo_YearAndUserInfo_Month(userInfo.getUserId(), userInfo.getUsername(), userInfo.getYear(), userInfo.getMonth())
                 .orElseThrow(() -> new DataNotFoundException("[aiUserReportService] 사용자의 해당 월의 리포트를 찾을 수 없습니다."));
-                
+
         return UserReportResponse.builder()
                 .userInfo(report.getUserInfo())
                 .summaryReport(report.getSummaryReport())

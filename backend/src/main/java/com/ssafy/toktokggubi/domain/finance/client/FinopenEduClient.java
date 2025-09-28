@@ -1,7 +1,10 @@
 package com.ssafy.toktokggubi.domain.finance.client;
 
-import com.ssafy.toktokggubi.domain.finance.dto.request.*;
-import com.ssafy.toktokggubi.domain.finance.dto.response.*;
+import com.ssafy.toktokggubi.domain.finance.dto.request.FinanceHeaderRequest;
+import com.ssafy.toktokggubi.domain.finance.dto.request.InquireDemandDepositAccountListRequest;
+import com.ssafy.toktokggubi.domain.finance.dto.request.InquireSignUpCreditCardListRequest;
+import com.ssafy.toktokggubi.domain.finance.dto.response.InquireAccountsResponse;
+import com.ssafy.toktokggubi.domain.finance.dto.response.InquireCardsResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;

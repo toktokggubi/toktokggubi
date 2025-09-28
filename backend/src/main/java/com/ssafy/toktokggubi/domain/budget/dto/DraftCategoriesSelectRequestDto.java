@@ -7,4 +7,5 @@ public record DraftCategoriesSelectRequestDto(
         Integer expectedVersion,
         @Schema(example = "[1,2,10]")
         java.util.List<Long> selectedCategories
-) {}
+) {
+}

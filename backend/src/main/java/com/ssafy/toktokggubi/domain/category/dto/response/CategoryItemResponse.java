@@ -5,5 +5,6 @@ public record CategoryItemResponse(
         String name,
         String description,
         Integer sortOrder
-) {}
+) {
+}
 

@@ -100,40 +100,41 @@ public class AiBudgetService {
 
     private String buildPrompt(AiReportInformationResponse base) {
         return """
-역할: 개인 예산 플래너. 이전 달 실사용(actual)과 기존 예산(budget_set)을 참고해 이번 달 권장 예산(budget_set)을 산출하라.
-
-출력 스키마(반드시 준수):
-- JSON만 출력한다.
-- 최상위 키는 "budget_set" 하나다.
-- "budget_set"은 아래 **숫자 키**만 가진다. (문자 키 금지)
-  - "total": 전체 합계
-  - "1": food
-  - "2": cafe
-  - "3": nightlife
-  - "4": life
-  - "5": cosmetic
-  - "6": transportation
-  - "7": car
-  - "8": medical
-  - "9": entertainment
-  - "10": shopping
-제약:
-- 모든 값은 0 이상의 정수(원 단위). 콤마/기호 금지.
-- 누락된 카테고리는 0으로 채운다.
-- total 은 각 카테고리(1..10)의 합과 **정확히 같아야 한다**. (오차 허용 없음)
-- food(1) ≥ cafe(2), entertainment(9)를 보장한다.
-
-참고 데이터(모델이 고려만 하되 그대로 복사 금지):
-[이전 예산]
-%s
-
-[이전 달 실사용]
-%s
-
-출력 형식 예(구조 예시일 뿐 값은 재계산):
-{"budget_set":{"total":1230000,"1":200000,"2":100000,"3":0,"4":0,"5":0,"6":300000,"7":0,"8":0,"9":0,"10":500000,"11":130000}}
-""".formatted(flat(base.budget_set()), flat(base.actual()));
+                역할: 개인 예산 플래너. 이전 달 실사용(actual)과 기존 예산(budget_set)을 참고해 이번 달 권장 예산(budget_set)을 산출하라.
+                
+                출력 스키마(반드시 준수):
+                - JSON만 출력한다.
+                - 최상위 키는 "budget_set" 하나다.
+                - "budget_set"은 아래 **숫자 키**만 가진다. (문자 키 금지)
+                  - "total": 전체 합계
+                  - "1": food
+                  - "2": cafe
+                  - "3": nightlife
+                  - "4": life
+                  - "5": cosmetic
+                  - "6": transportation
+                  - "7": car
+                  - "8": medical
+                  - "9": entertainment
+                  - "10": shopping
+                제약:
+                - 모든 값은 0 이상의 정수(원 단위). 콤마/기호 금지.
+                - 누락된 카테고리는 0으로 채운다.
+                - total 은 각 카테고리(1..10)의 합과 **정확히 같아야 한다**. (오차 허용 없음)
+                - food(1) ≥ cafe(2), entertainment(9)를 보장한다.
+                
+                참고 데이터(모델이 고려만 하되 그대로 복사 금지):
+                [이전 예산]
+                %s
+                
+                [이전 달 실사용]
+                %s
+                
+                출력 형식 예(구조 예시일 뿐 값은 재계산):
+                {"budget_set":{"total":1230000,"1":200000,"2":100000,"3":0,"4":0,"5":0,"6":300000,"7":0,"8":0,"9":0,"10":500000,"11":130000}}
+                """.formatted(flat(base.budget_set()), flat(base.actual()));
     }
+
     private String flat(Map<String, Long> m) {
         String[] order = keys(); // ["total","food","cafe",...,"etc"]
         StringBuilder sb = new StringBuilder();
@@ -151,8 +152,8 @@ public class AiBudgetService {
     private Map<String, Long> parseBudgetSet(String json) {
         try {
             var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            var root   = mapper.readTree(json);
-            var bs     = root.get("budget_set");
+            var root = mapper.readTree(json);
+            var bs = root.get("budget_set");
             if (bs == null || bs.isNull()) return java.util.Collections.emptyMap();
 
             Map<String, Long> out = new java.util.LinkedHashMap<>();
@@ -170,10 +171,10 @@ public class AiBudgetService {
 
             // 3) 혹시 영문 키로 온 경우 보정(영문 → 숫자ID)
             Map<String, String> nameToId = nameKeyToIdStrMap();
-            for (var it = nameToId.entrySet().iterator(); it.hasNext();) {
+            for (var it = nameToId.entrySet().iterator(); it.hasNext(); ) {
                 var e = it.next();
                 String nameKey = e.getKey();     // "food" ...
-                String idKey   = e.getValue();   // "1" ...
+                String idKey = e.getValue();   // "1" ...
                 if (bs.has(nameKey)) {
                     long v = Math.max(0L, bs.path(nameKey).asLong(0L));
                     out.put(idKey, v);
@@ -203,7 +204,9 @@ public class AiBudgetService {
     }
     /* ======================= 헬퍼/유틸 추가 ======================= */
 
-    /** 카테고리 키(영문 or 숫자 문자열) -> DB categoryId 매핑 */
+    /**
+     * 카테고리 키(영문 or 숫자 문자열) -> DB categoryId 매핑
+     */
     private Map<String, Long> loadCategoryNameToIdMap() {
         Map<String, Long> m = new java.util.HashMap<>();
         // 영문 키
@@ -224,13 +227,17 @@ public class AiBudgetService {
         return m;
     }
 
-    /** 만원 단위 반올림 */
+    /**
+     * 만원 단위 반올림
+     */
     private long round10k(long v) {
         if (v <= 0) return 0L;
         return Math.round(v / 10_000.0) * 10_000L;
     }
 
-    /** LLM 실패 시 폴백 생성: 이전 값/실사용 비율로 권장치 구성(키는 영문 기반으로 반환) */
+    /**
+     * LLM 실패 시 폴백 생성: 이전 값/실사용 비율로 권장치 구성(키는 영문 기반으로 반환)
+     */
     private Map<String, Long> fallbackFromActual(AiReportInformationResponse base) {
         Map<String, Long> prevBudget = base.budget_set(); // 영문 키 맵
         Map<String, Long> prevActual = base.actual();     // 영문 키 맵
@@ -246,7 +253,7 @@ public class AiBudgetService {
         Map<String, Long> out = new java.util.LinkedHashMap<>();
         out.put("total", target);
 
-        String[] names = new String[]{"food","cafe","nightlife","life","shopping","cosmetic","transportation","car","medical","entertainment"};
+        String[] names = new String[]{"food", "cafe", "nightlife", "life", "shopping", "cosmetic", "transportation", "car", "medical", "entertainment"};
         if (sumCats <= 0) {
             long each = round10k(Math.round(target / (double) names.length));
             for (String k : names) out.put(k, each);
@@ -267,7 +274,9 @@ public class AiBudgetService {
         return out;
     }
 
-    /** 후처리: 음수 방지 → 만원 반올림 → 식비 우선 → 델타 식비 보정 (영문/숫자 키 모두 대응) */
+    /**
+     * 후처리: 음수 방지 → 만원 반올림 → 식비 우선 → 델타 식비 보정 (영문/숫자 키 모두 대응)
+     */
     private Map<String, Long> postprocess(Map<String, Long> m) {
         if (m == null) m = new java.util.LinkedHashMap<>();
         // 음수 방지
@@ -282,19 +291,23 @@ public class AiBudgetService {
         return m;
     }
 
-    /** 프롬프트 표시 순서(영문 키) */
+    /**
+     * 프롬프트 표시 순서(영문 키)
+     */
     private String[] keys() {
         return new String[]{
-                "total","food","cafe","nightlife","life","cosmetic",
-                "transportation","car","medical","entertainment","shopping","etc"
+                "total", "food", "cafe", "nightlife", "life", "cosmetic",
+                "transportation", "car", "medical", "entertainment", "shopping", "etc"
         };
     }
 
-    /** 식비 우선 규칙: food(식비) ≥ cafe, entertainment */
+    /**
+     * 식비 우선 규칙: food(식비) ≥ cafe, entertainment
+     */
     private void enforceFoodPriority(Map<String, Long> m) {
         long food = firstNonZero(m, "1", "food");
         long cafe = firstNonZero(m, "2", "cafe");
-        long ent  = firstNonZero(m, "10", "entertainment");
+        long ent = firstNonZero(m, "10", "entertainment");
 
         long newFood = Math.max(food, Math.max(cafe, ent));
         if (m.containsKey("1")) {
@@ -304,7 +317,9 @@ public class AiBudgetService {
         }
     }
 
-    /** 합계-총액 델타를 식비에 반영(숫자 키 "1" 우선, 없으면 "food") */
+    /**
+     * 합계-총액 델타를 식비에 반영(숫자 키 "1" 우선, 없으면 "food")
+     */
     private void adjustDeltaToFood(Map<String, Long> m, long targetTotal) {
         long sum = 0L;
 
@@ -312,7 +327,9 @@ public class AiBudgetService {
         boolean hasNumeric = false;
         for (int i = 1; i <= 10; i++) {
             String k = String.valueOf(i);
-            if (m.containsKey(k)) { hasNumeric = true; }
+            if (m.containsKey(k)) {
+                hasNumeric = true;
+            }
             sum += m.getOrDefault(k, 0L);
         }
 
@@ -331,21 +348,27 @@ public class AiBudgetService {
         }
     }
 
-    /** 맵에서 첫 번째 존재하는 키 값을 반환(없으면 0) */
+    /**
+     * 맵에서 첫 번째 존재하는 키 값을 반환(없으면 0)
+     */
     private long firstNonZero(Map<String, Long> m, String primary, String fallback) {
         if (m.containsKey(primary)) return m.getOrDefault(primary, 0L);
         return m.getOrDefault(fallback, 0L);
     }
 
-    /** 영문 키 합(카테고리 10개만) */
+    /**
+     * 영문 키 합(카테고리 10개만)
+     */
     private long sumCatsByName(Map<String, Long> m) {
-        String[] names = new String[]{"food","cafe","nightlife","life","shopping","cosmetic","transportation","car","medical","entertainment"};
+        String[] names = new String[]{"food", "cafe", "nightlife", "life", "shopping", "cosmetic", "transportation", "car", "medical", "entertainment"};
         long s = 0L;
         for (String k : names) s += (m == null) ? 0L : m.getOrDefault(k, 0L);
         return s;
     }
 
-    /** 안전 get */
+    /**
+     * 안전 get
+     */
     private long get(Map<String, Long> m, String key) {
         return (m == null) ? 0L : m.getOrDefault(key, 0L);
     }

@@ -28,6 +28,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CategoryLocationService {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
+    private static final String TYPE = "LOCATION";
+    private static final String SCOPE = "CATEGORY";
     private final CardTransactionRepository txRepo;
     private final BudgetCategoryRepository budgetCategoryRepo;
     private final NotificationRepository notificationRepo;
@@ -35,12 +39,6 @@ public class CategoryLocationService {
     private final ObjectMapper objectMapper;
     private final Optional<GmsTextService> gmsTextService; // GMS(Optional)
     private final CategoryRepository categoryRepository;   // 카테고리명 조회
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
-
-    private static final String TYPE  = "LOCATION";
-    private static final String SCOPE = "CATEGORY";
 
     @Transactional
     public ThresholdCheckResponse notifyRemainForCategory(Long userId, Long categoryId) throws Exception {
@@ -132,18 +130,24 @@ public class CategoryLocationService {
     }
 
     // ===== helpers =====
-    private String currentYm() { return YearMonth.now(KST).format(YM); }
+    private String currentYm() {
+        return YearMonth.now(KST).format(YM);
+    }
 
     private String toJsonSafe(Object o) {
-        try { return objectMapper.writeValueAsString(o); }
-        catch (Exception e) { return null; }
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String resolveCategoryName(Long categoryId) {
         try {
             String name = categoryRepository.findNameById(categoryId);
             if (name != null && !name.isBlank()) return name;
-        } catch (Exception ignore) {}
+        } catch (Exception ignore) {
+        }
         return "카테고리";
     }
 }

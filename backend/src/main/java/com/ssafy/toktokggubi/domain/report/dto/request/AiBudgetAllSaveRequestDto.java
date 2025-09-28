@@ -5,7 +5,7 @@ import com.ssafy.toktokggubi.domain.budget.dto.FixedExpenseDto;
 
 import java.util.List;
 
-public record AiBudgetAllSaveRequestDto (
+public record AiBudgetAllSaveRequestDto(
 
         Long userId,
         String username, // User.nickname 에 매칭
@@ -13,4 +13,5 @@ public record AiBudgetAllSaveRequestDto (
         List<FixedExpenseDto> fixedExpenses,
         List<Long> selectedCategories,
         List<CategoryAllocDto> categoryAllocations
-){}
+) {
+}

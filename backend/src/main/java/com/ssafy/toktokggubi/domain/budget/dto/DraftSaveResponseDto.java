@@ -5,5 +5,6 @@ public record DraftSaveResponseDto(
         Integer version,
         DraftSnapshotDto snapshot,
         long ttlSeconds
-){}
+) {
+}
 

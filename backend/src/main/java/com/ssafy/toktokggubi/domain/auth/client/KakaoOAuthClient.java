@@ -20,10 +20,12 @@ import java.util.Map;
 public class KakaoOAuthClient {
     private final WebClient.Builder web;
 
-    @Value("${kakao.rest-key}") String clientId;
-    @Value("${kakao.redirect-uri}") String redirectUri;
+    @Value("${kakao.rest-key}")
+    String clientId;
+    @Value("${kakao.redirect-uri}")
+    String redirectUri;
 
-    public Mono<Map<String,Object>> exchangeCodeForToken(String code, String codeVerifier) {
+    public Mono<Map<String, Object>> exchangeCodeForToken(String code, String codeVerifier) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "authorization_code");
         form.add("client_id", clientId);
@@ -38,6 +40,7 @@ public class KakaoOAuthClient {
                 .body(BodyInserters.fromFormData(form))
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, ClientResponse::createException)
-                .bodyToMono(new ParameterizedTypeReference<Map<String,Object>>() {});
+                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
+                });
     }
 }

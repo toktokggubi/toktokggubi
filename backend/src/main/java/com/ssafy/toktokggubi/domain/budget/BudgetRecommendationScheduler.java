@@ -28,7 +28,7 @@ public class BudgetRecommendationScheduler {
     }
 
 
-    public ManualRunSummary  runOnce(String ymOverride) {
+    public ManualRunSummary runOnce(String ymOverride) {
         // 1) 활성 사용자 목록
         final String ym = (ymOverride != null && !ymOverride.isBlank()) ? ymOverride : ymResolver.prevYm();
         if (ym == null || ym.length() != 6) throw new IllegalStateException("YM format error: " + ym);
@@ -61,7 +61,10 @@ public class BudgetRecommendationScheduler {
                 failed
         );
     }
-    /** 수동 실행 결과 요약 DTO */
+
+    /**
+     * 수동 실행 결과 요약 DTO
+     */
     public record ManualRunSummary(
             String ym,
             int totalUsers,
@@ -69,5 +72,6 @@ public class BudgetRecommendationScheduler {
             int failed,
             List<Long> succeededUserIds,
             Map<Long, String> failedReasons
-    ) {}
+    ) {
+    }
 }

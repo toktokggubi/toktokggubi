@@ -4,4 +4,5 @@ public record FranchiseSummaryResponse(
         Long franchiseId,
         String merchantName,
         String imageUrl
-) {}
+) {
+}

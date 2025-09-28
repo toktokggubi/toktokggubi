@@ -13,4 +13,5 @@ public record FinanceHeaderRequest(
         String institutionTransactionUniqueNo,// yyyyMMddHHmmss + 6자리
         String apiKey,
         String userKey
-) {}
+) {
+}

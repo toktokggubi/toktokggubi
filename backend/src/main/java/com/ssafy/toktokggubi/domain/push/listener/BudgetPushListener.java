@@ -1,13 +1,13 @@
 package com.ssafy.toktokggubi.domain.push.listener;
 
-import com.ssafy.toktokggubi.domain.wallet.event.TxApprovedEvent;
 import com.ssafy.toktokggubi.domain.push.service.CategoryBudgetService;
 import com.ssafy.toktokggubi.domain.push.service.TotalBudgetService;
+import com.ssafy.toktokggubi.domain.wallet.event.TxApprovedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 
 @Slf4j

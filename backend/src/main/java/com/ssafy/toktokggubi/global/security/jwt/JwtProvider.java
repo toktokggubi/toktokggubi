@@ -17,16 +17,23 @@ import java.util.Date;
 @Component
 @Getter
 public class JwtProvider {
-    @Value("${jwt.secret}") private String secret;
-    @Value("${jwt.issuer:toktokggubi}") private String issuer;
-    @Value("${jwt.signup-exp-minutes:15}") private long signupExpMinutes;
-    @Value("${jwt.access-exp-minutes:60}") private long accessExpMinutes;
-    @Value("${jwt.refresh-exp-days:14}") private long refreshExpDays;
+    @Value("${jwt.secret}")
+    private String secret;
+    @Value("${jwt.issuer:toktokggubi}")
+    private String issuer;
+    @Value("${jwt.signup-exp-minutes:15}")
+    private long signupExpMinutes;
+    @Value("${jwt.access-exp-minutes:60}")
+    private long accessExpMinutes;
+    @Value("${jwt.refresh-exp-days:14}")
+    private long refreshExpDays;
 
     private SecretKey key;
 
     @PostConstruct
-    void init() { this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8)); }
+    void init() {
+        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
 
     // ====== 발급 ======
     public String createSignupToken(Long userId) {

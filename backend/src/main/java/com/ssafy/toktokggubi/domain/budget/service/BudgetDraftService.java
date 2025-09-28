@@ -27,6 +27,10 @@ public class BudgetDraftService {
     private final StringRedisTemplate redis;
     private final ObjectMapper objectMapper;
 
+    private static String draftKey(Long userId, String ym) {
+        return "budget:draft:%d:%s".formatted(userId, ym);
+    }
+
     private String key(long userId, String budgetYm) {
         return "budget:draft:%d:%s".formatted(userId, budgetYm);
     }
@@ -54,7 +58,8 @@ public class BudgetDraftService {
             );
         }
         try {
-            return objectMapper.readValue(raw, new TypeReference<>() {});
+            return objectMapper.readValue(raw, new TypeReference<>() {
+            });
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse draft json", e);
         }
@@ -67,7 +72,7 @@ public class BudgetDraftService {
      * - 부분 필드 머지
      * - 변경 없으면(no-op) 버전 유지, 변경 있으면 +1
      * - TTL 갱신
-     *
+     * <p>
      * ⚠ get→set 분리라 강한 원자성은 부족. 동시요청이 많다면 WATCH/MULTI 또는 Lua(CAS) 권장.
      */
     public DraftSnapshotDto mergeAndSave(long userId, String budgetYm, DraftPatchRequestDto req) {
@@ -132,16 +137,16 @@ public class BudgetDraftService {
         return merged;
     }
 
+    // ======================
+    // 내부 유틸
+    // ======================
+
     /**
      * 커밋 성공 등으로 Draft를 정리할 때 사용.
      */
     public void delete(long userId, String budgetYm) {
         redis.delete(key(userId, budgetYm));
     }
-
-    // ======================
-    // 내부 유틸
-    // ======================
 
     private boolean isNoChange(
             DraftSnapshotDto cur,
@@ -155,9 +160,6 @@ public class BudgetDraftService {
                 && Objects.equals(cur.fixedExpenses(), fixedExpenses)
                 && Objects.equals(cur.selectedCategories(), selectedCategories)
                 && Objects.equals(cur.categoryAllocations(), categoryAllocations);
-    }
-    private static String draftKey(Long userId, String ym) {
-        return "budget:draft:%d:%s".formatted(userId, ym);
     }
 
     public Optional<DraftSnapshotDto> findSnapshot(Long userId, String ym) {

@@ -1,16 +1,16 @@
 package com.ssafy.toktokggubi.domain.report.controller;
 
-import com.ssafy.toktokggubi.domain.budget.dto.BudgetAllSaveRequestDto;
 import com.ssafy.toktokggubi.domain.budget.dto.BudgetSaveResponseDto;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetRecommendService;
-import com.ssafy.toktokggubi.domain.report.dto.request.*;
+import com.ssafy.toktokggubi.domain.report.dto.request.AiReportInformationRequest;
+import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportGetRequest;
+import com.ssafy.toktokggubi.domain.report.dto.request.AiUserReportRequest;
+import com.ssafy.toktokggubi.domain.report.dto.request.UserInfo;
 import com.ssafy.toktokggubi.domain.report.dto.response.AiReportInformationResponse;
+import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
 import com.ssafy.toktokggubi.domain.report.service.AiBudgetPipelineService;
 import com.ssafy.toktokggubi.domain.report.service.AiReportInformationService;
 import com.ssafy.toktokggubi.domain.report.service.AiUserReportService;
-import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
-import com.ssafy.toktokggubi.domain.report.dto.response.UserReportResponse;
-import com.ssafy.toktokggubi.domain.report.entity.AiUserReport;
 import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
@@ -23,9 +23,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.time.ZoneId;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * AI 월간 리포트 정보 및 사용자 리포트 관련 API를 제공하는 컨트롤러.
@@ -40,7 +41,8 @@ public class AiReportInformationController {
     private final AiUserReportService aiUserReportService;
     private final UserProfileService userProfileService;
     private final BudgetRecommendService recommendService;
-private final AiBudgetPipelineService pipeline;
+    private final AiBudgetPipelineService pipeline;
+
     /**
      * AI 월간 리포트 정보를 조회합니다.
      * 예산 설정 및 실제 지출 내역을 포함한 월간 리포트 데이터를 반환합니다.
@@ -61,8 +63,9 @@ private final AiBudgetPipelineService pipeline;
     /**
      * AI 사용자 리포트를 저장합니다.
      * AI 분석을 통해 생성된 사용자별 월간 리포트 데이터를 받아 저장합니다.
-     *
+     * <p>
      * TODO: request의 형태는 아직 확정이 아니어서 변경 될 수 있음.
+     *
      * @param request 사용자 ID, 닉네임, 전체 요약, 이상 징후, 조정 내용, 년도, 월을 포함하는 요청 객체
      * @return HTTP 상태 코드 201 (Created)
      */
@@ -80,7 +83,7 @@ private final AiBudgetPipelineService pipeline;
      * AI 사용자 리포트를 조회합니다.
      * 사용자 ID, 닉네임, 조회할 년도 및 월을 기반으로 AI 월간 리포트 데이터를 반환합니다.
      *
-     * @param request 
+     * @param request
      * @return AI 월간 사용자 리포트 정보 응답 객체
      */
     @PostMapping("/get")
@@ -108,17 +111,16 @@ private final AiBudgetPipelineService pipeline;
                 .year(request.getYear())
                 .month(request.getMonth())
                 .build();
-        
+
         return aiUserReportService.getAiUserReport(userInfo);
     }
-
 
 
     public BudgetSaveResponseDto recommend(@RequestBody @Valid AiReportInformationRequest request) {
         return pipeline.recommendFromInfoAndSave(request);
     }
 
-    }
+}
 
 
 

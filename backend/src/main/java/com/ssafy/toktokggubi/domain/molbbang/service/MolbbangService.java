@@ -2,7 +2,10 @@ package com.ssafy.toktokggubi.domain.molbbang.service;
 
 import com.ssafy.toktokggubi.domain.molbbang.dto.request.CreateRoomRequest;
 import com.ssafy.toktokggubi.domain.molbbang.dto.response.*;
-import com.ssafy.toktokggubi.domain.molbbang.entity.*;
+import com.ssafy.toktokggubi.domain.molbbang.entity.MolbbangMember;
+import com.ssafy.toktokggubi.domain.molbbang.entity.MolbbangRoom;
+import com.ssafy.toktokggubi.domain.molbbang.entity.MolbbangScore;
+import com.ssafy.toktokggubi.domain.molbbang.entity.RoomStatus;
 import com.ssafy.toktokggubi.domain.molbbang.repository.MolbbangMemberRepository;
 import com.ssafy.toktokggubi.domain.molbbang.repository.MolbbangRoomRepository;
 import com.ssafy.toktokggubi.domain.molbbang.repository.MolbbangScoreRepository;
@@ -15,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Service
@@ -27,7 +32,9 @@ public class MolbbangService {
     private final MolbbangScoreRepository scoreRepo;
     private final SimpMessagingTemplate messagingTemplate;
 
-    private static boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
 
     /* ===== 유틸 ===== */
     @Transactional(readOnly = true)
@@ -93,7 +100,8 @@ public class MolbbangService {
         String base = isBlank(desired) ? "사용자" : desired.trim();
         Long roomId = room.getRoomId();
 
-        String candidate = base; int suffix = 1;
+        String candidate = base;
+        int suffix = 1;
         while (memberRepo.existsByRoom_RoomIdAndNickname(roomId, candidate)) {
             suffix++;
             String sfx = String.valueOf(suffix);
@@ -150,7 +158,9 @@ public class MolbbangService {
         }
 
         String code;
-        do { code = generateCode(); } while (roomRepo.findByRoomCode(code).isPresent());
+        do {
+            code = generateCode();
+        } while (roomRepo.findByRoomCode(code).isPresent());
 
         MolbbangRoom room = MolbbangRoom.builder()
                 .roomCode(code)
@@ -205,7 +215,10 @@ public class MolbbangService {
         MolbbangMember member = memberRepo.findByRoom_RoomIdAndUser_UserId(room.getRoomId(), userId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
 
-        if (!member.isActive()) { broadcastRoom(code); return new OkResponse(true); }
+        if (!member.isActive()) {
+            broadcastRoom(code);
+            return new OkResponse(true);
+        }
 
         memberRepo.save(member.toBuilder()
                 .active(false).ready(false).leftAt(LocalDateTime.now()).build());
@@ -314,7 +327,10 @@ public class MolbbangService {
         for (Object[] r : sorted) {
             idx++;
             int score = ((Number) r[3]).intValue();
-            if (!Objects.equals(lastScore, score)) { lastRank = idx; lastScore = score; }
+            if (!Objects.equals(lastScore, score)) {
+                lastRank = idx;
+                lastScore = score;
+            }
             ranking.add(new ResultsResponse.RankingRow(
                     ((Number) r[1]).longValue(), (String) r[2], score, lastRank
             ));

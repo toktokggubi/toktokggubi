@@ -17,5 +17,6 @@ public record RoomView(
             boolean ready,
             boolean host,
             boolean active
-    ) {}
+    ) {
+    }
 }

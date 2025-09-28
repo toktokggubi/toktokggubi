@@ -10,4 +10,5 @@ public record FinanceResponseHeader(
         String apiKey,
         String apiServiceCode,
         String institutionTransactionUniqueNo
-) {}
+) {
+}
