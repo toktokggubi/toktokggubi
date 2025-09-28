@@ -115,11 +115,11 @@
 - **Language**: Java 17
 - **Database**: MySQL, Redis, MongoDB
 - **Security**: Spring Security + JWT
-- **WebSocket**: STOMP
-- **Message Queue**: RabbitMQ
-- **API Documentation**: Swagger/OpenAPI
+- **WebSocket**: STOMP (Spring Messaging, /topic/**)
+- **API Documentation**: Swagger / OpenAPI
 - **File Processing**: Apache Tika
-- **OCR**: Google Cloud Vision API, Tesseract
+- **OCR**: Google Cloud Vision API (Server Side SDK)
+- **External Integrations**: Kakao OAuth2 (Login) / SSAFY Finance OpenAPI / Firebase Cloud Messaging(FCM) / GMS LLM Proxy
 
 ### AI Service
 - **Framework**: Flask
