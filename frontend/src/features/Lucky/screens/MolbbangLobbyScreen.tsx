@@ -506,6 +506,18 @@ export default function MolbbangLobbyScreen() {
 
   // 라운드 관련 디버깅 제거 (게임 한 번만 진행)
 
+  // 컴포넌트 언마운트 시 방 나가기 처리
+  useEffect(() => {
+    return () => {
+      // 컴포넌트가 언마운트될 때 방에서 나가기
+      if (code) {
+        molbbangApi.leaveRoom().catch((error) => {
+          console.log("방 나가기 실패:", error);
+        });
+      }
+    };
+  }, [code]);
+
   return (
     <>
       <LobbyTemplate
