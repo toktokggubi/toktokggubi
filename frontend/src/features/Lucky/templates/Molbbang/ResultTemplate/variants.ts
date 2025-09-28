@@ -24,6 +24,11 @@ export const s = StyleSheet.create({
     marginTop: 30,
     textAlign: "center",
   },
+  // 금액 강조(추가)
+  amount: {
+    ...font.bold,
+    color: "#0f172a",
+  },
 
   // 캐릭터
   characterWrap: { marginTop: 0, alignItems: "center" },
@@ -56,16 +61,50 @@ export const s = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
+  // 로딩 텍스트(추가)
+  listLoading: {
+    ...font.regular,
+    color: colors.GRAY_DARK,
+    textAlign: "center",
+    paddingVertical: 12,
+  },
   rankRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 6,
     gap: 12,
   },
+  // 꼴등 행 배경 강조(추가)
+  rankRowLoser: {
+    backgroundColor: "#fff7f7",
+    borderRadius: 8,
+  },
   badge: { width: 28, textAlign: "center", ...font.bold, color: "#0f172a" },
+  // 꼴등 배지 강조(추가)
+  badgeLoser: {
+    backgroundColor: "#ef4444",
+    color: "#fff",
+    borderRadius: 14,
+    overflow: "hidden",
+  },
   nick: { flex: 1, ...font.medium, color: "#0f172a" },
   score: { ...font.medium, color: "#334155" },
   me: { color: colors.BLUE_NORMAL, fontWeight: "700" },
+  // 꼴등 닉네임/점수 강조(추가)
+  loserNick: { color: "#ef4444", fontWeight: "700" },
+  loserScore: { color: "#ef4444", fontWeight: "700" },
+  // 꼴등 칩(추가)
+  loserChip: {
+    backgroundColor: "#fee2e2",
+    color: "#b91c1c",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    overflow: "hidden",
+    ...font.bold,
+    fontSize: 12,
+    marginRight: 6,
+  },
 
   // 버튼
   btn: {

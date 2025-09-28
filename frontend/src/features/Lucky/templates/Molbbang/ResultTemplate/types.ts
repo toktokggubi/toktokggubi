@@ -5,8 +5,8 @@ export interface ResultTemplateProps {
   myNickname: string;
   myRank: number | null;
   jackpotNickname?: string;
-  onBackToLobby: () => void;
+  onBackToLobby?: () => void;
   onExit?: () => void;
-  isLoser?: boolean; // 내가 꼴등이면 true
+  isLoser?: boolean;
   onPay?: () => void;
 }
