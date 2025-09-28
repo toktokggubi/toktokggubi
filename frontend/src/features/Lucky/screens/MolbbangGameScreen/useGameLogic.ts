@@ -61,7 +61,11 @@ export function useGameLogic({
 
   // ===== Finish game (host ends; participants only submit & navigate) =====
   const handleFinishGame = useCallback(async () => {
-    if (gameStateRef.current.isProcessingFinish || !gameStateRef.current.isGameActive) return;
+    if (
+      gameStateRef.current.isProcessingFinish ||
+      !gameStateRef.current.isGameActive
+    )
+      return;
 
     gameStateRef.current.isProcessingFinish = true;
 
@@ -82,7 +86,8 @@ export function useGameLogic({
       // try to map me (best-effort; not critical)
       let me: { nickname: string } | null = null;
       if (room?.members && room.members.length > 0) {
-        me = room.members.find((m) => m.nickname === nickname) || room.members[0];
+        me =
+          room.members.find((m) => m.nickname === nickname) || room.members[0];
       }
 
       // stop accumulating score
@@ -195,7 +200,18 @@ export function useGameLogic({
       setIsSubmittingScore(false);
       isStartingRef.current = false;
     }
-  }, [code, nickname, amount, hostFlagFromParams, room, router, gameStateRef, timerRef, countdownRef, reset]);
+  }, [
+    code,
+    nickname,
+    amount,
+    hostFlagFromParams,
+    room,
+    router,
+    gameStateRef,
+    timerRef,
+    countdownRef,
+    reset,
+  ]);
 
   // ===== stop game (local) =====
   const stopGame = useCallback(() => {
@@ -225,7 +241,9 @@ export function useGameLogic({
 
     let interval: ReturnType<typeof setInterval>;
     const startPolling = () => {
-      const pollInterval = gameStateRef.current.isGameActive ? 1000 : GAME_CONSTANTS.POLLING_INTERVAL;
+      const pollInterval = gameStateRef.current.isGameActive
+        ? 1000
+        : GAME_CONSTANTS.POLLING_INTERVAL;
       interval = setInterval(async () => {
         try {
           const r = await molbbangApi.fetchRoom();
@@ -276,7 +294,10 @@ export function useGameLogic({
     // ignore early status flaps
     startLockUntilRef.current = Date.now() + 500;
 
-    const initialRemaining = Math.max(0, Math.ceil(((gameEndAtRef.current ?? 0) - Date.now()) / 1000));
+    const initialRemaining = Math.max(
+      0,
+      Math.ceil(((gameEndAtRef.current ?? 0) - Date.now()) / 1000)
+    );
     setRemainingSecondsRef.current(initialRemaining);
     reset();
 
@@ -304,7 +325,14 @@ export function useGameLogic({
 
     gameStateRef.current.isStartingGame = false;
     // isStartingRef released on finish
-  }, [room?.status, gameStateRef, timerRef, countdownRef, reset, handleFinishGame]);
+  }, [
+    room?.status,
+    gameStateRef,
+    timerRef,
+    countdownRef,
+    reset,
+    handleFinishGame,
+  ]);
 
   // ===== server-driven finish detection =====
   useEffect(() => {
@@ -312,7 +340,11 @@ export function useGameLogic({
     if (Date.now() < startLockUntilRef.current) return;
 
     // server says finished
-    if (room.status === "finished" && gameStateRef.current.isGameActive && !navigatedToResultRef.current) {
+    if (
+      room.status === "finished" &&
+      gameStateRef.current.isGameActive &&
+      !navigatedToResultRef.current
+    ) {
       if (navigatedToResultRef.current) return;
       navigatedToResultRef.current = true;
 
@@ -343,20 +375,39 @@ export function useGameLogic({
     }
 
     // host cancelled or error → host back to lobby only
-    if (room.status === "lobby" && gameStateRef.current.isGameActive && hostFlagFromParams) {
+    if (
+      room.status === "lobby" &&
+      gameStateRef.current.isGameActive &&
+      hostFlagFromParams
+    ) {
       stopGame();
       router.replace({
         pathname: "/molbbang/room/[code]",
-        params: { code, nick: nickname, amount, host: hostFlagFromParams ? "1" : "0" },
+        params: {
+          code,
+          nick: nickname,
+          amount,
+          host: hostFlagFromParams ? "1" : "0",
+        },
       });
     }
 
     // NOTE: participant "lobby → result" shortcut removed to avoid false positives
-  }, [room?.status, stopGame, code, nickname, amount, router, gameStateRef, hostFlagFromParams]);
+  }, [
+    room?.status,
+    stopGame,
+    code,
+    nickname,
+    amount,
+    router,
+    gameStateRef,
+    hostFlagFromParams,
+  ]);
 
   // ===== timer-driven finish detection =====
   useEffect(() => {
-    if (!gameStateRef.current.isGameActive || navigatedToResultRef.current) return;
+    if (!gameStateRef.current.isGameActive || navigatedToResultRef.current)
+      return;
 
     const checkTimer = () => {
       if (
@@ -399,12 +450,28 @@ export function useGameLogic({
 
   // ===== live score update (only when active & not finishing) =====
   useEffect(() => {
-    if (!gameStateRef.current.isGameActive || gameStateRef.current.isProcessingFinish) return;
+    if (
+      !gameStateRef.current.isGameActive ||
+      gameStateRef.current.isProcessingFinish
+    )
+      return;
 
     const score = Math.round(shakeValue);
     setCurrentScoreRef.current(score);
     finalScoreRef.current = score;
   }, [shakeValue, gameStateRef]);
+
+  // 컴포넌트 언마운트 시 방 나가기 처리
+  useEffect(() => {
+    return () => {
+      // 컴포넌트가 언마운트될 때 방에서 나가기
+      if (code) {
+        molbbangApi.leaveRoom().catch((error) => {
+          console.log("방 나가기 실패:", error);
+        });
+      }
+    };
+  }, [code]);
 
   return {
     room,
