@@ -42,12 +42,12 @@ export function useGameLogic({
   const setRemainingSecondsRef = useRef(setRemainingSeconds);
   const setCurrentScoreRef = useRef(setCurrentScore);
 
-  // 라운드 중복 시작 방지 및 종료시각 기반 카운트다운 관리
-  const startedRoundRef = useRef<number | null>(null);
-  const roundEndAtRef = useRef<number | null>(null);
+  // 게임 상태 관리
+  const gameEndAtRef = useRef<number | null>(null);
   const startLockUntilRef = useRef<number>(0);
   const isStartingRef = useRef<boolean>(false); // 시작 중 플래그
   const finalScoreRef = useRef<number>(0); // 게임 종료 시점의 최종 점수 보존
+  const navigatedToResultRef = useRef<boolean>(false); // 결과화면 이동 방지
 
   // ref 업데이트
   setRemainingSecondsRef.current = setRemainingSeconds;
@@ -61,8 +61,8 @@ export function useGameLogic({
     enabled: true, // ← 항상 활성화
   });
 
-  // 라운드 종료 처리
-  const handleFinishRound = useCallback(async () => {
+  // 게임 종료 처리
+  const handleFinishGame = useCallback(async () => {
     if (
       gameStateRef.current.isProcessingFinish ||
       !gameStateRef.current.isGameActive
@@ -105,30 +105,39 @@ export function useGameLogic({
       // 게임 상태를 즉시 비활성화하여 점수 업데이트 방지
       gameStateRef.current.isGameActive = false;
 
-      // 먼저 점수 제출
+      // 먼저 점수 제출 (모든 플레이어가 점수를 제출하도록)
       if (me) {
         try {
           setIsSubmittingScore(true); // 로딩 시작
+          console.log("점수 제출:", { finalScore, nickname });
           await molbbangApi.submitScore(finalScore);
+          console.log("점수 제출 성공");
         } catch (error: any) {
+          console.error("점수 제출 실패:", error);
         } finally {
           setIsSubmittingScore(false); // 로딩 종료
         }
       } else {
+        console.warn("me 객체를 찾을 수 없어 점수를 제출할 수 없습니다");
       }
 
       // 게임 종료 (바로 최종 결과로)
+      console.log("호스트가 게임 종료 요청");
+
+      // 참가자들이 점수를 제출할 시간을 주기 위해 잠시 대기
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       const res = await molbbangApi.finishRound();
 
       if (res.ok) {
-        // 게임 완료 상태로 처리 (라운드 없이 바로 최종 결과)
+        // 게임 완료 상태로 처리 (바로 최종 결과)
         // 서버 상태 반영 (room.status는 실제 DB 상태 유지)
         setRoom((prevRoom: MolbbangRoom | null) => {
           // 게임 완료 상태로 업데이트
           return prevRoom
             ? {
                 ...prevRoom,
-                round: 1, // 라운드는 항상 1
+                round: 1, // 게임은 항상 1판
                 status: "finished", // 바로 게임 완료 상태로
               }
             : null;
@@ -152,7 +161,7 @@ export function useGameLogic({
 
             // 락 해제
             isStartingRef.current = false;
-            roundEndAtRef.current = null;
+            gameEndAtRef.current = null;
             startLockUntilRef.current = 0;
 
             // 타이머 정리
@@ -197,7 +206,7 @@ export function useGameLogic({
 
         // 락 해제
         isStartingRef.current = false;
-        roundEndAtRef.current = null;
+        gameEndAtRef.current = null;
         startLockUntilRef.current = 0;
 
         // 타이머 정리
@@ -213,7 +222,8 @@ export function useGameLogic({
         // 센서 리셋
         reset();
 
-        // 결과 화면으로 바로 이동
+        // 결과 화면으로 바로 이동 (호스트가 직접 종료하는 경우)
+        navigatedToResultRef.current = true; // 중복 이동 방지
         const resultParams = {
           code,
           nick: nickname,
@@ -250,7 +260,7 @@ export function useGameLogic({
       });
     } finally {
       gameStateRef.current.isProcessingFinish = false;
-      // 게임 종료 시 락 해제 (다음 라운드 준비를 위해)
+      // 게임 종료 시 락 해제
       isStartingRef.current = false;
     }
   }, [code, nickname, amount, hostFlagFromParams, room, shakeValue, router]);
@@ -264,8 +274,7 @@ export function useGameLogic({
 
     // 락 해제
     isStartingRef.current = false;
-    // startedRoundRef.current는 null로 초기화하지 않음 (다음 라운드 감지용)
-    roundEndAtRef.current = null;
+    gameEndAtRef.current = null;
     startLockUntilRef.current = 0;
 
     // 타이머 정리
@@ -281,43 +290,35 @@ export function useGameLogic({
     // 센서 리셋은 모달 표시 후에 수행 (점수 보존을 위해)
   }, []);
 
-  // 폴링
+  // 폴링 (게임 중일 때는 더 빠른 주기로)
   useEffect(() => {
     if (!code) {
       return;
     }
 
-    const interval = setInterval(async () => {
-      try {
-        // 모달이 표시되거나 게임이 활성화된 상태에서는 폴링하지 않음
-        if (gameStateRef.current.isGameActive) {
-          return;
+    const interval = setInterval(
+      async () => {
+        try {
+          const r = await molbbangApi.fetchRoom();
+          if (isRoom(r)) {
+            setRoom(r);
+          }
+        } catch {
+          // ignore
         }
-
-        const r = await molbbangApi.fetchRoom();
-        if (isRoom(r)) {
-          setRoom(r);
-        }
-      } catch {
-        // ignore
-      }
-    }, GAME_CONSTANTS.POLLING_INTERVAL);
+      },
+      // 게임이 활성화된 상태에서는 더 빠른 폴링으로 서버 상태 변경 감지
+      gameStateRef.current.isGameActive ? 1000 : GAME_CONSTANTS.POLLING_INTERVAL
+    );
 
     return () => clearInterval(interval);
   }, [code]);
 
-  // 게임 시작 감지
+  // 게임 시작 감지 (서버 기반 동기화)
   useEffect(() => {
     if (!room || room.status !== "playing") return;
 
-    const currentRound = typeof room.round === "number" ? room.round : null;
-    const roundChanged =
-      currentRound !== null &&
-      (startedRoundRef.current === null ||
-        currentRound !== startedRoundRef.current);
-
     const canStartGame =
-      roundChanged &&
       !gameStateRef.current.isGameActive &&
       !gameStateRef.current.isProcessingFinish &&
       !gameStateRef.current.isTimerRunning &&
@@ -337,59 +338,137 @@ export function useGameLogic({
       gameStateRef.current.isTimerRunning = true;
       gameStateRef.current.isProcessingFinish = false;
 
-      // 라운드 식별자 및 종료시각 고정
-      startedRoundRef.current = currentRound ?? startedRoundRef.current ?? 1;
-      roundEndAtRef.current = Date.now() + GAME_CONSTANTS.GAME_MS;
-      // 시작 직후 서버 상태 요동(playing/lobby 튐) 무시 구간
-      startLockUntilRef.current = Date.now() + 500; // 1.5초 → 0.5초로 단축
+      // 게임 시작 시간을 현재 시각으로 설정 (동기화 개선을 위해 폴링 주기 단축)
+      const gameStartTime = Date.now();
+      gameEndAtRef.current = gameStartTime + GAME_CONSTANTS.GAME_MS;
 
-      // 점수는 센서 리셋과 함께 자동으로 0이 되므로 별도 초기화 불필요
-      // setCurrentScoreRef.current(0); // 제거
+      // 시작 직후 서버 상태 요동(playing/lobby 튐) 무시 구간
+      startLockUntilRef.current = Date.now() + 500;
 
       const initialRemaining = Math.max(
         0,
-        Math.ceil(((roundEndAtRef.current ?? 0) - Date.now()) / 1000)
+        Math.ceil(((gameEndAtRef.current ?? 0) - Date.now()) / 1000)
       );
       setRemainingSecondsRef.current(initialRemaining);
       reset(); // 센서 리셋으로 점수도 자동으로 0이 됨
 
-      // 게임 종료 예약
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
+      // 서버 기반 게임 종료 예약 (정확한 시각 계산)
+      const timeUntilEnd = gameEndAtRef.current - Date.now();
+      if (timeUntilEnd > 0) {
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+        timerRef.current = setTimeout(() => {
+          void handleFinishGame();
+        }, timeUntilEnd);
       }
-      timerRef.current = setTimeout(() => {
-        void handleFinishRound();
-      }, GAME_CONSTANTS.GAME_MS);
 
       // 종료시각 기반 카운트다운
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
       }
       countdownRef.current = setInterval(() => {
-        if (!roundEndAtRef.current) return;
-        const remainingMs = roundEndAtRef.current - Date.now();
+        if (!gameEndAtRef.current) return;
+        const remainingMs = gameEndAtRef.current - Date.now();
         const next = Math.max(0, Math.ceil(remainingMs / 1000));
         setRemainingSecondsRef.current(next);
+
+        // 게임이 종료되었으면 타이머 정리
+        if (next <= 0 && countdownRef.current) {
+          clearInterval(countdownRef.current);
+          countdownRef.current = null;
+        }
       }, 100);
 
       gameStateRef.current.isStartingGame = false;
       // isStartingRef.current는 게임 종료 시에만 해제 (중복 실행 방지)
 
-      // 게임 시작 완료
+      console.log("게임 시작:", {
+        gameStartTime,
+        gameEndTime: gameEndAtRef.current,
+        timeUntilEnd,
+        initialRemaining,
+      });
     }
-  }, [room?.status, room?.round]); // 의존성 최소화
+  }, [room?.status]); // 의존성 최소화
 
-  // 게임 종료 감지 (시작 직후 상태 요동은 무시)
+  // 게임 종료 감지 (서버 상태 또는 타이머 기반)
   useEffect(() => {
     if (!room) return;
     if (Date.now() < startLockUntilRef.current) return;
 
-    if (room.status === "finished" && gameStateRef.current.isGameActive) {
+    // 1. 서버에서 게임 종료 상태로 변경된 경우
+    if (
+      room.status === "finished" &&
+      gameStateRef.current.isGameActive &&
+      !navigatedToResultRef.current
+    ) {
+      console.log("서버 게임 종료 감지: 결과화면으로 이동");
+      navigatedToResultRef.current = true;
       stopGame();
-    } else if (room.status === "lobby" && gameStateRef.current.isGameActive) {
+
+      // 결과화면으로 이동
+      const resultParams = {
+        code,
+        nick: nickname,
+        amount: String(amount),
+      };
+
+      router.replace({
+        pathname: "/molbbang/room/[code]/result",
+        params: resultParams,
+      });
+      return;
+    }
+
+    // 2. 타이머가 끝났는데 아직 게임이 활성화된 경우 (참가자들의 경우)
+    if (
+      gameEndAtRef.current &&
+      Date.now() >= gameEndAtRef.current &&
+      gameStateRef.current.isGameActive &&
+      !navigatedToResultRef.current
+    ) {
+      console.log("타이머 게임 종료 감지: 점수 제출 후 결과화면으로 이동");
+      navigatedToResultRef.current = true;
+
+      // 참가자들도 점수를 제출하도록 처리
+      const handleParticipantFinish = async () => {
+        try {
+          // 현재 점수 제출
+          const currentScore = finalScoreRef.current;
+          console.log("참가자 점수 제출:", { currentScore, nickname });
+
+          await molbbangApi.submitScore(currentScore);
+          console.log("참가자 점수 제출 성공");
+        } catch (error) {
+          console.error("참가자 점수 제출 실패:", error);
+        } finally {
+          stopGame();
+
+          // 결과화면으로 이동
+          const resultParams = {
+            code,
+            nick: nickname,
+            amount: String(amount),
+          };
+
+          router.replace({
+            pathname: "/molbbang/room/[code]/result",
+            params: resultParams,
+          });
+        }
+      };
+
+      void handleParticipantFinish();
+      return;
+    }
+
+    // 3. 대기방으로 돌아온 경우
+    if (room.status === "lobby" && gameStateRef.current.isGameActive) {
+      console.log("대기방 상태로 변경: 게임 종료");
       stopGame();
     }
-  }, [room?.status, stopGame]);
+  }, [room?.status, stopGame, code, nickname, amount, router]);
 
   // 점수 업데이트 (게임이 활성화된 상태에서만)
   useEffect(() => {
@@ -413,7 +492,7 @@ export function useGameLogic({
     room,
     magnitude,
     shakeValue,
-    handleFinishRound,
+    handleFinishRound: handleFinishGame, // 함수명 변경
     stopGame,
     reset, // 센서 리셋 함수 반환
     isSubmittingScore, // 로딩 상태 반환
