@@ -1,14 +1,26 @@
 // src/features/Lucky/screens/MolbbangCreateScreen.tsx
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { router } from "expo-router";
 import { molbbangApi } from "@/features/Lucky/api/molbbangService";
 import CreateRoomTemplate from "@/features/Lucky/templates/Molbbang/CreateRoomTemplate";
 import MolbbangAlert from "@/shared/ui/MolbbangAlert";
+import { useProfileQuery } from "@/features/Auth/model/useAuthQueries";
 
 export default function MolbbangCreateScreen() {
   const [amount, setAmount] = useState<string>("");
   const [nickname, setNickname] = useState<string>("호스트");
   const [loading, setLoading] = useState<boolean>(false);
+
+  // 사용자 프로필 정보 가져오기
+  const { data: profileData } = useProfileQuery();
+
+  // 사용자 닉네임이 로드되면 기본값으로 설정
+  useEffect(() => {
+    if (profileData?.nickname) {
+      setNickname(profileData.nickname);
+    }
+  }, [profileData?.nickname]);
+
   const [alert, setAlert] = useState<{
     visible: boolean;
     title?: string;

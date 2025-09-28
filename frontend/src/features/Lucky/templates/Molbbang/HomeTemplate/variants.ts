@@ -44,7 +44,7 @@ export const s = StyleSheet.create({
     backgroundColor: colors.YELLOW_NORMAL,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 4,
+    borderWidth: 0,
     borderColor: colors.BLUE_DARKER,
     borderRadius: 10,
     marginBottom: 267,
