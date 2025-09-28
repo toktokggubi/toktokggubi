@@ -105,17 +105,17 @@ export function useGameLogic({
       // 게임 상태를 즉시 비활성화하여 점수 업데이트 방지
       gameStateRef.current.isGameActive = false;
 
+      // 모든 플레이어가 점수 제출을 완료할 때까지 로딩화면 표시
+      setIsSubmittingScore(true); // 로딩 시작
+
       // 먼저 점수 제출 (모든 플레이어가 점수를 제출하도록)
       if (me) {
         try {
-          setIsSubmittingScore(true); // 로딩 시작
           console.log("점수 제출:", { finalScore, nickname });
           await molbbangApi.submitScore(finalScore);
           console.log("점수 제출 성공");
         } catch (error: any) {
           console.error("점수 제출 실패:", error);
-        } finally {
-          setIsSubmittingScore(false); // 로딩 종료
         }
       } else {
         console.warn("me 객체를 찾을 수 없어 점수를 제출할 수 없습니다");
@@ -124,8 +124,9 @@ export function useGameLogic({
       // 게임 종료 (바로 최종 결과로)
       console.log("호스트가 게임 종료 요청");
 
-      // 참가자들이 점수를 제출할 시간을 주기 위해 잠시 대기
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // 모든 참가자가 점수를 제출할 시간을 충분히 주기 위해 대기
+      console.log("모든 참가자의 점수 제출을 기다리는 중...");
+      await new Promise((resolve) => setTimeout(resolve, 4000));
 
       const res = await molbbangApi.finishRound();
 
@@ -260,6 +261,7 @@ export function useGameLogic({
       });
     } finally {
       gameStateRef.current.isProcessingFinish = false;
+      setIsSubmittingScore(false); // 로딩 종료
       // 게임 종료 시 락 해제
       isStartingRef.current = false;
     }
@@ -425,11 +427,74 @@ export function useGameLogic({
       gameStateRef.current.isGameActive &&
       !navigatedToResultRef.current
     ) {
-      console.log("서버 게임 종료 감지: 결과화면으로 이동");
+      console.log("서버 게임 종료 감지: 로딩화면 표시 후 결과화면으로 이동");
       navigatedToResultRef.current = true;
+
+      // 로딩화면 표시
+      setIsSubmittingScore(true);
+
+      // 점수 제출 시도
+      const handleServerFinish = async () => {
+        try {
+          const currentScore = finalScoreRef.current;
+          console.log("서버 종료 감지 시 점수 제출:", {
+            currentScore,
+            nickname,
+          });
+          await molbbangApi.submitScore(currentScore);
+          console.log("서버 종료 감지 시 점수 제출 성공");
+        } catch (error) {
+          console.error("서버 종료 감지 시 점수 제출 실패:", error);
+        } finally {
+          stopGame();
+          setIsSubmittingScore(false); // 로딩 종료
+
+          // 결과화면으로 이동
+          const resultParams = {
+            code,
+            nick: nickname,
+            amount: String(amount),
+          };
+
+          router.replace({
+            pathname: "/molbbang/room/[code]/result",
+            params: resultParams,
+          });
+        }
+      };
+
+      void handleServerFinish();
+      return;
+    }
+
+    // 2. 대기방으로 돌아온 경우 (게임 취소 또는 오류) - 호스트만 대기실로 이동
+    if (
+      room.status === "lobby" &&
+      gameStateRef.current.isGameActive &&
+      hostFlagFromParams
+    ) {
+      console.log("호스트가 게임 취소: 대기실로 이동");
       stopGame();
 
-      // 결과화면으로 이동
+      // 호스트만 대기실로 이동
+      router.replace({
+        pathname: "/molbbang/room/[code]",
+        params: {
+          code,
+          nick: nickname,
+          amount,
+          host: hostFlagFromParams ? "1" : "0",
+        },
+      });
+    } else if (
+      room.status === "lobby" &&
+      gameStateRef.current.isGameActive &&
+      !hostFlagFromParams
+    ) {
+      console.log("참가자가 게임 취소 감지: 결과화면으로 이동");
+      stopGame();
+
+      // 참가자는 결과화면으로 이동
       const resultParams = {
         code,
         nick: nickname,
@@ -439,24 +504,6 @@ export function useGameLogic({
       router.replace({
         pathname: "/molbbang/room/[code]/result",
         params: resultParams,
-      });
-      return;
-    }
-
-    // 2. 대기방으로 돌아온 경우 (게임 취소 또는 오류)
-    if (room.status === "lobby" && gameStateRef.current.isGameActive) {
-      console.log("대기방 상태로 변경: 게임 취소됨, 대기실로 이동");
-      stopGame();
-
-      // 게임이 취소되었으므로 대기실로 이동
-      router.replace({
-        pathname: "/molbbang/room/[code]",
-        params: {
-          code,
-          nick: nickname,
-          amount,
-          host: hostFlagFromParams ? "1" : "0",
-        },
       });
     }
   }, [room?.status, stopGame, code, nickname, amount, router]);
@@ -479,6 +526,9 @@ export function useGameLogic({
 
         // 참가자들도 점수를 제출하도록 처리
         const handleParticipantFinish = async () => {
+          // 참가자도 로딩화면 표시
+          setIsSubmittingScore(true);
+
           try {
             // 현재 점수 제출
             const currentScore = finalScoreRef.current;
@@ -486,11 +536,15 @@ export function useGameLogic({
 
             await molbbangApi.submitScore(currentScore);
             console.log("참가자 점수 제출 성공");
+
+            // 점수 제출 후 잠시 대기 (다른 참가자들도 제출할 시간을 주기 위해)
+            await new Promise((resolve) => setTimeout(resolve, 2000));
           } catch (error) {
             console.error("참가자 점수 제출 실패:", error);
             // 점수 제출 실패해도 결과화면으로 이동 (서버에서 0점으로 처리될 것)
           } finally {
             stopGame();
+            setIsSubmittingScore(false); // 로딩 종료
 
             // 점수 제출 성공/실패 관계없이 결과화면으로 이동
             const resultParams = {
