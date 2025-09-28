@@ -1,21 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, Text, Pressable, Alert } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { molbbangApi } from "@/features/Lucky/api/molbbangService";
 import type { MolbbangRoom } from "@/features/Lucky/api/molbbangService";
+import { molbbangApi } from "@/features/Lucky/api/molbbangService";
+import ResultTemplate from "@/features/Lucky/templates/Molbbang/ResultTemplate";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 
-// 전역 변수 타입 선언
 declare global {
   interface Window {
     __resultParamsLogged?: boolean;
   }
 }
-import ResultTemplate from "@/features/Lucky/templates/Molbbang/ResultTemplate";
 
 function isRoom(v: unknown): v is MolbbangRoom {
-  return (
-    typeof v === "object" && v !== null && Array.isArray((v as any).members)
-  );
+  return typeof v === "object" && v !== null && Array.isArray((v as any).members);
 }
 
 export default function MolbbangResultScreen() {
@@ -32,54 +28,65 @@ export default function MolbbangResultScreen() {
       : Array.isArray(params.code)
       ? params.code[0]
       : "";
+
   const nickname =
     typeof params.nick === "string"
       ? params.nick
       : Array.isArray(params.nick)
       ? params.nick[0]
       : "";
-  const amount = Number(
+
+  // 1) 파라미터의 amount는 "초기값"으로만 사용하고, 최종 값은 getResults().amount로 덮어쓴다.
+  const initialAmount = Number(
     typeof params.amount === "string"
       ? params.amount
       : Array.isArray(params.amount)
       ? params.amount[0]
       : 0
   );
+  const [amount, setAmount] = useState<number>(Number.isFinite(initialAmount) ? initialAmount : 0);
 
-  // URL 파라미터 처리
-
-  const [room, setRoom] = useState<MolbbangRoom | null>(null);
   const [ranking, setRanking] = useState<
     { userId: string; nickname: string; total: number }[]
   >([]);
-  const [jackpotUserId, setJackpotUserId] = useState<string | undefined>(
-    undefined
-  );
+  const [jackpotUserId, setJackpotUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        // 게임이 이미 종료되었으므로 바로 결과 조회
+        // 2) 결과 조회 시 서버에서 내려주는 금액을 사용한다.
         const res = await molbbangApi.getResults();
 
-        if (mounted && res.ok) {
-          // 랭킹 데이터가 비어있거나 유효하지 않은 경우 처리
-          if (
-            res.ranking &&
-            Array.isArray(res.ranking) &&
-            res.ranking.length > 0
-          ) {
+        if (!mounted) return;
+
+        if (res.ok) {
+          if (Array.isArray(res.ranking)) {
             setRanking(res.ranking);
-            setJackpotUserId(res.jackpotUserId);
           } else {
             setRanking([]);
+          }
+
+          setJackpotUserId(res.jackpotUserId);
+
+          // 서버 응답 금액이 유효하면 그걸로 갱신
+          if (typeof res.amount === "number" && Number.isFinite(res.amount) && res.amount > 0) {
+            setAmount(res.amount);
+          } else {
+            // 혹시 응답에 금액이 없는 경우엔 방 정보로 보정 시도 (선택)
+            try {
+              const roomView = await molbbangApi.fetchRoom();
+              if (roomView?.amount && Number.isFinite(roomView.amount)) {
+                setAmount(roomView.amount);
+              }
+            } catch {
+              // ignore
+            }
           }
         } else {
           setRanking([]);
         }
-      } catch (error) {
-        // 에러 발생 시 빈 랭킹으로 설정
+      } catch {
         if (mounted) {
           setRanking([]);
         }
@@ -91,7 +98,6 @@ export default function MolbbangResultScreen() {
   }, [code]);
 
   const myRank = useMemo(() => {
-    // 닉네임으로 사용자 순위 찾기
     const idx = ranking.findIndex((r) => r.nickname === nickname);
     return idx >= 0 ? idx + 1 : null;
   }, [ranking, nickname]);
@@ -100,69 +106,45 @@ export default function MolbbangResultScreen() {
     const hit = ranking.find((r) => r.userId === jackpotUserId);
     return hit?.nickname;
   }, [ranking, jackpotUserId]);
-  // ✅ 내가 꼴등인지 판단 (jackpot 닉네임과 동일 = 꼴등 규칙)
+
   const isLoser = useMemo(() => {
-    // 1. jackpotNick과 일치하는 경우
-    if (jackpotNick === nickname) {
-      return true;
-    }
-
-    // 2. 랭킹에서 꼴등인 경우 (마지막 순위)
-    if (myRank !== null && myRank === ranking.length && ranking.length > 0) {
-      return true;
-    }
-
-    // 3. 랭킹이 비어있지 않고 내가 가장 낮은 점수를 가진 경우
+    if (jackpotNick === nickname) return true;
+    if (myRank !== null && myRank === ranking.length && ranking.length > 0) return true;
     if (ranking.length > 0 && myRank !== null) {
-      const myRanking = ranking.find((r) => r.nickname === nickname);
-      const lowestScore = Math.min(...ranking.map((r) => r.total));
-      if (myRanking && myRanking.total === lowestScore) {
-        return true;
-      }
+      const me = ranking.find((r) => r.nickname === nickname);
+      const lowest = Math.min(...ranking.map((r) => r.total));
+      if (me && me.total === lowest) return true;
     }
-
     return false;
   }, [jackpotNick, nickname, myRank, ranking]);
 
-  // 디버깅을 위한 로그
-  console.log("결제 버튼 표시 조건 확인:", {
-    nickname,
-    jackpotNick,
-    myRank,
-    rankingLength: ranking.length,
-    isLoser,
-    ranking: ranking.map((r) => ({ nickname: r.nickname, total: r.total })),
-    myRanking: ranking.find((r) => r.nickname === nickname),
-  });
   const onBackToLobby = () => {
     router.replace({
       pathname: "/molbbang/room/[code]",
-      params: { code, nick: nickname, amount },
+      params: { code, nick: nickname, amount: String(amount) },
     });
   };
   const onPay = () => {
     router.push({
       pathname: "/pay/payment",
-      params: { code, nick: nickname, amount },
+      params: { code, nick: nickname, amount: String(amount) },
     });
   };
   const onExit = () => {
-    router.replace("/molbbang"); // ✅ 원하는 경로로 이동 (예: 홈 화면)
+    router.replace("/molbbang");
   };
-
-  // 랭킹 데이터 로딩 상태 확인
 
   return (
     <ResultTemplate
       code={code}
-      amount={amount}
+      amount={amount} // ✅ 서버 응답으로 갱신된 금액 사용
       ranking={ranking}
       myNickname={nickname}
       myRank={myRank}
       jackpotNickname={jackpotNick}
       onBackToLobby={onBackToLobby}
       onExit={onExit}
-      isLoser={isLoser} // ✅ 전달
+      isLoser={isLoser}
       onPay={onPay}
     />
   );
