@@ -18,4 +18,6 @@ public interface MolbbangScoreRepository extends JpaRepository<MolbbangScore, Lo
       GROUP BY ms.member.memberId, mm.user.userId, mm.nickname
     """)
     List<Object[]> aggregateRoomTotals(Long roomId);
+
+    long countByRoom_RoomId(Long roomId);
 }
