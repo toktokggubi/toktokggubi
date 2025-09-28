@@ -38,6 +38,9 @@ export function useFloatInBox(
   const px = useRef(0);
   const py = useRef(0);
 
+  // 성능 최적화를 위한 이전 위치 저장
+  const lastUpdateTime = useRef(0);
+
   // 박스 경계(중앙 기준 최대 이동량). 캐릭터의 반지름 여유로 48px 확보.
   const bounds = useRef<{ maxX: number; maxY: number }>({ maxX: 0, maxY: 0 });
 
@@ -65,6 +68,14 @@ export function useFloatInBox(
     if (!enabled || !box) return;
 
     const sub = Accelerometer.addListener(({ x, y }) => {
+      const now = Date.now();
+
+      // 프레임 제한: 16ms 간격으로 업데이트 (60fps)
+      if (now - lastUpdateTime.current < 16) {
+        return;
+      }
+      lastUpdateTime.current = now;
+
       // 좌표계 보정:
       // - x: 좌/우 기울기(우측으로 기울이면 +) → 화면에선 우측 +로 밀기
       // - y: 상/하 기울기(아래로 기울이면 +) → 화면에선 아래 +로 밀기
@@ -99,14 +110,22 @@ export function useFloatInBox(
         vy.current *= -0.4;
       }
 
-      // 상태 반영
-      // setState를 너무 자주 호출하면 리렌더가 많아지므로,
-      // 센서 주기 그대로 써도 60Hz면 충분히 부드럽다.
-      setPos({ x: px.current, y: py.current });
+      // 상태 반영 - 최적화: 위치 변화가 충분할 때만 업데이트
+      const newX = px.current;
+      const newY = py.current;
+      const currentPos = pos;
+
+      // 위치 변화가 2px 이상일 때만 업데이트 (성능 최적화)
+      if (
+        Math.abs(newX - currentPos.x) > 2 ||
+        Math.abs(newY - currentPos.y) > 2
+      ) {
+        setPos({ x: newX, y: newY });
+      }
     });
 
     return () => sub.remove();
-  }, [enabled, box, accelScale, friction, sampleHz]);
+  }, [enabled, box, accelScale, friction, sampleHz, pos]);
 
   return pos;
 }

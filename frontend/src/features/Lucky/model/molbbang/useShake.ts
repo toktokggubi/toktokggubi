@@ -10,9 +10,9 @@ interface UseShakeOptions {
 }
 
 export function useShake({
-  sampleHz = 60,
-  smoothing = 0.4, // 스무딩 증가로 더 안정적으로
-  shakeThreshold = 1.0,
+  sampleHz = 45, // 프로덕션에서 더 안정적인 주파수
+  smoothing = 0.5, // 더 부드러운 스무딩
+  shakeThreshold = 0.8, // 감도 조정
   enabled = true,
 }: UseShakeOptions) {
   const [magnitude, setMagnitude] = useState(0);

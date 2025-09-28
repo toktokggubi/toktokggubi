@@ -77,10 +77,7 @@ export default function LobbyTemplate(props: LobbyTemplateProps) {
             >
               <View style={s.memberLeft}>
                 <View style={[s.dot, m.online ? s.dotOn : s.dotOff]} />
-                <Text style={s.memberName}>
-                  {m.nickname}
-                  {m.nickname === meNickname ? "(나)" : ""}
-                </Text>
+                <Text style={s.memberName}>{m.nickname}</Text>
               </View>
               <View style={[s.badge, m.ready ? s.badgeReady : s.badgeWaiting]}>
                 <Text

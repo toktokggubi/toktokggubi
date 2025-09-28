@@ -35,4 +35,7 @@ export interface RoomTemplateProps {
   canStart: boolean; // 모든 인원이 준비 + 최소 2명
   allReady: boolean; // 모든 인원 준비 여부
   onToggleReady: () => void;
+
+  // ✅ 호스트 여부
+  isHost: boolean;
 }
