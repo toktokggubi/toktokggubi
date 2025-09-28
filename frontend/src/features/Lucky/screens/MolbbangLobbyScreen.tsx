@@ -309,7 +309,8 @@ export default function MolbbangLobbyScreen() {
         });
       }
 
-      // 게임 시작 성공 시 즉시 게임 화면으로 이동
+      // 게임 시작 성공 시 즉시 게임 화면으로 이동 (호스트만)
+      navigatedToGameRef.current = true; // 중복 이동 방지
       const gameParams = {
         code,
         nick: nickname,
@@ -336,23 +337,6 @@ export default function MolbbangLobbyScreen() {
     }
   }, [code, nickname, amount, hostFlagFromParams, router]);
 
-  // 이미 게임 화면으로 이동했는지 여부를 추적하여 중복 이동 방지 (자동 게임 시작 제거로 불필요해짐)
-  // const navigatedToGameRef = useRef(false);
-
-  // 게임 상태 변경 감지 제거 - 호스트 버튼 클릭으로만 게임 시작
-  // useEffect(() => {
-  //   if (room && room.status === "playing") {
-  //     // 자동 게임 시작 로직 제거
-  //   }
-  // }, [room?.status, code, router, nickname, amount, hostFlagFromParams, connected]);
-
-  // 대기방 상태로 돌아오면 이동 락 해제 (자동 게임 시작 제거로 불필요해짐)
-  // useEffect(() => {
-  //   if (room?.status === "lobby") {
-  //     navigatedToGameRef.current = false;
-  //   }
-  // }, [room?.status]);
-
   const myReady = !!me?.ready;
 
   const presentCount = members.some((m) => typeof m.online === "boolean")
@@ -373,6 +357,47 @@ export default function MolbbangLobbyScreen() {
     // 서버가 hostId를 안 준 경우: 최초 진입 시 받은 host 플래그 사용
     return hostFlagFromParams;
   }, [room, me, hostFlagFromParams]);
+
+  // 이미 게임 화면으로 이동했는지 여부를 추적하여 중복 이동 방지
+  const navigatedToGameRef = useRef(false);
+
+  // 게임 상태 변경 감지 - 모든 참가자가 자동으로 게임 화면으로 이동
+  useEffect(() => {
+    if (room && room.status === "playing" && !navigatedToGameRef.current) {
+      // 중복 이동 방지
+      navigatedToGameRef.current = true;
+
+      // 호스트는 이미 버튼 클릭으로 이동했으므로 참가자들만 자동 이동
+      if (!isHost) {
+        const gameParams = {
+          code,
+          nick: nickname,
+          amount: String(amount),
+          host: hostFlagFromParams ? "1" : "0",
+        };
+
+        router.push({
+          pathname: "/molbbang/room/[code]/game",
+          params: gameParams,
+        });
+      }
+    }
+  }, [
+    room?.status,
+    code,
+    router,
+    nickname,
+    amount,
+    hostFlagFromParams,
+    isHost,
+  ]);
+
+  // 대기방 상태로 돌아오면 이동 락 해제
+  useEffect(() => {
+    if (room?.status === "lobby") {
+      navigatedToGameRef.current = false;
+    }
+  }, [room?.status]);
 
   const onToggleReady = useCallback(async () => {
     const next = !myReady;
@@ -460,6 +485,7 @@ export default function MolbbangLobbyScreen() {
         onToggleReady={onToggleReady}
         onStart={onStart}
         onCopyCode={onCopyCode} // 방 코드 복사 기능 추가
+        showStartButton={isHost} // 호스트가 아닌 경우 게임시작 버튼 숨김
       />
 
       <MolbbangAlert

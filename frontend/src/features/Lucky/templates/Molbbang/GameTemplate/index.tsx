@@ -36,9 +36,9 @@ export default function GameTemplate({
   // ── 가속도 기반 위치 (중앙 기준 px 오프셋)
   const { x, y } = useFloatInBox(box, {
     enabled: true, // 모달이 없으므로 항상 활성화
-    accelScale: 170,
-    friction: 0.84,
-    sampleHz: 90,
+    accelScale: 120, // 감도 조금 낮춤
+    friction: 0.88, // 더 부드러운 감쇠
+    sampleHz: 60, // 프로덕션에서 안정적인 주파수
   });
 
   // ── 애니메이션 스타일(부드럽게 보정)
@@ -47,16 +47,16 @@ export default function GameTemplate({
       transform: [
         {
           translateX: withSpring(x, {
-            stiffness: 1000,
-            damping: 18,
-            mass: 0.3,
+            stiffness: 400, // 더 부드럽게
+            damping: 25, // 더 안정적으로
+            mass: 0.5, // 더 자연스럽게
           }),
         },
         {
           translateY: withSpring(y, {
-            stiffness: 1000,
-            damping: 18,
-            mass: 0.3,
+            stiffness: 400, // 더 부드럽게
+            damping: 25, // 더 안정적으로
+            mass: 0.5, // 더 자연스럽게
           }),
         },
       ],

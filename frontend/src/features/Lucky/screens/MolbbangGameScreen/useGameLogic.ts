@@ -55,9 +55,9 @@ export function useGameLogic({
 
   // 흔들기 센서 (항상 활성화, 게임 종료 시점에만 수동으로 리셋)
   const { magnitude, shakeValue, reset } = useShake({
-    sampleHz: 60,
-    smoothing: 0.4, // 스무딩 증가로 더 안정적으로
-    shakeThreshold: 0.8, // 실제로 흔들어야만 감지되도록 더 높임
+    sampleHz: 45, // 프로덕션에서 안정적인 주파수
+    smoothing: 0.5, // 더 부드러운 스무딩
+    shakeThreshold: 0.7, // 적절한 감도
     enabled: true, // ← 항상 활성화
   });
 

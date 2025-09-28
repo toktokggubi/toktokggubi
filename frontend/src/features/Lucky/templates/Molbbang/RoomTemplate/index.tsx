@@ -28,6 +28,8 @@ export default function RoomTemplate({
   canStart,
   allReady,
   onToggleReady,
+  // ✅ 호스트 여부
+  isHost,
 }: RoomTemplateProps) {
   return (
     <View style={s.container}>
@@ -111,14 +113,16 @@ export default function RoomTemplate({
                 QR
               </Text>
             </View>
-            <View style={[s.btn, s.primary, !canStart && s.btnDisabled]}>
-              <Text
-                onPress={canStart ? onStart : undefined}
-                style={[s.btnTxt, s.primaryTxt]}
-              >
-                시작
-              </Text>
-            </View>
+            {isHost && (
+              <View style={[s.btn, s.primary, !canStart && s.btnDisabled]}>
+                <Text
+                  onPress={canStart ? onStart : undefined}
+                  style={[s.btnTxt, s.primaryTxt]}
+                >
+                  시작
+                </Text>
+              </View>
+            )}
           </View>
 
           {!allReady && (
