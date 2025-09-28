@@ -1,6 +1,8 @@
 # 똑똑꺼비 (Toktokggubi)
 
-![똑똑꺼비 마스코트](frontend/src/assets/images/character/big-character-02.png)
+<div align="center">
+  <img src="frontend/src/assets/images/character/big-character-02.png" width="180" height="120">
+</div>
 
 > 예산 관리와 AI 소비 코칭, interactive 소비 제안을 통해 과소비를 예방하고 혜택을 최적화하여 사용자의 건전한 소비 습관을 만들어주는 서비스
 
