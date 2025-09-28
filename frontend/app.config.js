@@ -18,9 +18,6 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      infoPlist: {
-        UIBackgroundModes: ["remote-notification"],
-      },
     },
     android: {
       adaptiveIcon: {
@@ -31,9 +28,6 @@ module.exports = {
       permissions: [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.POST_NOTIFICATIONS",
-        "android.permission.VIBRATE",
-        "android.permission.WAKE_LOCK",
       ],
       versionCode: 1,
       package: "com.technologia.toktokggubi",
@@ -56,14 +50,6 @@ module.exports = {
       "expo-font",
       "expo-location",
       "expo-video",
-      [
-        "expo-notifications",
-        {
-          icon: "./assets/images/notification-icon.png",
-          color: "#ffffff",
-          defaultChannel: "default",
-        },
-      ],
       [
         "@react-native-firebase/app",
         {
