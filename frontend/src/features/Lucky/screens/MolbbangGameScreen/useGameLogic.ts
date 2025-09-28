@@ -126,7 +126,7 @@ export function useGameLogic({
 
       // 모든 참가자가 점수를 제출할 시간을 충분히 주기 위해 대기
       console.log("모든 참가자의 점수 제출을 기다리는 중...");
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const res = await molbbangApi.finishRound();
 
@@ -443,6 +443,24 @@ export function useGameLogic({
           });
           await molbbangApi.submitScore(currentScore);
           console.log("서버 종료 감지 시 점수 제출 성공");
+
+          // 점수 제출 후 잠시 대기 (다른 참가자들도 제출할 시간을 주기 위해)
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+
+          // 결과 조회 시도
+          try {
+            console.log("서버 종료 감지 시 결과 조회 시도");
+            const resultsRes = await molbbangApi.getResults();
+            if (resultsRes.ok) {
+              console.log("서버 종료 감지 시 결과 조회 성공");
+            } else {
+              console.log(
+                "서버 종료 감지 시 결과 조회 실패, 그래도 결과화면으로 이동"
+              );
+            }
+          } catch (error) {
+            console.error("서버 종료 감지 시 결과 조회 에러:", error);
+          }
         } catch (error) {
           console.error("서버 종료 감지 시 점수 제출 실패:", error);
         } finally {
@@ -538,7 +556,12 @@ export function useGameLogic({
             console.log("참가자 점수 제출 성공");
 
             // 점수 제출 후 잠시 대기 (다른 참가자들도 제출할 시간을 주기 위해)
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+
+            // 타이머 기반 종료에서는 결과 조회하지 않음 (서버 상태 기반 종료에서 처리)
+            console.log(
+              "타이머 기반 종료: 결과 조회는 서버 상태 기반 종료에서 처리됨"
+            );
           } catch (error) {
             console.error("참가자 점수 제출 실패:", error);
             // 점수 제출 실패해도 결과화면으로 이동 (서버에서 0점으로 처리될 것)
@@ -546,17 +569,11 @@ export function useGameLogic({
             stopGame();
             setIsSubmittingScore(false); // 로딩 종료
 
-            // 점수 제출 성공/실패 관계없이 결과화면으로 이동
-            const resultParams = {
-              code,
-              nick: nickname,
-              amount: String(amount),
-            };
-
-            router.replace({
-              pathname: "/molbbang/room/[code]/result",
-              params: resultParams,
-            });
+            // 타이머 기반 종료에서는 결과화면으로 이동하지 않음
+            // 서버 상태 기반 종료에서만 결과화면으로 이동
+            console.log(
+              "타이머 기반 종료 완료: 서버 상태 변경을 기다리는 중..."
+            );
           }
         };
 
