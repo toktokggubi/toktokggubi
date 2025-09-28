@@ -6,9 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -167,12 +165,14 @@ public class GmsTextService {
         }
 
         // 0) 풀 자체를 10,000원 단위로 반올림
-        long pool10 = Math.round(pool / 10_000.0) * 10_000L;
+        final long UNIT = 10_000L;
+       long poolFloor = (pool / UNIT) * UNIT;     // 예: 2,160,000
+        long tail      = pool - poolFloor;         // 예: 5,600 (0..9,999)
 
         // 1) LLM에게 퍼센트 받기 (아래 B 프롬프트 개선도 함께 반영)
         Map<String, Integer> pctByName = null;
         try {
-            String prompt = buildBetterAllocPrompt(categoryNames, pool10);
+            String prompt = buildBetterAllocPrompt(categoryNames, poolFloor);
             String out = llm.complete(prompt, 200, 0.4);
             pctByName = parsePercentJson(out);
         } catch (Exception ignore) {}
@@ -182,6 +182,10 @@ public class GmsTextService {
             pctByName = fallbackPercent(categoryNames); // 아래 C 참고
         }
 
+        // 2.5) LLM 결과를 FLOOR/CAP 범위로 클램프하고 합계=100으로 재정규화
+       pctByName = clampAndNormalizeTo100(pctByName, categoryNames, FLOOR, CAP);
+
+
         // 3) 금액 환산 + 만원 단위 반올림
         Map<String, Long> amt = new java.util.LinkedHashMap<>();
         long sum = 0L;
@@ -190,7 +194,7 @@ public class GmsTextService {
 
         for (String name : categoryNames) {
             int pct = Math.max(0, pctByName.getOrDefault(name, 0));
-            long v = Math.round(pool10 * (pct / 100.0));
+            long v = Math.round(poolFloor * (pct / 100.0));
             v = Math.round(v / 10_000.0) * 10_000L; // ★ 만원 단위 반올림
             amt.put(name, v);
             sum += v;
@@ -198,41 +202,119 @@ public class GmsTextService {
         }
 
         // 4) 잔차 보정(만원 단위 유지)
-        long delta = pool10 - sum;
+        long delta = poolFloor - sum;
         if (delta != 0 && primary != null) {
             long adj = Math.round(delta / 10_000.0) * 10_000L; // 만원 단위로만 조정
             amt.put(primary, Math.max(0L, amt.get(primary) + adj));
             sum += adj;
         }
 
+        if (tail != 0 && primary != null) {
+            amt.put(primary, Math.max(0L, amt.getOrDefault(primary, 0L) + tail));}
+
+
         // 마지막 안전: 합계가 여전히 안 맞으면(이론상 드묾) 가장 앞 항목에 맞춰 클램프
-        if (sum != pool10 && !amt.isEmpty()) {
+        if (sum != poolFloor && !amt.isEmpty()) {
             String first = categoryNames.get(0);
-            long need = pool10 - sum;
+            long need = poolFloor - sum;
             long adj = Math.round(need / 10_000.0) * 10_000L;
             amt.put(first, Math.max(0L, amt.get(first) + adj));
         }
 
         return amt;
     }
+    private static final Map<String,Integer> RELAX_TOP = Map.of(
+            "식비", 80,
+            "카페/간식", 25,
+            "문화", 20,
+            "생활", 60,
+            "교통", 40,
+            "의료/건강", 40,
+            "쇼핑", 20,
+            "뷰티/미용", 15,
+            "술/유흥", 15,
+            "자동차", 30
+    );
+    private static final Map<String, Integer> FLOOR = Map.ofEntries(
+            Map.entry("식비",20), Map.entry("카페/간식",3), Map.entry("술/유흥",1),
+            Map.entry("생활",8),  Map.entry("쇼핑",2),     Map.entry("뷰티/미용",2),
+            Map.entry("교통",3),  Map.entry("자동차",5),   Map.entry("의료/건강",2),
+            Map.entry("문화",2)
+    );
+    private static final Map<String, Integer> CAP = Map.ofEntries(
+            Map.entry("식비",45), Map.entry("카페/간식",15), Map.entry("술/유흥",10),
+            Map.entry("생활",30), Map.entry("쇼핑",10),     Map.entry("뷰티/미용",10),
+            Map.entry("교통",15), Map.entry("자동차",20),   Map.entry("의료/건강",12),
+            Map.entry("문화",10)
+    );
 
-    private String buildBetterAllocPrompt(List<String> names, long pool10) {
-        String cats = String.join(", ", names);
+    private static String toJsonArray(List<String> names) {
+        return names.stream()
+                .map(n -> "\"" + n + "\"")
+                .collect(java.util.stream.Collectors.joining(", ", "[", "]"));
+    }
+
+    private String buildBetterAllocPrompt(List<String> names, long pool) {
+        // 입력 목록에 있는 카테고리에 대해서만 규칙 생성
+        String catsJson = toJsonArray(names);
+
+        // 카테고리별 절대 제약(하한/상한)
+        StringBuilder perCat = new StringBuilder();
+        for (String n : names) {
+            Integer f = FLOOR.get(n);
+            Integer c = CAP.get(n);
+            if (f != null || c != null) {
+                perCat.append(String.format("- \"%s\": percent %s%s%s%n",
+                        n,
+                        f != null ? String.format("≥ %d", f) : "",
+                        (f != null && c != null) ? " and " : "",
+                        c != null ? String.format("≤ %d", c) : ""
+                ));
+            }
+        }
+
+        // 상대 제약(존재할 때만 적용)
+        boolean hasFood  = names.contains("식비");
+        boolean hasCafe  = names.contains("카페/간식");
+        boolean hasCult  = names.contains("문화");
+        boolean hasLife  = names.contains("생활");
+        boolean hasShop  = names.contains("쇼핑");
+        boolean hasMed   = names.contains("의료/건강");
+        boolean hasLiqu  = names.contains("술/유흥");
+
+        StringBuilder pairwise = new StringBuilder();
+        if (hasFood && hasCafe) pairwise.append("- \"식비\" > \"카페/간식\"\n");
+        if (hasCafe && hasCult) pairwise.append("- \"카페/간식\" > \"문화\"\n");
+        if (hasLife && hasShop) pairwise.append("- \"생활\" ≥ \"쇼핑\"\n");
+        if (hasMed  && hasLiqu) pairwise.append("- \"의료/건강\" ≥ \"술/유흥\"\n");
+
         return """
-    역할: 예산 분배 플래너.
-    입력:
-    - 총 분배 금액(원): %,d
-    - 카테고리: %s
-    요구사항:
-    - 각 카테고리의 "percent"(정수, 합계=100)를 제안해라.
-    - 제약(해당 이름이 있을 경우 반드시 충족):
-      * "식비" > "카페" 또는 "카페/간식"
-      * ("카페" 또는 "카페/간식") > "문화"
-    - 필수/생계성은 높이고, 사치성은 낮춘다.
-    - 반환은 반드시 JSON만:
-      {"allocations":[{"name":"카테고리명","percent":정수}, ...]}
-    - 합계가 100이 아니면 마지막 항목에서 보정.
-    """.formatted(pool10, cats);
+역할: 예산 분배 플래너.
+
+입력:
+- 총 분배 금액(원): %,d
+- 카테고리(아래 목록만 사용; 각 항목을 정확히 1번씩 사용; 입력 순서를 유지해 반환): %s
+
+출력(JSON만, 한 줄):
+{"allocations":[{"name":"카테고리명","percent":정수}, ...]}
+
+필수 형식/규칙:
+1) allocations 배열 길이 = 입력 카테고리 개수와 동일.
+2) 모든 name은 입력 목록의 항목과 "완전히 동일"해야 함(띄어쓰기/슬래시/대소문자 포함).
+3) percent는 0 이상 정수, 합계는 "정확히 100".
+4) 마지막 항목에서 보정해서라도 합계=100을 보장.
+
+카테고리별 절대 제약(존재하는 항목에만 적용):
+%s
+상대 제약(존재하는 항목에만 적용):
+%s
+지침:
+- 필수/생계성 지출은 높이고, 사치성 지출은 낮춘다.
+- 필수/생계성 지출 : 식비, 생활 , 교통, 의료/건강 
+- 사치성 지출 : 카페/간식 , 술/유흥, 쇼핑, 뷰티/미용, 자동차, 문화
+- 위 제약을 모두 만족하도록 내부 계산 후, 출력은 오직 지정된 JSON 형식만 내보낸다.
+설명/문장/코드블록/주석/추가 텍스트 금지.
+""".formatted(pool, catsJson, perCat.toString(), pairwise.toString());
     }
     private Map<String, Integer> fallbackPercent(List<String> names) {
         // 기본은 균등
@@ -475,6 +557,109 @@ public class GmsTextService {
             "절약은 미덕이다",
             "작은 절약 큰 부"
     );
+    private static Map<String,Integer> clampAndNormalizeTo100(
+            Map<String,Integer> in,
+            List<String> names,
+            Map<String,Integer> floor,
+            Map<String,Integer> cap
+    ) {
+        int n = names.size();
+        int[] f = new int[n], c = new int[n], v = new int[n];
+
+        int sumFloor = 0, sumCap = 0;
+        for (int i=0;i<n;i++) {
+            String k = names.get(i);
+            f[i] = Math.max(0, floor.getOrDefault(k, 0));
+            c[i] = Math.min(100, Math.max(f[i], cap.getOrDefault(k, 100)));
+            sumFloor += f[i];
+            sumCap   += c[i];
+        }
+        // FLOOR 합이 100 초과하면 비율 축소
+        if (sumFloor > 100) {
+            f = scaleVectorToSum(f, 100);
+            for (int i=0;i<n;i++) c[i] = Math.max(c[i], f[i]); // 일관성
+        }
+        // 선택한 카테고리만으로 CAP 합이 100 미만이면 → 캡 완화(부분집합 상황)
+         if (sumCap < 100) {
+             int newSumCap = 0;
+             for (int i = 0; i < n; i++) {
+                 final String name = names.get(i);                // <-- 여기 추가
+                 final int baseCap = c[i];
+                 final int relaxTop = RELAX_TOP.getOrDefault(name, baseCap);
+                 // f[i] ≤ c[i] ≤ relaxTop
+                 c[i] = Math.min(relaxTop, Math.max(c[i], f[i]));
+                 newSumCap += c[i];
+                     }
+                 // 극단 케이스: 그래도 합이 100 미만이면, '가장 우선' 항목(식비 등)에만 추가 완화
+                         if (newSumCap < 100) {
+                         for (int i=0;i<n && newSumCap<100;i++) {
+                                 String name = names.get(i);
+                                 if ("식비".equals(name)) {
+                                        int extra = Math.min(100 - newSumCap, 100 - c[i]);
+                                         c[i] += extra; newSumCap += extra;
+                                     }
+                             }
+                     }
+         }
+
+        int sum = 0;
+        for (int i=0;i<n;i++) {
+            String k = names.get(i);
+            int x = (in==null) ? 0 : Math.max(0, in.getOrDefault(k, 0));
+            v[i] = Math.max(f[i], Math.min(c[i], x));
+            sum += v[i];
+        }
+
+        if (sum < 100) distributeUp(v, c, 100 - sum);      // headroom 큰 순
+        else if (sum > 100) distributeDown(v, f, sum - 100); // 여유 큰 순
+
+        LinkedHashMap<String,Integer> out = new LinkedHashMap<>();
+        for (int i=0;i<n;i++) out.put(names.get(i), v[i]);
+        return out;
+    }
+
+    private static int[] scaleVectorToSum(int[] arr, int target) {
+        int n = arr.length;
+        double[] exact = new double[n];
+        int[] floor = new int[n]; int base = 0, sum=0;
+        for (int x: arr) sum += x;
+        double s = (sum==0) ? 0.0 : (target*1.0/sum);
+        for (int i=0;i<n;i++) { exact[i]=arr[i]*s; floor[i]=(int)Math.floor(exact[i]); base+=floor[i]; }
+        int leftover = target - base;
+        List<Integer> idx = new ArrayList<>();
+        for (int i=0;i<n;i++) idx.add(i);
+        idx.sort((a,b)-> Double.compare(exact[b]-floor[b], exact[a]-floor[a]));
+        int[] out = Arrays.copyOf(floor, floor.length);
+        for (int i=0;i<leftover && i<idx.size();i++) out[idx.get(i)]++;
+        return out;
+    }
+
+    private static void distributeUp(int[] v, int[] cap, int need) {
+        int n = v.length;
+        while (need > 0) {
+            int best = -1; double room = -1;
+            for (int i=0;i<n;i++) {
+                int r = cap[i] - v[i];
+                if (r > room) { room = r; best = i; }
+            }
+            if (best < 0 || room <= 0) break;
+            v[best]++; need--;
+        }
+    }
+    private static void distributeDown(int[] v, int[] floor, int need) {
+        int n = v.length;
+        while (need > 0) {
+            int best = -1; double room = -1;
+            for (int i=0;i<n;i++) {
+                int r = v[i] - floor[i];
+                if (r > room) { room = r; best = i; }
+            }
+            if (best < 0 || room <= 0) break;
+            v[best]--; need--;
+        }
+    }
+
+
 
     private String pickFallbackProverb() {
         int i = java.util.concurrent.ThreadLocalRandom.current().nextInt(PROVERB_FALLBACK.size());

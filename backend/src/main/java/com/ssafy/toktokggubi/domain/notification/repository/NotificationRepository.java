@@ -125,7 +125,7 @@ public interface NotificationRepository extends JpaRepository<NotificationLog, L
     INSERT INTO notification_log
         (user_id, type, title, body, payload_json, sent_at)
     VALUES
-        (:userId, :type, :title, :body, :payloadJson, :sendAt)
+        (:userId, :type, :title, :body, :payloadJson, :sentAt)
     """, nativeQuery = true)
     int insertLog(
             @Param("userId") long userId,
