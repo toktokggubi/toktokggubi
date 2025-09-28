@@ -1277,7 +1277,7 @@ if __name__ == "__main__":
     # Schedule the monthly report job
     scheduler.add_job(
         func=send_monthly_report,
-        trigger=CronTrigger(day=27, hour=20, minute=18), # Run on the first day of every month at midnight
+        trigger=CronTrigger(day=1, hour=0, minute=0), # Run on the first day of every month at midnight
         id='monthly_report_job',
         name='Monthly Report Generator',
         replace_existing=True
