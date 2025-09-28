@@ -9,7 +9,7 @@ import { http } from "@/shared/api/http";
 export const fetchNotifications =
   async (): Promise<NotificationListResponse> => {
     try {
-      const response = await http.get('/ai/notification/list');
+      const response = await http.get('/ai/notification');
       return response.data;
     } catch (error) {
       // 에러 시 빈 응답 반환
