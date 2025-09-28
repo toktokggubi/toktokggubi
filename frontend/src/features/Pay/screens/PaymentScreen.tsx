@@ -193,42 +193,50 @@ export default function PaymentScreen() {
   const { data: userGifticons = [], isLoading: gifticonsLoading, isError: gifticonsError } = useGifticonsQuery();
   const bottomSheetRef = useRef<BottomSheetRef>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const lastSentCategoryIdRef = useRef<number | null>(null);
-  const lastSentTimeRef = useRef<number | null>(null);
+  const lastSentPlaceRef = useRef<string | null>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 페이지 마운트 시 마지막 전송 카테고리 ID 초기화
+  // 컴포넌트 언마운트 시 디바운스 타이머 정리
   useEffect(() => {
-    lastSentCategoryIdRef.current = null;
-    lastSentTimeRef.current = null;
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, []);
 
-  // 위치 정보를 서버로 전송하는 함수
+  // 위치 정보를 서버로 전송하는 함수 (디바운스 적용)
   const sendLocationToServer = useCallback(async (place: KakaoPlace) => {
-    try {
-      // 위치기반 알림 설정 확인
-      const notificationService = NotificationSettingsService.getInstance();
-      const isLocationNotificationEnabled = await notificationService.isNotificationEnabled('locationBasedOn');
-      
-      if (!isLocationNotificationEnabled) {
-        return;
-      }
-
-      const categoryId = getCategoryIdFromPlace(place);
-      const currentTime = Date.now();
-      
-      // 1분 전에 같은 카테고리로 전송했다면 중복 전송 방지
-      if (lastSentCategoryIdRef.current === categoryId && 
-          lastSentTimeRef.current && 
-          currentTime - lastSentTimeRef.current < 60000) { // 1분 = 60000ms
-        return;
-      }
-      
-      await pushLocation(categoryId);
-      lastSentCategoryIdRef.current = categoryId;
-      lastSentTimeRef.current = currentTime;
-    } catch (error) {
-      // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
+    // 이전 디바운스 타이머 취소
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
+
+    // 500ms 디바운스 적용
+    debounceTimeoutRef.current = setTimeout(async () => {
+      try {
+        // 위치기반 알림 설정 확인
+        const notificationService = NotificationSettingsService.getInstance();
+        const isLocationNotificationEnabled = await notificationService.isNotificationEnabled('locationBasedOn');
+        
+        if (!isLocationNotificationEnabled) {
+          return;
+        }
+
+        // 같은 장소로 중복 전송 방지
+        const placeKey = `${place.place_name}-${place.x}-${place.y}`;
+        if (lastSentPlaceRef.current === placeKey) {
+          return;
+        }
+
+        const categoryId = getCategoryIdFromPlace(place);
+        
+        await pushLocation(categoryId);
+        lastSentPlaceRef.current = placeKey;
+      } catch (error) {
+        // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
+      }
+    }, 500);
   }, []);
 
   // UserGifticon을 SharedGifticon으로 변환
@@ -408,7 +416,7 @@ export default function PaymentScreen() {
         }
       }
     }
-  }, [hasNearby, selectedPlace, nearbyPlaces, sendLocationToServer, allCardBenefitsQuery.isLoading, allCardBenefitsQuery.data, isUserManuallySwiped]);
+  }, [hasNearby, selectedPlace, nearbyPlaces, allCardBenefitsQuery.isLoading, allCardBenefitsQuery.data, isUserManuallySwiped]);
 
   // 현재 선택된 가맹점의 혜택 찾기
   const matchedBenefits = useMemo(() => {
@@ -716,7 +724,7 @@ export default function PaymentScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [invalidateNearbyCache, refetchNearbyPlaces, selectedPlace, sendLocationToServer]);
+  }, [invalidateNearbyCache, refetchNearbyPlaces, selectedPlace]);
 
   // 위치 선택 핸들러 - 해당 장소에서 혜택이 가장 큰 카드로 자동 전환
   const handlePlaceSelect = (place: KakaoPlace) => {
