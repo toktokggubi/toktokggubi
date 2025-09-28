@@ -193,6 +193,12 @@ export default function PaymentScreen() {
   const { data: userGifticons = [], isLoading: gifticonsLoading, isError: gifticonsError } = useGifticonsQuery();
   const bottomSheetRef = useRef<BottomSheetRef>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const lastSentCategoryIdRef = useRef<number | null>(null);
+
+  // 페이지 마운트 시 마지막 전송 카테고리 ID 초기화
+  useEffect(() => {
+    lastSentCategoryIdRef.current = null;
+  }, []);
 
   // 위치 정보를 서버로 전송하는 함수
   const sendLocationToServer = useCallback(async (place: KakaoPlace) => {
@@ -206,7 +212,14 @@ export default function PaymentScreen() {
       }
 
       const categoryId = getCategoryIdFromPlace(place);
+      
+      // 이전에 전송한 카테고리 ID와 동일하면 중복 전송 방지
+      if (lastSentCategoryIdRef.current === categoryId) {
+        return;
+      }
+      
       await pushLocation(categoryId);
+      lastSentCategoryIdRef.current = categoryId;
     } catch (error) {
       // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
     }

@@ -122,8 +122,6 @@ export default function NotificationScreen() {
 
         if (unreadCount > 0) {
           await markNotificationsAsRead();
-          // 시스템 알림창의 모든 알림도 제거
-          await Notifications.dismissAllNotificationsAsync();
         }
       } catch (error) {
         // 에러 시 빈 배열로 설정

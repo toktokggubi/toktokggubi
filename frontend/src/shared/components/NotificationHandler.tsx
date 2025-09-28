@@ -136,8 +136,6 @@ export default function NotificationHandler({ children }: NotificationHandlerPro
         message={notificationAlert.message}
         onConfirm={() => {
           setNotificationAlert({ ...notificationAlert, visible: false });
-          // 확인 버튼을 누르면 항상 (tabs)/home으로 이동
-          router.push('/(tabs)/home');
         }}
       />
     </>
