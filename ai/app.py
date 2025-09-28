@@ -1244,22 +1244,22 @@ def send_monthly_report():
             with open(f"report_data_{username}_{year}_{month}.json", "w", encoding='utf-8') as f:
                 json.dump(report_data, f, indent=2, ensure_ascii=False)
 
-            # if "error" in report_data:
-            #     logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_data['error']}")
-            # elif "message" in report_data:
-            #     logger.info(f"Analysis for {username} (ID: {user_id}) resulted in a message: {report_data['message']}")
-            # else:
-            #     logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
-            #     # Save the generated report to the backend database.
+            if "error" in report_data:
+                logger.error(f"Failed to generate monthly report for {username} (ID: {user_id}): {report_data['error']}")
+            elif "message" in report_data:
+                logger.info(f"Analysis for {username} (ID: {user_id}) resulted in a message: {report_data['message']}")
+            else:
+                logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
+                # Save the generated report to the backend database.
 
-            #     save_report_url = "https://j13b207.p.ssafy.io/api/ai/report/save"
-            #     save_payload = report_data
-            #     logger.info(f"Saving report for user {username} (ID: {user_id}). Full Payload: {json.dumps(save_payload, indent=2)}") # Added for debugging
-            #     save_res = requests.post(save_report_url, json=save_payload, headers=headers)
-            #     if save_res.status_code == 201:
-            #         logger.info(f"Successfully saved report for user {username} (ID: {user_id}) to the backend.")
-            #     else:
-            #         logger.error(f"Failed to save report for user {username} (ID: {user_id}). Status: {save_res.status_code}, Response: {save_res.text}")
+                save_report_url = "https://j13b207.p.ssafy.io/api/ai/report/save"
+                save_payload = report_data
+                logger.info(f"Saving report for user {username} (ID: {user_id}). Full Payload: {json.dumps(save_payload, indent=2)}") # Added for debugging
+                save_res = requests.post(save_report_url, json=save_payload, headers=headers)
+                if save_res.status_code == 201:
+                    logger.info(f"Successfully saved report for user {username} (ID: {user_id}) to the backend.")
+                else:
+                    logger.error(f"Failed to save report for user {username} (ID: {user_id}). Status: {save_res.status_code}, Response: {save_res.text}")
 
 
         except requests.exceptions.RequestException as e:
