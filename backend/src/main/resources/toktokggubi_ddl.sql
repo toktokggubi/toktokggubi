@@ -440,21 +440,3 @@ CREATE TABLE `molbbang_score`
         FOREIGN KEY (`member_id`) REFERENCES `molbbang_member` (`member_id`)
             ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
-
-/* =========================================================
-   13) 뷰: 방별 총점/순위(집계)
-========================================================= */
-CREATE VIEW `v_molbbang_room_totals` AS
-SELECT mr.room_id,
-       mm.member_id,
-       mm.user_id,
-       mm.nickname,
-       COALESCE(SUM(ms.score), 0)                                                     AS total_score,
-       RANK() OVER (PARTITION BY mr.room_id ORDER BY COALESCE(SUM(ms.score), 0) DESC) AS rank_desc,
-       RANK() OVER (PARTITION BY mr.room_id ORDER BY COALESCE(SUM(ms.score), 0) ASC)  AS rank_asc
-FROM molbbang_room mr
-         JOIN molbbang_member mm
-              ON mm.room_id = mr.room_id AND mm.is_active = TRUE
-         LEFT JOIN molbbang_score ms
-                   ON ms.room_id = mr.room_id AND ms.member_id = mm.member_id
-GROUP BY mr.room_id, mm.member_id, mm.user_id, mm.nickname;
