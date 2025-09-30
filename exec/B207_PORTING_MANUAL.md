@@ -64,6 +64,8 @@ OPENAI_API_KEY
 GOOGLE_APPLICATION_CREDENTIALS
 FCM_CREDENTIALS_LOCATION
 FCM_ENABLED
+
+HF_TOKEN
 ```
 
 #### AI Service (`ai/.env`)
@@ -83,7 +85,7 @@ LLM_PROVIDER=huggingface-local # Options: huggingface-local, huggingface-api, lo
 LLM_MODEL_NAME=EleutherAI/polyglot-ko-1.3b # huggingface에서 model 중, 한국어 text generation 모델을 선택해 작성성
 
 # Optional, hugggingface-local을 선택했을 경우, 모델을 pull하기 위한 토큰 로그인 필요
-HUGGING_FACE_HUB_TOKEN=your_hf_token
+HF_TOKEN=your_hf_token
 ```
 
 ```bash
@@ -91,7 +93,7 @@ HUGGING_FACE_HUB_TOKEN=your_hf_token
 docker exec -it ai bash
 
 # 로그인
-huggingface-cli login --token $HUGGING_FACE_HUB_TOKEN
+huggingface-cli login --token $HF_TOKEN
 
 ```
 

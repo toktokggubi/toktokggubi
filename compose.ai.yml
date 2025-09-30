@@ -25,3 +25,4 @@ services:
       - ./.env
     environment:
       - DB_HOST=postgres
+      - HF_TOKEN=${HF_TOKEN}

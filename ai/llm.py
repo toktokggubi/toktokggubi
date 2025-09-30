@@ -108,7 +108,7 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
         return None
 
     system_message = """
-    당신은 이제 **소비 분석 전문가**입니다. 당신의 목표는 사용자의 소비 내역을 분석하고, 비정상적인 지출(이상치)을 파악하며, 합리적인 소비 습관을 위한 개선 제안을 하는 것입니다. 당신은 데이터에 기반한 객관적인 분석가이며, 동시에 사용자가 이해하기 쉽고 실행 가능한 조언을 제공하는 친절한 컨설턴트입니다. 주어진 숫자를 기반으로 틀리지 않게 적으세요. 절대 자신의 감정을 말하지 마세요. 반드시 데이터에 기반해서 이야기 해야합니다. 반드시 근거가 없는 설명은 하지 마세요.
+    당신은 이제 **소비 분석 전문가**입니다. 당신의 목표는 사용자의 소비 내역을 분석하고, 비정상적인 지출(이상치)을 파악하며, 합리적인 소비 습관을 위한 개선 제안을 하는 것입니다. 당신은 데이터에 기반한 객관적인 분석가이며, 동시에 사용자가 이해하기 쉽고 실행 가능한 조언을 제공하는 친절한 컨설턴트입니다. 주어진 숫자를 기반으로 틀리지 않게 적으세요. 절대 자신의 감정을 말하지 마세요. 반드시 데이터에 기반해서 이야기 해야합니다. 반드시 근거가 없는 설명은 하지 마세요. 그리고 분석 리포트는 앱을 통해서 전달하기 때문에 반드시 다른 앱을 사용하는 것은 언급하지 않아야 합니다.
     ---
     ### **분석 대상 및 입력 정보 (Input Data)**
 
@@ -146,10 +146,12 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
 
     ### **추가 지시사항 (Additional Instructions)**
 
-    * **톤 앤 매너:** 뒤에 반드시 어미에 "입니다, 꺼비!"를 추가하세요. 예를 들면, "....입니다, 꺼비!" 식으로 답변을 마무리하세요.
     * **구체성:** 막연한 조언 대신, **구체적인 금액이나 횟수**를 포함하는 제안을 하세요.
     * **데이터 활용:** 제공된 데이터 외에, 일반적인 경제 상식이나 소비 트렌드를 참고하여 답변의 풍부함을 더할 수 있습니다. 하지만 이는 보조적인 역할이며, 핵심은 사용자가 제공한 데이터 분석에 집중해야 합니다.
     * **응답 길이:** 각 섹션이 너무 길지 않게, 핵심 내용을 명확하게 전달하세요.
+
+
+
     """
     if is_json:
         system_message += " You must respond only with the requested JSON object, without any additional text or explanations."
@@ -170,8 +172,11 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
                 return_tensors="pt"
             ).to(local_hf_model.device)
 
+            attention_mask = (inputs != local_hf_tokenizer.pad_token_id).long().to(local_hf_model.device)
+
             outputs = local_hf_model.generate(
                 inputs,
+                attention_mask=attention_mask,
                 max_new_tokens=max_tokens,
                 do_sample=True,
                 temperature=0.4,  # Increased temperature for more diverse output
@@ -210,7 +215,7 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
             logger.error("LLM is enabled but no provider is recognized.")
             return None
 
-        logger.info(f"LLM Raw Response:\n---\n{llm_response_content}\n---")
+        # logger.info(f"LLM Raw Response:\n---\n{llm_response_content}\n---")
         return llm_response_content
 
     except Exception as e:
