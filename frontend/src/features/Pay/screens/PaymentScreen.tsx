@@ -14,6 +14,7 @@ import {
   Image,
 } from "react-native";
 import { useRouter } from "expo-router";
+import * as SecureStore from "expo-secure-store";
 import PaymentTemplate from "../templates/PaymentTemplate";
 import { useUserCards } from "@/features/User/model/card/hooks";
 import type { UserCardVM } from "@/features/User/model/card/types";
@@ -44,6 +45,68 @@ import {
 } from "@/shared/constants/kakao";
 
 const KAKAO_KEY = process.env.EXPO_PUBLIC_KAKAO_REST_KEY!;
+
+// SecureStore 키 (콜론 제거 - iOS/Android 규칙 준수)
+const LAST_SENT_KEY = "location_lastSentByCategory";
+const LEGACY_LAST_SENT_KEY = "location:lastSentByCategory";
+
+// 위치 기반 알림 쿨다운 설정 (분 단위)
+const CATEGORY_COOLDOWN_MS =
+  (Number(process.env.EXPO_PUBLIC_LOCATION_COOLDOWN_MINUTES) || 5) * 60_000;
+
+// 카테고리별 다른 쿨다운 설정 (선택사항)
+const COOLDOWN_BY_CATEGORY_MS: Record<number, number> = {
+  2: 5 * 60_000,  // 카페/간식 - 5분
+  1: 5 * 60_000, // 식비(음식점) - 5분
+  5: 5 * 60_000,  // 쇼핑 - 5분
+  10: 5 * 60_000, // 문화 - 5분
+  4: 5 * 60_000,  // 생활 - 5분
+  8: 5 * 60_000,  // 자동차 - 5분
+  9: 5 * 60_000,  // 의료/건강 - 5분
+};
+
+const getCooldownMs = (categoryId: number) =>
+  COOLDOWN_BY_CATEGORY_MS[categoryId] ?? CATEGORY_COOLDOWN_MS;
+
+// 쿨다운 상태를 SecureStore에 저장
+const saveCooldownState = async (lastSentByCategory: Map<number, number>) => {
+  try {
+    const obj: Record<string, number> = {};
+    lastSentByCategory.forEach((v, k) => (obj[String(k)] = v));
+    await SecureStore.setItemAsync(LAST_SENT_KEY, JSON.stringify(obj));
+  } catch (error) {
+    console.error('❌ 쿨다운 상태 저장 실패:', error);
+  }
+};
+
+// SecureStore에서 쿨다운 상태 로드 (마이그레이션 포함)
+const loadCooldownState = async (): Promise<Map<number, number>> => {
+  try {
+    // 1) 새 키 시도
+    let raw = await SecureStore.getItemAsync(LAST_SENT_KEY);
+
+    // 2) 없으면 레거시 키 읽고 -> 새 키로 옮기기
+    if (!raw) {
+      const legacyRaw = await SecureStore.getItemAsync(LEGACY_LAST_SENT_KEY);
+      if (legacyRaw) {
+        await SecureStore.setItemAsync(LAST_SENT_KEY, legacyRaw);
+        // (선택) 레거시 키 정리
+        try { await SecureStore.deleteItemAsync(LEGACY_LAST_SENT_KEY); } catch {}
+        raw = legacyRaw;
+      }
+    }
+
+    if (raw) {
+      const obj = JSON.parse(raw);
+      const map = new Map<number, number>();
+      Object.entries(obj).forEach(([k, v]) => map.set(Number(k), v as number));
+      return map;
+    }
+  } catch (error) {
+    console.error("❌ 쿨다운 상태 로드 실패:", error);
+  }
+  return new Map<number, number>();
+};
 
 // 카테고리 이름을 ID로 매핑하는 함수 (데이터베이스와 일치)
 const getCategoryIdFromPlace = (place: KakaoPlace): number => {
@@ -164,6 +227,9 @@ export default function PaymentScreen() {
   const [activeCardIndex, setActiveCardIndex] = useState(0);
   const activeCardIndexRef = useRef(0);
   const [isUserManuallySwiped, setIsUserManuallySwiped] = useState(false);
+  
+  // 쿨다운 로드 완료 상태
+  const [cooldownReady, setCooldownReady] = useState(false);
 
   // activeCardIndex와 ref 동기화
   useEffect(() => {
@@ -195,6 +261,21 @@ export default function PaymentScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const lastSentPlaceRef = useRef<string | null>(null);
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // 카테고리별 마지막 전송시각 저장용
+  const lastSentByCategoryRef = useRef<Map<number, number>>(new Map());
+  
+  // 카테고리별 진행중 락 (동시 호출 방지)
+  const inFlightByCategoryRef = useRef<Map<number, boolean>>(new Map());
+  
+  // 쿨다운 로드 완료 상태를 ref로도 관리 (sendLocationToServer에서 사용)
+  const cooldownReadyRef = useRef(false);
+  useEffect(() => { 
+    cooldownReadyRef.current = cooldownReady; 
+  }, [cooldownReady]);
+
+  // StrictMode 이중 실행 방지 (초기 자동 전송 1회만)
+  const didAutoNotifyRef = useRef(false);
 
   // 컴포넌트 언마운트 시 디바운스 타이머 정리
   useEffect(() => {
@@ -205,8 +286,22 @@ export default function PaymentScreen() {
     };
   }, []);
 
+  // PaymentScreen 진입 시 쿨다운 상태 로드
+  useEffect(() => {
+    (async () => {
+      const savedState = await loadCooldownState();
+      lastSentByCategoryRef.current = savedState;
+      setCooldownReady(true); // ✅ 로드 완료 플래그
+    })();
+  }, []);
+
   // 위치 정보를 서버로 전송하는 함수 (디바운스 적용)
   const sendLocationToServer = useCallback(async (place: KakaoPlace) => {
+    // (a) 로드 전 호출이면 리턴
+    if (!cooldownReadyRef.current) {
+      return;
+    }
+
     // 이전 디바운스 타이머 취소
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -214,27 +309,45 @@ export default function PaymentScreen() {
 
     // 500ms 디바운스 적용
     debounceTimeoutRef.current = setTimeout(async () => {
+      const categoryId = getCategoryIdFromPlace(place);
+      
       try {
         // 위치기반 알림 설정 확인
         const notificationService = NotificationSettingsService.getInstance();
-        const isLocationNotificationEnabled = await notificationService.isNotificationEnabled('locationBasedOn');
+        const enabled = await notificationService.isNotificationEnabled('locationBasedOn');
+        if (!enabled) return;
+
+        // (b) 쿨다운 체크를 최우선
+        const now = Date.now();
+        const last = lastSentByCategoryRef.current.get(categoryId) ?? 0;
+        const cooldown = getCooldownMs(categoryId);
         
-        if (!isLocationNotificationEnabled) {
+        if (now - last < cooldown) {
           return;
         }
 
-        // 같은 장소로 중복 전송 방지
+        // (c) 같은 장소 중복 방지
         const placeKey = `${place.place_name}-${place.x}-${place.y}`;
         if (lastSentPlaceRef.current === placeKey) {
           return;
         }
 
-        const categoryId = getCategoryIdFromPlace(place);
-        
+        // (d) in-flight 락으로 동시 중복 방지
+        if (inFlightByCategoryRef.current.get(categoryId)) {
+          return;
+        }
+        inFlightByCategoryRef.current.set(categoryId, true);
+
         await pushLocation(categoryId);
+
+        // (e) 성공 시 lastSentByCategoryRef 갱신 + SecureStore 저장
         lastSentPlaceRef.current = placeKey;
-      } catch (error) {
-        // 에러가 발생해도 사용자 경험에 영향을 주지 않도록 조용히 처리
+        lastSentByCategoryRef.current.set(categoryId, now);
+        await saveCooldownState(lastSentByCategoryRef.current);
+      } catch (e) {
+        console.error('pushLocation failed', e);
+      } finally {
+        inFlightByCategoryRef.current.set(categoryId, false);
       }
     }, 500);
   }, []);
@@ -378,16 +491,13 @@ export default function PaymentScreen() {
 
   // 주변 가맹점이 로드되면 첫 번째 가맹점을 자동으로 선택 (혜택이 가장 많은 가맹점)
   useEffect(() => {
-    if (
-      hasNearby &&
-      !selectedPlace &&
-      nearbyPlaces &&
-      nearbyPlaces.length > 0
-    ) {
+    if (!cooldownReady) return;          
+    if (didAutoNotifyRef.current) return;  
+    if (hasNearby && !selectedPlace && nearbyPlaces?.length) {
       const firstPlace = nearbyPlaces[0];
       setSelectedPlace(firstPlace);
       
-      // 첫 번째 장소의 카테고리 ID를 서버로 전송
+      didAutoNotifyRef.current = true;    
       sendLocationToServer(firstPlace);
       
       // 모든 카드의 혜택 데이터가 로드되었으면 최적 카드로 전환
@@ -416,7 +526,7 @@ export default function PaymentScreen() {
         }
       }
     }
-  }, [hasNearby, selectedPlace, nearbyPlaces, allCardBenefitsQuery.isLoading, allCardBenefitsQuery.data, isUserManuallySwiped]);
+  }, [cooldownReady, hasNearby, selectedPlace, nearbyPlaces, allCardBenefitsQuery.isLoading, allCardBenefitsQuery.data, isUserManuallySwiped]);
 
   // 현재 선택된 가맹점의 혜택 찾기
   const matchedBenefits = useMemo(() => {
@@ -716,15 +826,13 @@ export default function PaymentScreen() {
       invalidateNearbyCache();
       await refetchNearbyPlaces();
       
-      // 현재 선택된 장소가 있으면 카테고리 ID를 다시 전송
-      if (selectedPlace) {
-        sendLocationToServer(selectedPlace);
-      }
+      // Pull-to-Refresh에서는 위치 전송하지 않음 (쿨다운 체크를 위해)
+      // 사용자가 직접 장소를 선택하거나 자동 선택될 때만 전송
     } catch (error) {
     } finally {
       setRefreshing(false);
     }
-  }, [invalidateNearbyCache, refetchNearbyPlaces, selectedPlace]);
+  }, [invalidateNearbyCache, refetchNearbyPlaces]);
 
   // 위치 선택 핸들러 - 해당 장소에서 혜택이 가장 큰 카드로 자동 전환
   const handlePlaceSelect = (place: KakaoPlace) => {
