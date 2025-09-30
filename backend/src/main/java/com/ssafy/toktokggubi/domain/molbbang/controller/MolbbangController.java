@@ -86,7 +86,11 @@ public class MolbbangController {
     )
     @PatchMapping("/me/leave")
     public OkResponse leaveMe(@Parameter(hidden = true) Principal principal) {
-        return service.leaveRoom(service.myRoom(uid(principal)).roomCode(), uid(principal));
+        Long uid = Long.valueOf(principal.getName());
+
+        return service.findActiveRoomCode(uid)
+                .map(code -> service.leaveRoom(code, uid))
+                .orElseGet(() -> new OkResponse(true));
     }
 
     @Operation(
