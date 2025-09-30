@@ -440,4 +440,3 @@ CREATE TABLE `molbbang_score`
         FOREIGN KEY (`member_id`) REFERENCES `molbbang_member` (`member_id`)
             ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE = InnoDB;
-

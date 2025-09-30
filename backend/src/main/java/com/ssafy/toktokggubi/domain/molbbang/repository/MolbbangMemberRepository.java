@@ -14,4 +14,6 @@ public interface MolbbangMemberRepository extends JpaRepository<MolbbangMember, 
     Optional<MolbbangMember> findByRoom_RoomIdAndUser_UserId(Long roomId, Long userId);
 
     List<MolbbangMember> findByRoom_RoomIdAndActiveTrue(Long roomId);
+
+    List<MolbbangMember> findByRoom_RoomId(Long roomId);
 }
