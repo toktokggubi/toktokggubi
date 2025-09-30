@@ -18,7 +18,9 @@ RUN apt-get update && \
     python3.11 \
     python3.11-distutils \
     python3-pip \
+    && apt-get install -y tzdata \
     && rm -rf /var/lib/apt/lists/*
+ENV TZ=Asia/Seoul
 
 # Make python3.11 the default python
 RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
