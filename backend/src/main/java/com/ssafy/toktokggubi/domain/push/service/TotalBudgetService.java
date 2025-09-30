@@ -13,30 +13,31 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.Optional;
 
-import java.time.*;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class TotalBudgetService {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
+    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code(); // "BUDGET_THRESHOLD/TOTAL/80"
+    private static final String EXCEED = PushType.BUDGET_EXCEEDED_TOTAL.code();     // "BUDGET_EXCEEDED/TOTAL"
+    private static final String SCOPE = "TOTAL";
     private final CardTransactionRepository txRepo;
     private final UserMonthlyBudgetRepository umbRepo;
     private final NotificationRepository notificationRepo;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
-
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
     private final Optional<GmsTextService> gmsTextService;
-    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_TOTAL_80.code(); // "BUDGET_THRESHOLD/TOTAL/80"
-    private static final String EXCEED    = PushType.BUDGET_EXCEEDED_TOTAL.code();     // "BUDGET_EXCEEDED/TOTAL"
-    private static final String SCOPE         = "TOTAL";
 
     @Transactional
     public ThresholdCheckResponse checkThreshold(String txNo) throws Exception {
@@ -90,7 +91,7 @@ public class TotalBudgetService {
         }
 
         LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
-        LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
+        LocalDateTime monthTo = ym.plusMonths(1).atDay(1).atStartOfDay();
 
         if (THRESHOLD.equals(typeKeyFull) && rate >= 1.0) {
             return new ThresholdCheckResponse(false, userId, null, SCOPE, budgetYm, used, totalBudget, false);
@@ -140,10 +141,15 @@ public class TotalBudgetService {
         return new ThresholdCheckResponse(true, userId, null, SCOPE, budgetYm, used, totalBudget, true);
     }
 
-    private String currentYm() { return YearMonth.now(KST).format(YM); }
+    private String currentYm() {
+        return YearMonth.now(KST).format(YM);
+    }
 
     private String toJsonSafe(Object o) {
-        try { return objectMapper.writeValueAsString(o); }
-        catch (Exception e) { return null; }
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

@@ -1,7 +1,9 @@
 package com.ssafy.toktokggubi.domain.user.dto.request;
 
 import com.ssafy.toktokggubi.domain.user.entity.Gender;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record SignupProfileRequest(
         @NotNull Long userId,
@@ -10,4 +12,5 @@ public record SignupProfileRequest(
         @Size(max = 20) String ageGroup,
         @Size(max = 50) String jobTitle,
         Long monthlyIncome
-) {}
+) {
+}

@@ -7,11 +7,11 @@ import com.ssafy.toktokggubi.domain.finance.dto.response.InquireAccountsResponse
 import com.ssafy.toktokggubi.domain.finance.dto.response.InquireCardsResponse;
 import com.ssafy.toktokggubi.domain.user.dto.response.FinanceSyncResponse;
 import com.ssafy.toktokggubi.domain.user.entity.User;
+import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import com.ssafy.toktokggubi.domain.wallet.entity.UserAccount;
 import com.ssafy.toktokggubi.domain.wallet.entity.UserCard;
 import com.ssafy.toktokggubi.domain.wallet.repository.UserAccountRepository;
 import com.ssafy.toktokggubi.domain.wallet.repository.UserCardRepository;
-import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

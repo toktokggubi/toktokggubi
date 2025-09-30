@@ -9,4 +9,5 @@ public record NotificationItemDto(
         String body,
         LocalDateTime sentAt,
         LocalDateTime readAt
-) {}
+) {
+}

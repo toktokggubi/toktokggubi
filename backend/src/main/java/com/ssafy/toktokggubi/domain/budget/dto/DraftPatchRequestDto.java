@@ -8,5 +8,6 @@ public record DraftPatchRequestDto(
         List<FixedExpenseDto> fixedExpenses,     // 고정지출 리스트
         List<Long> selectedCategories,           // 선택된 카테고리 ID들
         List<CategoryAllocDto> categoryAllocations // 카테고리별 금액 할당
-) {}
+) {
+}
 

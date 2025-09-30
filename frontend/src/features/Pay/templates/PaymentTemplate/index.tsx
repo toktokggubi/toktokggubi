@@ -192,30 +192,31 @@ function PaymentTemplate({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 상단 X 버튼 */}
-      <View style={styles.topHeader} {...panResponder.panHandlers}>
-        <TouchableOpacity style={styles.closeButton} onPress={handleBack}>
-          <Ionicons name="close" size={24} color={colors.GRAY_DARK} />
-        </TouchableOpacity>
-      </View>
-
-      {/* 상단 탭 */}
-      <View style={styles.tap} {...panResponder.panHandlers}>
-        <SegmentedTabs
-          options={["카드", "기프티콘"]}
-          value={selectedTab}
-          onChange={onChangeTab}
-          height={40}
-        />
-      </View>
-
-      {/* ScrollView로 감싸서 Pull-to-Refresh 지원 */}
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
+        // stickyHeaderIndices={[1]} // 탭을 고정하고 싶으면 활성화 (0: topHeader, 1: tap)
       >
+        {/* 상단 X 버튼 */}
+        <View style={styles.topHeader}>
+          <TouchableOpacity style={styles.closeButton} onPress={handleBack}>
+            <Ionicons name="close" size={24} color={colors.GRAY_DARK} />
+          </TouchableOpacity>
+        </View>
+
+        {/* 상단 탭 */}
+        <View style={styles.tap}>
+          <SegmentedTabs
+            options={["카드", "기프티콘"]}
+            value={selectedTab}
+            onChange={onChangeTab}
+            height={40}
+          />
+        </View>
         {/* 카드 탭일 때 카드 캐러셀 표시 */}
         {selectedTab === 0 ? (
           <View style={styles.cardContainer}>
@@ -235,6 +236,7 @@ function PaymentTemplate({
                   activeOpacity={0.8}
                   onPress={handleCardPress}
                   style={styles.carouselTouchArea}
+                  {...panResponder.panHandlers}
                 >
                   <Carousel
                     ref={carouselRef}
@@ -276,7 +278,6 @@ function PaymentTemplate({
               {benefitsSection ? (
                 <View
                   style={{ marginTop: 8, marginBottom:12 }}
-                  {...panResponder.panHandlers}
                 >
                   {benefitsSection}
                 </View>
@@ -284,7 +285,6 @@ function PaymentTemplate({
               {cardBottomSection ? (
                 <View
                   style={{ marginTop: 0, marginBottom: 12 }}
-                  {...panResponder.panHandlers}
                 >
                   {cardBottomSection}
                 </View>
@@ -316,25 +316,27 @@ function PaymentTemplate({
               
               return (
                 <>
-                  <Carousel
-                    ref={giftCarouselRef}
-                    data={activeGifticons}
-                    renderItem={renderGifticon}
-                    width={ITEM_W}
-                    height={220}
-                    loop={false}
-                    autoPlay={false}
-                    pagingEnabled={true}
-                    scrollAnimationDuration={300}
-                    onSnapToItem={handleGiftChange}
-                    onProgressChange={gifticonProgress}
-                    mode="parallax"
-                    modeConfig={{
-                      parallaxScrollingScale: 0.92,
-                      parallaxScrollingOffset: 80,
-                    }}
-                    style={styles.carouselContainer}
-                  />
+                  <View {...panResponder.panHandlers}>
+                    <Carousel
+                      ref={giftCarouselRef}
+                      data={activeGifticons}
+                      renderItem={renderGifticon}
+                      width={ITEM_W}
+                      height={220}
+                      loop={false}
+                      autoPlay={false}
+                      pagingEnabled={true}
+                      scrollAnimationDuration={300}
+                      onSnapToItem={handleGiftChange}
+                      onProgressChange={gifticonProgress}
+                      mode="parallax"
+                      modeConfig={{
+                        parallaxScrollingScale: 0.92,
+                        parallaxScrollingOffset: 80,
+                      }}
+                      style={styles.carouselContainer}
+                    />
+                  </View>
                 </>
               );
             })()}
@@ -344,7 +346,6 @@ function PaymentTemplate({
               return activeGifticons.length > 0 && gifticonBottomSection ? (
                 <View
                   style={styles.gifticonBottomContainer}
-                  {...panResponder.panHandlers}
                 >
                   {gifticonBottomSection}
                 </View>
@@ -413,10 +414,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1,
+    paddingBottom: 24,
   },
   cardContainer: {
-    flex: 1,
     backgroundColor: "#F8FBFF",
     paddingTop: 20,
     paddingHorizontal: 0,

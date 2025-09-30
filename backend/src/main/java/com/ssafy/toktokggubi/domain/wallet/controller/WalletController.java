@@ -1,9 +1,9 @@
 package com.ssafy.toktokggubi.domain.wallet.controller;
 
+import com.ssafy.toktokggubi.domain.wallet.dto.request.PaymentRequest;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.BestCardsResponse;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.CardBenefitsResponse;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.CardsListResponse;
-import com.ssafy.toktokggubi.domain.wallet.dto.request.PaymentRequest;
 import com.ssafy.toktokggubi.domain.wallet.dto.response.PaymentResponse;
 import com.ssafy.toktokggubi.domain.wallet.service.WalletService;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
@@ -20,7 +20,9 @@ public class WalletController {
 
     private final WalletService walletService;
 
-    /** 사용자 계정에 등록된 카드 목록 */
+    /**
+     * 사용자 계정에 등록된 카드 목록
+     */
     @GetMapping("/cards")
     public ResponseEntity<CardsListResponse> getCards() {
         Long userId = SecurityUtils.currentUserIdOrNull();
@@ -28,7 +30,9 @@ public class WalletController {
         return ResponseEntity.ok(walletService.getUserCards(userId));
     }
 
-    /** 각 카드별 혜택 리스트 */
+    /**
+     * 각 카드별 혜택 리스트
+     */
     @GetMapping("/cards/{userCardId}/benefits")
     public ResponseEntity<CardBenefitsResponse> getCardBenefits(
             @PathVariable Long userCardId

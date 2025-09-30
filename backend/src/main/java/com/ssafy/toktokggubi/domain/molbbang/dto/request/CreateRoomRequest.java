@@ -6,4 +6,5 @@ import jakarta.validation.constraints.NotNull;
 public record CreateRoomRequest(
         @NotNull @Min(1) Long amount,
         String nickname
-) {}
+) {
+}

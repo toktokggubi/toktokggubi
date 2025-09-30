@@ -16,4 +16,5 @@ public record PaymentResponse(
         String transactionYmd,     // YYYYMMDD
         String transactionHms,     // HHMMSS
         LocalDateTime createdAt
-) {}
+) {
+}

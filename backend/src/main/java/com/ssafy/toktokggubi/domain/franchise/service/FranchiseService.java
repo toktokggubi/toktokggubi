@@ -19,7 +19,7 @@ public class FranchiseService {
     private final FranchiseRepository franchiseRepository;
 
     /**
-     * @param q    부분 검색 (franchiseName LIKE %q%), null 허용
+     * @param q 부분 검색 (franchiseName LIKE %q%), null 허용
      */
     public FranchiseListResponse list(String q) {
         Sort s = Sort.by(Sort.Direction.ASC, "franchiseName");

@@ -1,6 +1,5 @@
 package com.ssafy.toktokggubi.domain.report.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.ssafy.toktokggubi.domain.report.dto.request.SpendingDetails;
 import com.ssafy.toktokggubi.domain.report.dto.request.SummaryReport;
 import com.ssafy.toktokggubi.domain.report.dto.request.UserInfo;
@@ -8,7 +7,6 @@ import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
  * AI 월간 사용자 리포트 데이터를 MongoDB에 저장하기 위한 엔티티.

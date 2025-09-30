@@ -12,5 +12,6 @@ public record CardsListResponse(List<CardSummary> cards) {
             String maskedCardNo,
             boolean active,
             String imageUrl
-    ) {}
+    ) {
+    }
 }

@@ -4,4 +4,5 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record InquireDemandDepositAccountListRequest(
         @JsonProperty("Header") FinanceHeaderRequest header
-) {}
+) {
+}

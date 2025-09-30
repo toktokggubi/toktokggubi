@@ -19,7 +19,7 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
 
     /**
-     * @param q    부분 검색 (name LIKE %q%), null 허용
+     * @param q 부분 검색 (name LIKE %q%), null 허용
      */
     public CategoryListResponse list(String q) {
         Sort s = Sort.by(Sort.Direction.ASC, "sortOrder");

@@ -7,4 +7,5 @@ public record NotificationListResponseDto(
         int limit,
         long total,
         List<NotificationItemDto> items
-) {}
+) {
+}

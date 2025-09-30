@@ -28,6 +28,41 @@ public class AiReportInformationService {
     private final BudgetCategoryRepository budgetCatRepo;
     private final CardTransactionRepository txAggRepo;
 
+    private static String leftPad2(String s) {
+        String v = s.trim();
+        return (v.length() == 1) ? ("0" + v) : v;
+    }
+
+    /* ---------- helpers ---------- */
+
+    private static long toLong(Object o) {
+        if (o == null) return 0L;
+        if (o instanceof Long l) return l;
+        if (o instanceof Integer i) return i.longValue();
+        if (o instanceof java.math.BigInteger bi) return bi.longValue();
+        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
+        if (o instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(o.toString());
+        } catch (Exception e) {
+            return 0L;
+        }
+    }
+
+    private static Long toLongOrNull(Object o) {
+        if (o == null) return null;
+        if (o instanceof Long l) return l;
+        if (o instanceof Integer i) return i.longValue();
+        if (o instanceof java.math.BigInteger bi) return bi.longValue();
+        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
+        if (o instanceof Number n) return n.longValue();
+        try {
+            return Long.parseLong(o.toString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public AiReportInformationResponse getInformation(AiReportInformationRequest req) {
         validate(req);
 
@@ -40,7 +75,7 @@ public class AiReportInformationService {
         String ym = req.year() + mm; // YYYYMM
         YearMonth ymObj = YearMonth.of(Integer.parseInt(req.year()), Integer.parseInt(mm));
         String fromYmd = "%04d%02d01".formatted(ymObj.getYear(), ymObj.getMonthValue());
-        String toYmd   = "%04d%02d%02d".formatted(ymObj.getYear(), ymObj.getMonthValue(), ymObj.lengthOfMonth());
+        String toYmd = "%04d%02d%02d".formatted(ymObj.getYear(), ymObj.getMonthValue(), ymObj.lengthOfMonth());
 
         // 2) budget_set
         Map<String, Long> budget = new LinkedHashMap<>();
@@ -68,7 +103,7 @@ public class AiReportInformationService {
         Map<String, Long> catActual = CategoryKeyMapper.emptyActualPreset();
         for (Object[] r : txAggRepo.sumApprovedByCategoryId(req.userId(), fromYmd, toYmd)) {
             long catId = toLong(r[0]);
-            long sum   = toLong(r[1]);
+            long sum = toLong(r[1]);
             String key = CategoryKeyMapper.keyOf(catId);
             catActual.put(key, sum);
         }
@@ -76,8 +111,6 @@ public class AiReportInformationService {
 
         return new AiReportInformationResponse(budget, actual);
     }
-
-    /* ---------- helpers ---------- */
 
     private void validate(AiReportInformationRequest req) {
         if (req.userId() == null) {
@@ -96,30 +129,5 @@ public class AiReportInformationService {
         if (m < 1 || m > 12) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "month는 1~12 범위여야 합니다.");
         }
-    }
-
-    private static String leftPad2(String s) {
-        String v = s.trim();
-        return (v.length() == 1) ? ("0" + v) : v;
-    }
-
-    private static long toLong(Object o) {
-        if (o == null) return 0L;
-        if (o instanceof Long l) return l;
-        if (o instanceof Integer i) return i.longValue();
-        if (o instanceof java.math.BigInteger bi) return bi.longValue();
-        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
-        if (o instanceof Number n) return n.longValue();
-        try { return Long.parseLong(o.toString()); } catch (Exception e) { return 0L; }
-    }
-
-    private static Long toLongOrNull(Object o) {
-        if (o == null) return null;
-        if (o instanceof Long l) return l;
-        if (o instanceof Integer i) return i.longValue();
-        if (o instanceof java.math.BigInteger bi) return bi.longValue();
-        if (o instanceof java.math.BigDecimal bd) return bd.longValue();
-        if (o instanceof Number n) return n.longValue();
-        try { return Long.parseLong(o.toString()); } catch (Exception e) { return null; }
     }
 }

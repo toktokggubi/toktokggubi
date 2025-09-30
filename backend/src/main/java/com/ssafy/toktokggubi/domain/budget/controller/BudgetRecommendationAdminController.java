@@ -2,19 +2,11 @@ package com.ssafy.toktokggubi.domain.budget.controller;
 
 import com.ssafy.toktokggubi.domain.budget.BudgetRecommendationScheduler;
 import com.ssafy.toktokggubi.global.time.YmResolver;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/admin/ai/budget")
@@ -29,7 +21,7 @@ public class BudgetRecommendationAdminController {
     public BudgetRecommendationScheduler.ManualRunSummary runOnce(
 
     ) {
-        String ym   = ymResolver.prevYm();
+        String ym = ymResolver.prevYm();
         return scheduler.runOnce(ym);
     }
 }

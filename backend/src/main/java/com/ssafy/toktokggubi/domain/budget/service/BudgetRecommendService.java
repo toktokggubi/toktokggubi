@@ -1,13 +1,13 @@
 package com.ssafy.toktokggubi.domain.budget.service;
 
-import com.openai.errors.UnauthorizedException;
-import com.ssafy.toktokggubi.domain.budget.dto.*;
+import com.ssafy.toktokggubi.domain.budget.dto.BudgetAllSaveRequestDto;
+import com.ssafy.toktokggubi.domain.budget.dto.BudgetSaveResponseDto;
+import com.ssafy.toktokggubi.domain.budget.dto.CategoryAllocDto;
+import com.ssafy.toktokggubi.domain.budget.dto.FixedExpenseDto;
 import com.ssafy.toktokggubi.domain.budget.entity.BudgetCategory;
 import com.ssafy.toktokggubi.domain.budget.entity.FixedExpense;
 import com.ssafy.toktokggubi.domain.budget.entity.UserMonthlyBudget;
 import com.ssafy.toktokggubi.domain.budget.entity.UserSelectedCategory;
-import com.ssafy.toktokggubi.domain.budget.exception.BudgetErrorCode;
-import com.ssafy.toktokggubi.domain.budget.exception.BudgetException;
 import com.ssafy.toktokggubi.domain.budget.repository.BudgetCategoryRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.FixedExpenseRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
@@ -15,19 +15,15 @@ import com.ssafy.toktokggubi.domain.budget.repository.UserSelectedCategoryReposi
 import com.ssafy.toktokggubi.domain.category.entity.Category;
 import com.ssafy.toktokggubi.domain.report.dto.request.AiBudgetAllSaveRequestDto;
 import com.ssafy.toktokggubi.domain.user.entity.User;
-import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import com.ssafy.toktokggubi.global.time.YmResolver;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -190,7 +186,10 @@ public class BudgetRecommendService {
         feRepo.saveAll(new ArrayList<>(toSave));
         return toSave.size();
     }
-    /** 배분(프론트용 replace-all): 전달받은 allocation 전부 insert */
+
+    /**
+     * 배분(프론트용 replace-all): 전달받은 allocation 전부 insert
+     */
     private int insertAllBudgetCategories(UserMonthlyBudget umb, Long userId, User userRef,
                                           List<CategoryAllocDto> allocs) {
         if (allocs == null || allocs.isEmpty()) return 0;
@@ -225,6 +224,7 @@ public class BudgetRecommendService {
         }
         return count;
     }
+
     private int insertNewBudgetCategoriesOnly(UserMonthlyBudget umb, Long userId, User userRef,
                                               List<CategoryAllocDto> allocs) {
         if (allocs == null || allocs.isEmpty()) return 0;
@@ -257,7 +257,9 @@ public class BudgetRecommendService {
         return count;
     }
 
-    /** USC 즉석 업서트: (user, category) 없으면 생성 */
+    /**
+     * USC 즉석 업서트: (user, category) 없으면 생성
+     */
     private UserSelectedCategory upsertUsc(Long userId, User userRef, Long categoryId) {
         return uscRepo.findByUser_UserIdAndCategory_CategoryId(userId, categoryId)
                 .orElseGet(() -> {

@@ -27,19 +27,18 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CategoryBudgetService {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
+    // 풀키(중복방지/로그용)
+    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_CATEGORY_80.code(); // "BUDGET_THRESHOLD/CATEGORY/80"
+    private static final String EXCEEDED = PushType.BUDGET_EXCEEDED_CATEGORY.code();     // "BUDGET_EXCEEDED/CATEGORY"
+    private static final String SCOPE = "CATEGORY";
     private final CardTransactionRepository txRepo;
     private final BudgetCategoryRepository budgetCategoryRepo;
     private final NotificationRepository notificationRepo;
     private final FcmService fcmService;
     private final ObjectMapper objectMapper;
     private final Optional<GmsTextService> gmsTextService;
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-    private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyyMM", Locale.KOREA);
-
-    // 풀키(중복방지/로그용)
-    private static final String THRESHOLD = PushType.BUDGET_THRESHOLD_CATEGORY_80.code(); // "BUDGET_THRESHOLD/CATEGORY/80"
-    private static final String EXCEEDED = PushType.BUDGET_EXCEEDED_CATEGORY.code();     // "BUDGET_EXCEEDED/CATEGORY"
-    private static final String SCOPE         = "CATEGORY";
 
     @Transactional
     public ThresholdCheckResponse checkThreshold(String transactionUniqueNo) throws Exception {
@@ -82,8 +81,11 @@ public class CategoryBudgetService {
         Long categoryId = category.getCategoryId();
 
         String categoryName;
-        try { categoryName = category.getName(); }
-        catch (Exception ignore) { categoryName = null; }
+        try {
+            categoryName = category.getName();
+        } catch (Exception ignore) {
+            categoryName = null;
+        }
         if (categoryName == null || categoryName.isBlank()) categoryName = "카테고리#" + categoryId;
 
         YearMonth ym = YearMonth.now(KST);
@@ -105,7 +107,7 @@ public class CategoryBudgetService {
         String typeKey = typeKeyFull + "#CAT:" + categoryId;
         // 월 범위 계산
         LocalDateTime monthFrom = ym.atDay(1).atStartOfDay();
-        LocalDateTime monthTo   = ym.plusMonths(1).atDay(1).atStartOfDay();
+        LocalDateTime monthTo = ym.plusMonths(1).atDay(1).atStartOfDay();
 
         // ── EXCEEDED 우선 정책: THRESHOLD 호출인데 이미 100% 이상이면 스킵
         if (THRESHOLD.equals(typeKeyFull) && rate >= 1.0) {
@@ -190,10 +192,15 @@ public class CategoryBudgetService {
         return new ThresholdCheckResponse(true, userId, categoryId, SCOPE, budgetYm, used, finalAmount, true);
     }
 
-    private String currentYm() { return YearMonth.now(KST).format(YM); }
+    private String currentYm() {
+        return YearMonth.now(KST).format(YM);
+    }
 
     private String toJsonSafe(Object o) {
-        try { return objectMapper.writeValueAsString(o); }
-        catch (Exception e) { return null; }
+        try {
+            return objectMapper.writeValueAsString(o);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

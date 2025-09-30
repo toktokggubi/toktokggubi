@@ -11,12 +11,12 @@ public interface MolbbangScoreRepository extends JpaRepository<MolbbangScore, Lo
 
     // [memberId, userId, nickname, totalScore]
     @Query("""
-      SELECT ms.member.memberId, mm.user.userId, mm.nickname, SUM(ms.score)
-      FROM MolbbangScore ms
-      JOIN MolbbangMember mm ON mm.memberId = ms.member.memberId
-      WHERE ms.room.roomId = :roomId
-      GROUP BY ms.member.memberId, mm.user.userId, mm.nickname
-    """)
+              SELECT ms.member.memberId, mm.user.userId, mm.nickname, SUM(ms.score)
+              FROM MolbbangScore ms
+              JOIN MolbbangMember mm ON mm.memberId = ms.member.memberId
+              WHERE ms.room.roomId = :roomId
+              GROUP BY ms.member.memberId, mm.user.userId, mm.nickname
+            """)
     List<Object[]> aggregateRoomTotals(Long roomId);
 
     long countByRoom_RoomId(Long roomId);

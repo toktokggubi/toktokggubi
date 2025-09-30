@@ -1,11 +1,5 @@
 package com.ssafy.toktokggubi.domain.wallet.service;
 
-import com.ssafy.toktokggubi.domain.push.service.FcmService;
-import com.ssafy.toktokggubi.domain.wallet.dto.response.BestCardsResponse;
-import com.ssafy.toktokggubi.domain.wallet.dto.response.CardBenefitsResponse;
-import com.ssafy.toktokggubi.domain.wallet.dto.response.CardsListResponse;
-import com.ssafy.toktokggubi.domain.wallet.dto.request.PaymentRequest;
-import com.ssafy.toktokggubi.domain.wallet.dto.response.PaymentResponse;
 import com.ssafy.toktokggubi.domain.card.entity.CardProductBenefit;
 import com.ssafy.toktokggubi.domain.card.repository.CardProductBenefitRepository;
 import com.ssafy.toktokggubi.domain.merchant.entity.Merchant;
@@ -13,6 +7,11 @@ import com.ssafy.toktokggubi.domain.merchant.repository.MerchantRepository;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardStatus;
 import com.ssafy.toktokggubi.domain.transaction.entity.CardTransaction;
 import com.ssafy.toktokggubi.domain.transaction.repository.CardTransactionRepository;
+import com.ssafy.toktokggubi.domain.wallet.dto.request.PaymentRequest;
+import com.ssafy.toktokggubi.domain.wallet.dto.response.BestCardsResponse;
+import com.ssafy.toktokggubi.domain.wallet.dto.response.CardBenefitsResponse;
+import com.ssafy.toktokggubi.domain.wallet.dto.response.CardsListResponse;
+import com.ssafy.toktokggubi.domain.wallet.dto.response.PaymentResponse;
 import com.ssafy.toktokggubi.domain.wallet.entity.UserCard;
 import com.ssafy.toktokggubi.domain.wallet.event.TxApprovedEvent;
 import com.ssafy.toktokggubi.domain.wallet.repository.UserCardRepository;
@@ -26,9 +25,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.Comparator;
+import java.util.UUID;
 
-import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 @RequiredArgsConstructor

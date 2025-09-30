@@ -5,7 +5,9 @@ import com.ssafy.toktokggubi.domain.user.dto.response.FinanceSyncResponse;
 import com.ssafy.toktokggubi.global.security.utils.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/finance")
