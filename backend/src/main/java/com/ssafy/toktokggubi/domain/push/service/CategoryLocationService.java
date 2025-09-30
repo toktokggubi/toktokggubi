@@ -41,7 +41,7 @@ public class CategoryLocationService {
     private final CategoryRepository categoryRepository;   // 카테고리명 조회
 
     @Transactional
-    public ThresholdCheckResponse notifyRemainForCategory(Long userId, Long categoryId) throws Exception {
+    public ThresholdCheckResponse notifyRemainForCategory(Long userId, Long categoryId) {
         if (userId == null || categoryId == null) {
             return new ThresholdCheckResponse(false, userId, categoryId, SCOPE, currentYm(), 0L, 0L, false);
         }

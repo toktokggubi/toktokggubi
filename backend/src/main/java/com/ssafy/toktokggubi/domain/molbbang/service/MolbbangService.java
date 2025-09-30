@@ -18,10 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +30,12 @@ public class MolbbangService {
     private final MolbbangMemberRepository memberRepo;
     private final MolbbangScoreRepository scoreRepo;
     private final SimpMessagingTemplate messagingTemplate;
+
+    /* ====== 인메모리 종료대기(Armed) & 타이머 ====== */
+    private static final int GRACE_SECONDS = 10;
+    private final Map<Long, Boolean> autoEndArmed = new ConcurrentHashMap<>();
+    private final Map<Long, ScheduledFuture<?>> scheduledFinalizers = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
@@ -116,7 +121,7 @@ public class MolbbangService {
         var rooms = roomRepo.findRecentRoomsByUserAndStatus(
                 userId,
                 RoomStatus.FINISHED,
-                PageRequest.of(0, 1) // 최신 1건
+                PageRequest.of(0, 1)
         );
         return rooms.stream()
                 .findFirst()
@@ -148,7 +153,7 @@ public class MolbbangService {
 
     @Transactional
     public CreateRoomResponse createRoom(CreateRoomRequest req, User hostUser) {
-        // 유저가 이미 다른 방에 active면 정리
+        // 기존 active 정리
         memberRepo.findByUser_UserIdAndActiveTrue(hostUser.getUserId())
                 .forEach(m -> memberRepo.save(m.toBuilder()
                         .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
@@ -185,6 +190,7 @@ public class MolbbangService {
 
     @Transactional
     public OkResponse joinRoom(String code, String nickname, User user) {
+        // 기존 active 정리
         memberRepo.findByUser_UserIdAndActiveTrue(user.getUserId())
                 .forEach(m -> memberRepo.save(m.toBuilder()
                         .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
@@ -209,6 +215,11 @@ public class MolbbangService {
         return new OkResponse(true);
     }
 
+    /**
+     * - active가 남아 있으면 joinedAt ASC로 결정적 호스트 위임
+     * - 아무도 없으면 CANCELLED
+     * - LOBBY에서 전원 이탈 시 CANCELLED
+     */
     @Transactional
     public OkResponse leaveRoom(String code, Long userId) {
         MolbbangRoom room = getRoomByCodeOrThrow(code);
@@ -220,24 +231,42 @@ public class MolbbangService {
             return new OkResponse(true);
         }
 
+        // 이 멤버 비활성화
         memberRepo.save(member.toBuilder()
                 .active(false).ready(false).leftAt(LocalDateTime.now()).build());
 
+        // 남은 active들
+        List<MolbbangMember> actives = memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId());
+
         if (member.isHost()) {
-            roomRepo.save(room.toBuilder()
-                    .status(RoomStatus.CANCELLED)
-                    .endedAt(LocalDateTime.now())
-                    .build());
-            memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId())
-                    .forEach(m -> memberRepo.save(m.toBuilder()
-                            .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
+            if (!actives.isEmpty()) {
+                // 결정적 위임(가장 먼저 들어온 사람)
+                MolbbangMember newHost = actives.stream()
+                        .min(Comparator.comparing(MolbbangMember::getJoinedAt)).get();
+                memberRepo.save(member.toBuilder().host(false).build()); // 이전 호스트 내림
+                memberRepo.save(newHost.toBuilder().host(true).build()); // 새 호스트 지정
+            } else {
+                // 아무도 없으면 취소
+                roomRepo.save(room.toBuilder()
+                        .status(RoomStatus.CANCELLED)
+                        .endedAt(LocalDateTime.now())
+                        .build());
+            }
+        } else {
+            // 일반 멤버: 로비에서 전원 이탈 시 취소
+            if (room.getStatus() == RoomStatus.LOBBY && actives.isEmpty()) {
+                roomRepo.save(room.toBuilder()
+                        .status(RoomStatus.CANCELLED)
+                        .endedAt(LocalDateTime.now())
+                        .build());
+            }
         }
 
         broadcastRoom(code);
         return new OkResponse(true);
     }
 
-    /* ===== 준비/시작/종료/결과/점수 ===== */
+    /* ===== 준비/시작/종료/점수 ===== */
 
     @Transactional
     public OkResponse setReadyForMe(Long userId, boolean ready) {
@@ -270,23 +299,56 @@ public class MolbbangService {
                 .startedAt(LocalDateTime.now())
                 .build());
 
+        // 혹시 이전 방에서 무언가 armed가 남아있었다면 해제
+        autoEndArmed.remove(room.getRoomId());
+        cancelScheduledFinalizer(room.getRoomId());
+
         broadcastRoom(room.getRoomCode());
         return new StartGameResponse(true, "in_progress");
     }
 
+    /* ===== 종료 대기(Armed) 플로우 ===== */
+
+    /** startedAt 기준으로 시작 당시 방에 있던 멤버 수 계산 */
+    private int countRequiredMembers(MolbbangRoom room) {
+        LocalDateTime startedAt = room.getStartedAt();
+        if (startedAt == null) return 0;
+        List<MolbbangMember> allMembers = memberRepo.findByRoom_RoomId(room.getRoomId());
+        return (int) allMembers.stream()
+                .filter(m -> m.getJoinedAt() != null && !m.getJoinedAt().isAfter(startedAt))
+                .filter(m -> m.getLeftAt() == null || !m.getLeftAt().isBefore(startedAt))
+                .count();
+    }
+
+    /** 미제출자 0점 보정 → FINISHED → 브로드캐스트 */
     @Transactional
-    public EndGameResponse endMyGame(Long userId) {
-        MolbbangRoom room = getActiveRoomOfUserOrThrow(userId);
-        MolbbangMember me = memberRepo.findByRoom_RoomIdAndUser_UserId(room.getRoomId(), userId)
-                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+    public void finalizeRoomWithZeroFill(Long roomId) {
+        MolbbangRoom room = roomRepo.findById(roomId).orElse(null);
+        if (room == null) return;
+        if (room.getStatus() != RoomStatus.IN_PROGRESS) return; // 이미 종료/취소 시 무시
 
-        var actives = memberRepo.findByRoom_RoomIdAndActiveTrue(room.getRoomId());
-        long submitted = scoreRepo.countByRoom_RoomId(room.getRoomId());
-        if (submitted < actives.size()) throw new IllegalStateException("not_all_scored");
+        LocalDateTime startedAt = room.getStartedAt();
+        if (startedAt == null) return;
 
-        if (!me.isHost()) throw new IllegalStateException("호스트만 종료할 수 있습니다.");
-        if (room.getStatus() != RoomStatus.IN_PROGRESS)
-            throw new IllegalStateException("not_in_progress");
+        List<MolbbangMember> allMembers = memberRepo.findByRoom_RoomId(room.getRoomId());
+        List<MolbbangMember> expectedMembers = allMembers.stream()
+                .filter(m -> m.getJoinedAt() != null && !m.getJoinedAt().isAfter(startedAt))
+                .filter(m -> m.getLeftAt() == null || !m.getLeftAt().isBefore(startedAt))
+                .toList();
+
+        Set<Long> submittedMemberIds = scoreRepo.aggregateRoomTotals(room.getRoomId()).stream()
+                .map(arr -> ((Number) arr[0]).longValue()) // memberId
+                .collect(Collectors.toSet());
+
+        for (MolbbangMember m : expectedMembers) {
+            if (!submittedMemberIds.contains(m.getMemberId())) {
+                scoreRepo.save(MolbbangScore.builder()
+                        .room(room)
+                        .member(m)
+                        .score(0)
+                        .build());
+            }
+        }
 
         roomRepo.save(room.toBuilder()
                 .status(RoomStatus.FINISHED)
@@ -298,9 +360,59 @@ public class MolbbangService {
                 .forEach(m -> memberRepo.save(m.toBuilder()
                         .active(false).ready(false).leftAt(LocalDateTime.now()).build()));
 
+        // armed/타이머 해제
+        autoEndArmed.remove(room.getRoomId());
+        cancelScheduledFinalizer(room.getRoomId());
+
         broadcastResults(room);
         broadcastRoom(room.getRoomCode());
-        return new EndGameResponse(true, "finished");
+    }
+
+    private void cancelScheduledFinalizer(Long roomId) {
+        ScheduledFuture<?> f = scheduledFinalizers.remove(roomId);
+        if (f != null) {
+            f.cancel(false);
+        }
+    }
+
+    /**
+     * 호스트가 누르면: 즉시 종료하지 않고 Armed 설정 + 그레이스 타이머 등록.
+     * - 전원 제출 완료면 즉시 finalize
+     * - 아니면 'pending' 반환, GRACE_SECONDS 후 강제 finalize(0점 보정)
+     */
+    @Transactional
+    public EndGameResponse endMyGame(Long userId) {
+        MolbbangRoom room = getActiveRoomOfUserOrThrow(userId);
+        MolbbangMember me = memberRepo.findByRoom_RoomIdAndUser_UserId(room.getRoomId(), userId)
+                .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        if (!me.isHost()) throw new IllegalStateException("호스트만 종료할 수 있습니다.");
+        if (room.getStatus() != RoomStatus.IN_PROGRESS)
+            throw new IllegalStateException("not_in_progress");
+
+        int required = countRequiredMembers(room);
+        long submitted = scoreRepo.countByRoom_RoomId(room.getRoomId());
+
+        // Armed 설정
+        autoEndArmed.put(room.getRoomId(), true);
+
+        if (submitted >= required) {
+            // 이미 모두 제출 완료 → 즉시 마감
+            finalizeRoomWithZeroFill(room.getRoomId());
+            return new EndGameResponse(true, "finished");
+        }
+
+        // 그레이스 타이머 예약 (기존 예약이 있으면 취소 후 재예약)
+        cancelScheduledFinalizer(room.getRoomId());
+        ScheduledFuture<?> future = scheduler.schedule(() -> {
+            try {
+                finalizeRoomWithZeroFill(room.getRoomId());
+            } catch (Exception ignore) {}
+        }, GRACE_SECONDS, TimeUnit.SECONDS);
+        scheduledFinalizers.put(room.getRoomId(), future);
+
+        // 대기 상태 응답(프론트는 카운트다운/대기 UI)
+        return new EndGameResponse(true, "pending");
     }
 
     @Transactional(readOnly = true)
@@ -348,6 +460,10 @@ public class MolbbangService {
         return new ResultsResponse(true, ranking, jackpotUserId, room.getAmount());
     }
 
+    /**
+     * - 시작시점 스냅샷(시간 기준)에 포함되지 않은 멤버의 제출은 거부(not_in_snapshot)
+     * - armed 상태라면 제출 후 전원 제출 완료 시 자동 finalize
+     */
     @Transactional
     public OkResponse submitMyScore(Long userId, int score) {
         MolbbangRoom room = getActiveRoomOfUserOrThrow(userId);
@@ -355,6 +471,16 @@ public class MolbbangService {
 
         MolbbangMember me = memberRepo.findByRoom_RoomIdAndUser_UserId(room.getRoomId(), userId)
                 .orElseThrow(() -> new EntityNotFoundException("Member not found"));
+
+        // 시작시점 스냅샷 포함 여부(시간 기준)
+        LocalDateTime startedAt = room.getStartedAt();
+        if (startedAt == null) throw new IllegalStateException("invalid_started_at");
+        if (me.getJoinedAt() != null && me.getJoinedAt().isAfter(startedAt)) {
+            throw new IllegalStateException("not_in_snapshot");
+        }
+        if (me.getLeftAt() != null && me.getLeftAt().isBefore(startedAt)) {
+            throw new IllegalStateException("not_in_snapshot");
+        }
 
         if (scoreRepo.existsByRoom_RoomIdAndMember_MemberId(room.getRoomId(), me.getMemberId())) {
             throw new IllegalStateException("already_submitted");
@@ -366,6 +492,17 @@ public class MolbbangService {
                 .score(score)
                 .build());
 
+        // Armed + 전원 제출 완료 시 즉시 마감
+        if (Boolean.TRUE.equals(autoEndArmed.get(room.getRoomId()))) {
+            int required = countRequiredMembers(room);
+            long submitted = scoreRepo.countByRoom_RoomId(room.getRoomId());
+            if (submitted >= required) {
+                finalizeRoomWithZeroFill(room.getRoomId());
+                return new OkResponse(true);
+            }
+        }
+
+        // 진행중 방송(선택)
         broadcastRoom(room.getRoomCode());
         broadcastResults(room);
         return new OkResponse(true);
