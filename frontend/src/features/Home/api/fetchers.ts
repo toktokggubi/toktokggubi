@@ -18,9 +18,10 @@ export async function fetchMonthlySummary(params?: {
 
 // TX-1 이번 달 소비 금액 조회 (카테고리별)
 export async function fetchMonthlySummaryByCategory() {
-  // 테스트를 위해 2025년 9월 데이터 조회
+  const currentDate = new Date();
+  const ym = currentDate.toISOString().slice(0, 7).replace('-', '');
   const { data } = await http.get(HOME_ENDPOINTS.monthlySummaryByCategory, {
-    params: { ym: '202509' }
+    params: { ym }
   });
   return data as {
     categories: Array<{
@@ -34,9 +35,10 @@ export async function fetchMonthlySummaryByCategory() {
 
 // TX-1 이번달 카테고리별 소비 목록 조회
 export async function fetchMonthlyCategoryList() {
-  // 테스트를 위해 2025년 9월 데이터 조회
+  const currentDate = new Date();
+  const ym = currentDate.toISOString().slice(0, 7).replace('-', '');
   const { data } = await http.get(HOME_ENDPOINTS.monthlyCategoryList, {
-    params: { ym: '202509' }
+    params: { ym }
   });
   return data as {
     userId: number;
