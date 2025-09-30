@@ -41,6 +41,21 @@ public class MolbbangService {
         return s == null || s.trim().isEmpty();
     }
 
+
+    @Transactional(readOnly = true)
+    public Optional<String> findActiveRoomCode(Long userId) {
+        var list = memberRepo.findByUser_UserIdAndActiveTrue(userId);
+        if (list.isEmpty()) return Optional.empty();
+
+        if (list.size() > 1) {
+            list.stream().skip(1).forEach(m ->
+                    memberRepo.save(m.toBuilder()
+                            .active(false).ready(false).leftAt(LocalDateTime.now()).build())
+            );
+        }
+        return Optional.of(list.get(0).getRoom().getRoomCode());
+    }
+
     /* ===== 유틸 ===== */
     @Transactional(readOnly = true)
     public RoomView getRoom(String code) {
