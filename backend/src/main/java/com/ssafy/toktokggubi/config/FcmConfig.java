@@ -3,7 +3,6 @@ package com.ssafy.toktokggubi.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -32,7 +31,6 @@ public class FcmConfig {
         } else {
             creds = GoogleCredentials.getApplicationDefault();
         }
-       ;
 
         FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(creds)

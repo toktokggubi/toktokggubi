@@ -2,7 +2,6 @@ package com.ssafy.toktokggubi.domain.gms.service;
 
 import com.ssafy.toktokggubi.domain.budget.dto.TotalAmountResponseDto;
 import com.ssafy.toktokggubi.domain.gms.llm.LlmClient;
-
 import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

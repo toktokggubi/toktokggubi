@@ -11,7 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -34,7 +37,21 @@ public class KakaoAuthController {
     @Value("${kakao.redirect-uri}")
     private String kakaoRedirectUri;
 
-    /** 프론트가 열 수 있는 authorize URL 제공 */
+    private static String deepLinkHtml(URI deep) {
+        String intentUrl = "intent://oauth/kakao#Intent;scheme=toktokggubi;package=com.technologia.toktokggubi;end";
+        return """
+                <!doctype html><html><head><meta charset="utf-8">
+                <meta http-equiv="refresh" content="0; url=%s">
+                <script>setTimeout(function(){ location.href = '%s'; }, 150);</script>
+                </head><body>
+                <p>앱으로 이동 중… 이동하지 않으면 <a href="%s">여기</a>를 누르세요.</p>
+                </body></html>
+                """.formatted(deep.toString(), intentUrl, deep.toString());
+    }
+
+    /**
+     * 프론트가 열 수 있는 authorize URL 제공
+     */
     @GetMapping("/authorize-url")
     public Map<String, String> authorizeUrl(
             @RequestParam(required = false) String state,
@@ -58,7 +75,9 @@ public class KakaoAuthController {
         return Map.of("url", url);
     }
 
-    /** 카카오 콜백 (카카오 -> 우리 서버) */
+    /**
+     * 카카오 콜백 (카카오 -> 우리 서버)
+     */
     @GetMapping("/callback")
     public ResponseEntity<String> callback(@RequestParam String code,
                                            @RequestParam(required = false) String state,
@@ -104,18 +123,6 @@ public class KakaoAuthController {
                     .contentType(org.springframework.http.MediaType.TEXT_PLAIN)
                     .body("Internal error during Kakao callback");
         }
-    }
-
-    private static String deepLinkHtml(URI deep) {
-        String intentUrl = "intent://oauth/kakao#Intent;scheme=toktokggubi;package=com.technologia.toktokggubi;end";
-        return """
-      <!doctype html><html><head><meta charset="utf-8">
-      <meta http-equiv="refresh" content="0; url=%s">
-      <script>setTimeout(function(){ location.href = '%s'; }, 150);</script>
-      </head><body>
-      <p>앱으로 이동 중… 이동하지 않으면 <a href="%s">여기</a>를 누르세요.</p>
-      </body></html>
-      """.formatted(deep.toString(), intentUrl, deep.toString());
     }
 
 }

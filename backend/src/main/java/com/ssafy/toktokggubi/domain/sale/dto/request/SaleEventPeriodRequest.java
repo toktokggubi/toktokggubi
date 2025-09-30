@@ -1,6 +1,7 @@
 package com.ssafy.toktokggubi.domain.sale.dto.request;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
 public record SaleEventPeriodRequest(

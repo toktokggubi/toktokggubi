@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, Long> {
     List<Merchant> findByMerchantName(String merchantName);
+
     Optional<Merchant> findFirstByMerchantName(String merchantName);
+
     Optional<Merchant> findFirstByMerchantNameContaining(String keyword);
 }

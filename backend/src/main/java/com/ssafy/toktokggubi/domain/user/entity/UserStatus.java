@@ -1,3 +1,3 @@
 package com.ssafy.toktokggubi.domain.user.entity;
 
-public enum UserStatus { ACTIVE, INACTIVE, WITHDRAWN }
+public enum UserStatus {ACTIVE, INACTIVE, WITHDRAWN}

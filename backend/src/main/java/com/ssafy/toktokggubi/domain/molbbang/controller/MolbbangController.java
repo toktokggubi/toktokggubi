@@ -1,6 +1,9 @@
 package com.ssafy.toktokggubi.domain.molbbang.controller;
 
-import com.ssafy.toktokggubi.domain.molbbang.dto.request.*;
+import com.ssafy.toktokggubi.domain.molbbang.dto.request.CreateRoomRequest;
+import com.ssafy.toktokggubi.domain.molbbang.dto.request.JoinRoomRequest;
+import com.ssafy.toktokggubi.domain.molbbang.dto.request.ReadyRequest;
+import com.ssafy.toktokggubi.domain.molbbang.dto.request.SubmitMyScoreRequest;
 import com.ssafy.toktokggubi.domain.molbbang.dto.response.*;
 import com.ssafy.toktokggubi.domain.molbbang.service.MolbbangService;
 import com.ssafy.toktokggubi.domain.user.entity.User;
@@ -26,7 +29,9 @@ public class MolbbangController {
     private final MolbbangService service;
     private final UserRepository userRepo;
 
-    private Long uid(Principal p) { return Long.valueOf(p.getName()); }
+    private Long uid(Principal p) {
+        return Long.valueOf(p.getName());
+    }
 
     @Operation(
             summary = "방 생성",

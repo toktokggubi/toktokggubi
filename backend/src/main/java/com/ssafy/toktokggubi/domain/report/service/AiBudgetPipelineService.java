@@ -1,12 +1,10 @@
 package com.ssafy.toktokggubi.domain.report.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ssafy.toktokggubi.domain.budget.dto.BudgetAllSaveRequestDto;
 import com.ssafy.toktokggubi.domain.budget.dto.BudgetSaveResponseDto;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import com.ssafy.toktokggubi.domain.budget.service.BudgetRecommendService;
 import com.ssafy.toktokggubi.domain.gms.service.AiBudgetService;
-import com.ssafy.toktokggubi.domain.report.dto.request.AiBudgetAllSaveRequestDto;
 import com.ssafy.toktokggubi.domain.report.dto.request.AiReportInformationRequest;
 import com.ssafy.toktokggubi.domain.report.dto.response.AiReportInformationResponse;
 import com.ssafy.toktokggubi.global.time.YmResolver;
@@ -31,7 +29,7 @@ public class AiBudgetPipelineService {
 
         // 2) userId & ym 결정
         Long userId = req.userId();
-        String ym   = ymResolver.nowYm();
+        String ym = ymResolver.nowYm();
 
         // 3) 이미 해당 (userId, ym) UMB가 있으면 스킵 (수정 안 함)
         var existing = umbRepo.findByUser_UserIdAndBudgetYm(userId, ym);

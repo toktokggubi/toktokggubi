@@ -1,23 +1,21 @@
 package com.ssafy.toktokggubi.domain.budget.service;
 
-import com.ssafy.toktokggubi.domain.budget.dto.CategoryAllocDto;
 import com.ssafy.toktokggubi.domain.budget.dto.BudgetCommitResponseDto;
+import com.ssafy.toktokggubi.domain.budget.dto.CategoryAllocDto;
 import com.ssafy.toktokggubi.domain.budget.dto.DraftSnapshotDto;
 import com.ssafy.toktokggubi.domain.budget.dto.FixedExpenseDto;
 import com.ssafy.toktokggubi.domain.budget.entity.BudgetCategory;
 import com.ssafy.toktokggubi.domain.budget.entity.FixedExpense;
 import com.ssafy.toktokggubi.domain.budget.entity.UserMonthlyBudget;
 import com.ssafy.toktokggubi.domain.budget.entity.UserSelectedCategory;
-import com.ssafy.toktokggubi.domain.budget.exception.BudgetException;
 import com.ssafy.toktokggubi.domain.budget.exception.BudgetErrorCode;
-
+import com.ssafy.toktokggubi.domain.budget.exception.BudgetException;
 import com.ssafy.toktokggubi.domain.budget.repository.BudgetCategoryRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.FixedExpenseRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.UserMonthlyBudgetRepository;
 import com.ssafy.toktokggubi.domain.budget.repository.UserSelectedCategoryRepository;
 import com.ssafy.toktokggubi.domain.category.entity.Category;
 import com.ssafy.toktokggubi.domain.user.entity.User;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +39,12 @@ public class BudgetCommitService {
 
     @PersistenceContext               // ★ EntityManager 주입 (조회 없이 FK 참조용)
     private EntityManager em;
+
+    private static Set<Long> diff(Set<Long> a, Set<Long> b) {
+        var r = new HashSet<>(a);
+        r.removeAll(b);
+        return r;
+    }
 
     @Transactional
     public BudgetCommitResponseDto commit(Long userId, String budgetYm, Integer expectedVersion) {
@@ -140,7 +144,10 @@ public class BudgetCommitService {
             throw new IllegalStateException("duplicate commit for " + budgetYm, e);
         }
     }
-    /** Redis 스냅샷에서 필요한 카테고리 집합 도출 */
+
+    /**
+     * Redis 스냅샷에서 필요한 카테고리 집합 도출
+     */
     private Set<Long> resolveRequiredCategoryIds(DraftSnapshotDto snap) {
         var allocIds = Optional.ofNullable(snap.categoryAllocations()).orElseGet(List::of)
                 .stream().map(CategoryAllocDto::categoryId).collect(Collectors.toSet());
@@ -157,13 +164,9 @@ public class BudgetCommitService {
         return selectedIds;
     }
 
-    private static Set<Long> diff(Set<Long> a, Set<Long> b) {
-        var r = new HashSet<>(a);
-        r.removeAll(b);
-        return r;
-    }
-
-    /** 필요한 USC를 모두 보장하고, categoryId -> USC 맵으로 반환 */
+    /**
+     * 필요한 USC를 모두 보장하고, categoryId -> USC 맵으로 반환
+     */
     private Map<Long, UserSelectedCategory> upsertUserSelections(Long userId, Set<Long> catIds) {
         if (catIds.isEmpty()) return Map.of();
 

@@ -1,7 +1,8 @@
 package com.ssafy.toktokggubi.domain.user.controller;
 
-import com.ssafy.toktokggubi.domain.user.dto.request.*;
-import com.ssafy.toktokggubi.domain.user.dto.response.*;
+import com.ssafy.toktokggubi.domain.user.dto.request.PasswordChangeRequest;
+import com.ssafy.toktokggubi.domain.user.dto.request.ProfileUpdateRequest;
+import com.ssafy.toktokggubi.domain.user.dto.response.ProfileResponse;
 import com.ssafy.toktokggubi.domain.user.service.UserAuthService;
 import com.ssafy.toktokggubi.domain.user.service.UserProfileService;
 import com.ssafy.toktokggubi.global.dto.response.MessageResponse;

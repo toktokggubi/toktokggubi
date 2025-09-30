@@ -7,4 +7,5 @@ public record BudgetAllSaveRequestDto(
         List<FixedExpenseDto> fixedExpenses,
         List<Long> selectedCategories,
         List<CategoryAllocDto> categoryAllocations
-) {}
+) {
+}

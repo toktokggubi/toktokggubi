@@ -5,4 +5,5 @@ public record TxSummaryResponseDto(
         String to,          // ISO yyyy-MM-dd
         long totalAmount,
         long totalCount
-) {}
+) {
+}

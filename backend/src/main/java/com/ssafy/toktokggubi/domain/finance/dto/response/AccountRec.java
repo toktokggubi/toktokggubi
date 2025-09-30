@@ -18,4 +18,5 @@ public record AccountRec(
         String accountBalance,
         String lastTransactionDate,
         String currency
-) {}
+) {
+}

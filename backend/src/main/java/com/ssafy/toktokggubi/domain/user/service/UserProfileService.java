@@ -1,11 +1,9 @@
 package com.ssafy.toktokggubi.domain.user.service;
 
-import com.ssafy.toktokggubi.domain.user.dto.request.*;
-import com.ssafy.toktokggubi.domain.user.dto.response.*;
+import com.ssafy.toktokggubi.domain.user.dto.request.ProfileUpdateRequest;
+import com.ssafy.toktokggubi.domain.user.dto.response.ProfileResponse;
 import com.ssafy.toktokggubi.domain.user.entity.User;
-import com.ssafy.toktokggubi.domain.user.entity.UserStatus;
 import com.ssafy.toktokggubi.domain.user.repository.UserRepository;
-import com.ssafy.toktokggubi.global.dto.response.TokenEnvelope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

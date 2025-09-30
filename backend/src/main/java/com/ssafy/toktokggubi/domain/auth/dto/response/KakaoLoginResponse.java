@@ -9,5 +9,7 @@ public record KakaoLoginResponse(
         String signupToken,      // 신규/INACTIVE
         TokenEnvelope token      // ACTIVE
 ) {
-    @Builder public KakaoLoginResponse {}
+    @Builder
+    public KakaoLoginResponse {
+    }
 }

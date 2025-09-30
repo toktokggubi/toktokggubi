@@ -8,5 +8,6 @@ public record ResultsResponse(
         Long jackpotUserId, // 꼴찌가 혼자일 때만 해당 userId
         Long amount
 ) {
-    public record RankingRow(Long userId, String nickname, Integer score, Integer rank) {}
+    public record RankingRow(Long userId, String nickname, Integer score, Integer rank) {
+    }
 }

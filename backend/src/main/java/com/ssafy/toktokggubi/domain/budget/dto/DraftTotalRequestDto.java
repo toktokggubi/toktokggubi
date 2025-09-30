@@ -7,4 +7,5 @@ public record DraftTotalRequestDto(
         @NotNull
         @Schema(description = "총예산(원)", example = "2200000")
         Long totalAmount
-) {}
+) {
+}

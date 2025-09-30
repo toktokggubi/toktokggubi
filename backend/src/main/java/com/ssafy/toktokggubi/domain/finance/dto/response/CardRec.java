@@ -16,4 +16,5 @@ public record CardRec(
         String cardExpiryDate,
         String withdrawalAccountNo,
         String withdrawalDate
-) {}
+) {
+}

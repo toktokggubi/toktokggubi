@@ -11,5 +11,6 @@ public record CardBenefitsResponse(
             Long franchiseId,
             String franchiseName,
             BigDecimal discountRate // percent
-    ) {}
+    ) {
+    }
 }

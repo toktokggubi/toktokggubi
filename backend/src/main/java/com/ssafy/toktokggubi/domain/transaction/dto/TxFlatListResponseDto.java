@@ -8,7 +8,9 @@ public record TxFlatListResponseDto(
         PeriodRange period,   // 전체일 때 null 반환해도 OK
         List<Item> items
 ) {
-    public record PeriodRange(String fromYmd, String toYmd) {}
+    public record PeriodRange(String fromYmd, String toYmd) {
+    }
+
     public record Item(
             long categoryId,
             String categoryName,
@@ -20,5 +22,6 @@ public record TxFlatListResponseDto(
             String merchantName,
             long userCardId,
             String cardName
-    ) {}
+    ) {
+    }
 }

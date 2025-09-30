@@ -6,22 +6,24 @@ import java.util.List;
 import java.util.Map;
 
 public final class CategoryKeyMapper {
-    private CategoryKeyMapper() {}
-
     // ID 순서 보장(LinkedHashMap)
     private static final Map<Long, String> MAP = new LinkedHashMap<>();
+
     static {
-        MAP.put(1L,  "food");
-        MAP.put(2L,  "cafe");
-        MAP.put(3L,  "nightlife");
-        MAP.put(4L,  "life");
-        MAP.put(5L,  "shopping");
-        MAP.put(6L,  "cosmetic");
-        MAP.put(7L,  "transportation");
-        MAP.put(8L,  "car");
-        MAP.put(9L,  "medical");
+        MAP.put(1L, "food");
+        MAP.put(2L, "cafe");
+        MAP.put(3L, "nightlife");
+        MAP.put(4L, "life");
+        MAP.put(5L, "shopping");
+        MAP.put(6L, "cosmetic");
+        MAP.put(7L, "transportation");
+        MAP.put(8L, "car");
+        MAP.put(9L, "medical");
         MAP.put(10L, "entertainment");
         MAP.put(11L, "etc");
+    }
+
+    private CategoryKeyMapper() {
     }
 
     public static List<Long> orderedCategoryIds() {

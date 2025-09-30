@@ -1,6 +1,5 @@
 package com.ssafy.toktokggubi.domain.gms.llm;
 
-import com.ssafy.toktokggubi.domain.gms.llm.LlmClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +15,10 @@ public class GmsLlmClient implements LlmClient {
 
     private final WebClient gmsWebClient;
 
-    @Value("${gms.llm.api-key}") String apiKey;
-    @Value("${gms.llm.model}") String model;
+    @Value("${gms.llm.api-key}")
+    String apiKey;
+    @Value("${gms.llm.model}")
+    String model;
 
     @Override
     public String complete(String prompt, int maxTokens, double temperature) {
@@ -75,5 +76,6 @@ public class GmsLlmClient implements LlmClient {
                 .block();
     }
 
-    private record Resp(org.springframework.http.HttpStatusCode code, String body) {}
+    private record Resp(org.springframework.http.HttpStatusCode code, String body) {
+    }
 }

@@ -13,4 +13,5 @@ public record GifticonItemResponse(
         LocalDate expiresAt,
         Long daysUntilExpire,    // null 가능
         GifticonStatus status
-) {}
+) {
+}

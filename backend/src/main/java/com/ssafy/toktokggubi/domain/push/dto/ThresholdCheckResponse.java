@@ -10,4 +10,5 @@ public record ThresholdCheckResponse(
         Long usedAmount,
         Long finalAmount,
         boolean sent
-) {}
+) {
+}

@@ -8,4 +8,8 @@ public record TokenEnvelope(
         String refreshToken,
         long refreshExpiresIn,
         String tokenType
-) { @Builder public TokenEnvelope {} }
+) {
+    @Builder
+    public TokenEnvelope {
+    }
+}

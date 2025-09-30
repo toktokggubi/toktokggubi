@@ -5,4 +5,5 @@ public record BudgetSaveResponseDto(
         Long userMonthlyBudgetId,
         int fixedExpenseCount,
         int budgetCategoryCount
-) {}
+) {
+}

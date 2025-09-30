@@ -16,5 +16,6 @@ public record BestCardsResponse(
             String cardType,
             BigDecimal discountRate,  // percent
             Long estimatedFinalAmount // amount 있을 때만 계산, 없으면 null
-    ) {}
+    ) {
+    }
 }

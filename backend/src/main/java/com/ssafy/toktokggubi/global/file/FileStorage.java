@@ -29,7 +29,7 @@ public class FileStorage {
         String mime = tika.detect(file.getBytes());
         String ext = switch (mime) {
             case "image/jpeg" -> ".jpg";
-            case "image/png"  -> ".png";
+            case "image/png" -> ".png";
             case "image/webp" -> ".webp";
             default -> throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "이미지 파일만 업로드할 수 있습니다(jpg, png, webp).");
@@ -45,5 +45,6 @@ public class FileStorage {
         return new SavedFile(filename, url, target);
     }
 
-    public record SavedFile(String filename, String url, Path path) {}
+    public record SavedFile(String filename, String url, Path path) {
+    }
 }

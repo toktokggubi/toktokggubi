@@ -1,12 +1,10 @@
 package com.ssafy.toktokggubi.domain.push.service;
 
 import com.google.firebase.messaging.*;
-import com.ssafy.toktokggubi.domain.push.service.PushTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -64,9 +62,12 @@ public class FcmService {
         return FirebaseMessaging.getInstance().send(msg, dryRun);
     }
 
-    private String linkOrEmpty(String s) { return (s == null) ? "" : s; }
+    private String linkOrEmpty(String s) {
+        return (s == null) ? "" : s;
+    }
 
 
-
-    private String nz(String s) { return (s == null) ? "" : s; }
+    private String nz(String s) {
+        return (s == null) ? "" : s;
+    }
 }

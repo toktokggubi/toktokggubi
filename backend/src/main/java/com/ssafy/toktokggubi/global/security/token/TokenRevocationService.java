@@ -9,8 +9,8 @@ import java.time.Duration;
 @Service
 @RequiredArgsConstructor
 public class TokenRevocationService {
-    private final StringRedisTemplate redis;
     private static final String KEY_PREFIX = "auth:blacklist:";
+    private final StringRedisTemplate redis;
 
     public void revoke(String accessToken, Duration ttl) {
         redis.opsForValue().set(KEY_PREFIX + accessToken, "1", ttl);

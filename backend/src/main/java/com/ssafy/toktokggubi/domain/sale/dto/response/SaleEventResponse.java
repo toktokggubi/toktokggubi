@@ -9,4 +9,5 @@ public record SaleEventResponse(
         LocalDateTime startsAt,
         LocalDateTime endsAt,
         String description
-) {}
+) {
+}

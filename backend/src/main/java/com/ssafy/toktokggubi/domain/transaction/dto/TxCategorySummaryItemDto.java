@@ -5,4 +5,5 @@ public record TxCategorySummaryItemDto(
         String categoryName,
         long amount,
         long count
-) {}
+) {
+}
