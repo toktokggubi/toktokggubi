@@ -14,25 +14,6 @@ import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<NotificationLog, Long> {
 
-    // ✅ 중복 체크 (user_id + type + budget_ym + category_id)
-    @Query(value = """
-            SELECT CASE WHEN EXISTS (
-                SELECT 1
-                  FROM notification_log
-                 WHERE user_id   = :userId
-                   AND type      = :type
-                   AND budget_ym = :budgetYm
-                   AND category_id = :categoryId
-            ) THEN TRUE ELSE FALSE END
-            """, nativeQuery = true)
-    boolean existsComposite(
-            @Param("userId") long userId,
-            @Param("type") String type,
-            @Param("budgetYm") String budgetYm,
-            @Param("categoryId") String categoryId
-    );
-
-
     // 조회 (월 범위 + 읽음필터), 결과는 Object[]로 받고 서비스에서 매핑
     @Query(value = """
                 SELECT notification_log_id, type, title, body, sent_at, read_at
