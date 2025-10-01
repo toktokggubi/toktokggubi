@@ -47,13 +47,19 @@ export const MonthlySummarySection: React.FC<MonthlySummarySectionProps> = ({
 
   const sentences = splitSentences(overallSummary);
 
-  // ### 기준으로 섹션 나누기
+  // ## 기준으로 섹션 나누기
   const splitIntoSections = (text: string): Array<{title: string, content: string}> => {
-    const sections = text.split(/^###\s*/m).filter(section => section.trim().length > 0);
+    const sections = text.split(/^##\s*/m).filter(section => section.trim().length > 0);
     
     return sections.map(section => {
       const lines = section.trim().split('\n');
-      const title = lines[0].trim();
+      let title = lines[0].trim();
+      
+      // 앞의 # 제거 (예: "# 식비관리" -> "식비관리")
+      if (title.startsWith('#')) {
+        title = title.replace(/^#+\s*/, '');
+      }
+      
       const content = lines.slice(1).join('\n').trim();
       
       return {
