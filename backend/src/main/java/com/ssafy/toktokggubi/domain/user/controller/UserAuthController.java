@@ -19,17 +19,31 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpEntity;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "유저 인증", description = "유저 인증 API")
 public class UserAuthController {
     private final UserAuthService authService;
     private final JwtProvider jwtProvider;
+    private final RestTemplate finopenRestTemplate;
+
+    @Value("${ai.base-url}")
+    private String aiBaseUrl;
 
     @PostMapping("/signup")
     public SignupEmailResponse signup(@RequestBody @Valid SignupEmailRequest req) {
@@ -48,6 +62,7 @@ public class UserAuthController {
         Long userId = jwtProvider.parseSignupUserId(token);
 
         TokenEnvelope tok = authService.createProfile(userId, req);
+        sendRequestToAI(userId, req.nickname());
         return LoginResponse.builder()
                 .message("회원 가입 완료")
                 .userId(userId)
@@ -78,6 +93,23 @@ public class UserAuthController {
 
         authService.logout(userId, access);
         return ResponseEntity.ok(new MessageResponse("로그아웃 완료"));
+    }
+
+    private void sendRequestToAI(Long userId, String username) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            Map<String, Object> requestData = new HashMap<>();
+            requestData.put("user_id", userId);
+            requestData.put("username", username);
+            String url = aiBaseUrl + "/ai/model";
+            String requestBody = objectMapper.writeValueAsString(requestData);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+            finopenRestTemplate.postForEntity(url, request, String.class);
+        } catch (Exception e) {
+            log.error("Failed to send request to AI service for user {}: {}", userId, e.getMessage());
+        }
     }
 
     @PostMapping("/password/reset")

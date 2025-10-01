@@ -83,6 +83,8 @@ services:
   #   build:
   #     context: ./ai # Build from the Dockerfile in the ./ai directory
   #   restart: always
+  #   ports:
+  #     - "5000:5000"
   #   environment:
   #     - DB_HOST=postgres
   #     - POSTGRES_USER=${POSTGRES_USER}
