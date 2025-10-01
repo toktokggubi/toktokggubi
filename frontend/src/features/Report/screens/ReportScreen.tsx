@@ -32,7 +32,7 @@ export default function ReportScreen() {
   const { data: profile, isLoading: profileLoading } = useProfileQuery();
 
   const [currentYear, setCurrentYear] = useState(2025);
-  const [currentMonth, setCurrentMonth] = useState(8); // 9월 - 1 = 8월
+  const [currentMonth, setCurrentMonth] = useState(9); // 9월 - 1 = 8월
   const [expenseData, setExpenseData] = useState<DonutChartData[]>([]);
   const [reportData, setReportData] = useState<UserReportResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);

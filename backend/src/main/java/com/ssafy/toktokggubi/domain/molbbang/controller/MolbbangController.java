@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,8 +65,11 @@ public class MolbbangController {
             description = "현재 내가 참여 중(active)인 방의 상태/멤버 목록을 반환합니다."
     )
     @GetMapping("/me")
-    public RoomView myRoom(@Parameter(hidden = true) Principal principal) {
-        return service.myRoom(uid(principal));
+    public ResponseEntity<RoomView> myRoom(@Parameter(hidden = true) Principal principal) {
+        Long uid = Long.valueOf(principal.getName());
+        return service.findActiveRoomCode(uid)
+                .map(code -> ResponseEntity.ok(service.getRoom(code)))
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 
     @Operation(
