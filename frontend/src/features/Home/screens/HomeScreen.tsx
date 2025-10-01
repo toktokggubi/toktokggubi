@@ -161,8 +161,8 @@ export const HomeScreen: React.FC = () => {
       try {
         // 테스트를 위해 2025년 9월 데이터 조회
         monthlySummaryResponse = await fetchMonthlySummary({
-          from: "20250901",
-          to: "20250930",
+          from: "20251001",
+          to: "20251030",
         });
       } catch (err) {
         throw err;
