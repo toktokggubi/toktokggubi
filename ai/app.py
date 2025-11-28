@@ -44,7 +44,7 @@ def analyze_user_data():
         if not req_data or 'user_id' not in req_data or 'username' not in req_data or 'budget' not in req_data or 'year' not in req_data or 'month' not in req_data:
             return jsonify({"error": "Request body must be JSON and contain 'user_id', 'username', 'budget', 'year', and 'month'"}), 400
 
-        user_id = req_data['user_id']
+        user_id = str(req_data['user_id'])
         username = req_data['username']
         budget = req_data['budget']
         year = req_data['year']
@@ -158,8 +158,8 @@ def analyze_user_data():
         return jsonify({"error": error_msg}), 500
 
 
-@app.route("/ai/model", methods=['GET'])
-def make_model(): 
+@app.route("/ai/model", methods=['POST'])
+def make_model():
     '''
     새로운 유저가 등록되었을 떄, 사용되는 API
     Input : user_id, username
@@ -169,12 +169,13 @@ def make_model():
     - 학습된 모델을 저장
     '''
     try:
-        req_data = request.get_json()
-        if not req_data or 'user_id' not in req_data or 'username' not in req_data:
-            return jsonify({"error": "Request body must be JSON and contain 'user_id', 'username'"}), 400
-
-        user_id = req_data['user_id']
-        username = req_data['username']
+        if not request.is_json:
+            return jsonify({"error": "Request must be JSON"}), 400
+        data = request.get_json()
+        user_id = str(data.get('user_id'))
+        username = data.get('username')
+        if not user_id or not username:
+            return jsonify({"error": "Request body must contain 'user_id' and 'username'"}), 400
 
         # Register user in the database if they don't exist
         register_user_if_not_exists(user_id, username)
@@ -241,7 +242,7 @@ def transaction_anomaly():
         logger.error('[transaction_anomaly] Request body is empty')
         return jsonify({'error': 'Request body is empty'}), 400
 
-    user_id = data.get('user_id')
+    user_id = str(data.get('user_id'))
     username = data.get('username')
     transaction = data.get('transaction')
 
@@ -350,7 +351,7 @@ def send_monthly_report():
                 logger.info(f"Successfully generated monthly report for {username} (ID: {user_id}).")
                 # Save the generated report to the backend database.
 
-                save_report_url = "http://localhost/api/ai/report/save"
+                save_report_url = "https://j13b207.p.ssafy.io/api/ai/report/save"
                 save_payload = report_data
                 # logger.info(f"Saving report for user {username} (ID: {user_id}). Full Payload: {json.dumps(save_payload, indent=2)}") # Added for debugging
                 save_res = requests.post(save_report_url, json=save_payload, headers=headers)
@@ -377,7 +378,7 @@ if __name__ == "__main__":
     scheduler.add_job(
         func=send_monthly_report,
         # trigger=CronTrigger(day=1, hour=0, minute=0),
-        trigger=CronTrigger(day=30, hour=17, minute=25),
+        trigger=CronTrigger(day=1, hour=0, minute=0),
         # trigger=IntervalTrigger(minutes=10),
         id='monthly_report_job',
         name='Monthly Report Generator',

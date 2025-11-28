@@ -18,6 +18,8 @@ services:
       retries: 10
 
   ai:
+    ports:
+      - "5000:5000"
     build:
       context: ./ai
     restart: always

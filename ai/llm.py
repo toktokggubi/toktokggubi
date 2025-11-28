@@ -182,7 +182,7 @@ def generate_llm_response(prompt, max_tokens=1024, is_json=False):
                 temperature=0.4,  # Increased temperature for more diverse output
                 top_p=0.9,
                 repetition_penalty=1.2,  # Added repetition penalty to prevent repeating words/phrases
-                eos_token_id=[local_hf_tokenizer.eos_token_id, local_hf_tokenizer.convert_tokens_to_ids("<|eot_id|>")],
+                eos_token_id=[_id for _id in [local_hf_tokenizer.eos_token_id, local_hf_tokenizer.convert_tokens_to_ids("<|eot_id|>")] if _id is not None],
                 pad_token_id=local_hf_tokenizer.pad_token_id,
             )
             # Decode only the newly generated tokens
