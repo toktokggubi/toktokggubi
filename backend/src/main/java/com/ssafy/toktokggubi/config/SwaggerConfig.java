@@ -20,8 +20,7 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .servers(List.of(
-                        new Server().url("/").description("http://localhost:8080/"),
-                        new Server().url("/api").description("http://j13b207.p.ssafy.io/api/")
+                        new Server().url("/").description("http://localhost:8080/")
                 ))
                 .info(new Info().title("TokTokGGUBI API").version("v1"))
                 .components(new Components()
