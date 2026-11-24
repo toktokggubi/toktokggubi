@@ -19,6 +19,15 @@
 
 > 예산 관리와 AI 소비 코칭, interactive 소비 제안을 통해 과소비를 예방하고 혜택을 최적화하여 사용자의 건전한 소비 습관을 만들어주는 서비스
 
+## 프로젝트 개요
+
+| 구분 | 내용 |
+|------|------|
+| 프로젝트 | SSAFY 13기 특화 PJT (핀테크 도메인) |
+| 기간 | 2025.08.25 ~ 09.26 (5주) |
+| 인원 | 6명 (FE 3, BE 2, Infra/AI 1) |
+| 성과 | 특화 PJT 우수상 1등 |
+
 ## 서비스 소개
 
 똑똑꺼비는 AI 기반의 개인 맞춤형 예산 관리 및 소비 코칭 서비스입니다. 사용자의 소비 패턴을 분석하여 예산을 자동으로 추천하고, 실시간 알림과 월간 리포트를 통해 건전한 소비 습관을 형성하도록 돕습니다.
@@ -125,6 +134,16 @@ sequenceDiagram
 ```
 
 ## 주요 기능
+
+### 서비스 화면
+
+| 홈 · 이번 달 예산 현황 | 흔들기 · AI 소비 제안 |
+|:---:|:---:|
+| <img src="docs/ui-main-budget-sept-28pct-242k.png" width="280" alt="홈 예산 현황 화면"> | <img src="docs/ui-ai-suggest-cafe-28k-popup.png" width="280" alt="흔들기 소비 제안 팝업 화면"> |
+
+| 기프티콘 목록 | 몰빵 결과 |
+|:---:|:---:|
+| <img src="docs/ui-gifticon-list-starbucks-ediya-tamntams.png" width="280" alt="기프티콘 목록 화면"> | <img src="docs/ui-mulbbang-result-37k-final-ranking.png" width="280" alt="몰빵 결과 화면"> |
 
 ### 1. 예산 관리
 
