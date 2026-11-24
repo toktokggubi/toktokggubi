@@ -1,4 +1,4 @@
-# 똑똑꺼비 (Toktokggubi)
+# 🐸 똑똑꺼비 (Toktokggubi)
 
 <div align="center">
   <img src="frontend/src/assets/images/character/big-character-02.png" width="180" height="120">
